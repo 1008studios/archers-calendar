@@ -1,0 +1,268 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  min-height: 100%;
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  background: #060807;
+  color: #f7faf8;
+}
+
+body {
+  overflow: hidden;
+}
+
+[data-app-theme="light"] {
+  color-scheme: light;
+}
+
+[data-app-theme="light"],
+[data-app-theme="light"] [class~="bg-[#080B09]"]:not([data-wallpaper-canvas], [data-wallpaper-canvas] *),
+[data-app-theme="light"] [class~="bg-[#070A08]"]:not([data-wallpaper-canvas], [data-wallpaper-canvas] *),
+[data-app-theme="light"] [class~="bg-[#090D0B]/50"]:not([data-wallpaper-canvas], [data-wallpaper-canvas] *),
+[data-app-theme="light"] [class~="bg-[#090D0B]/80"]:not([data-wallpaper-canvas], [data-wallpaper-canvas] *),
+[data-app-theme="light"] [class~="bg-[#090D0B]/95"]:not([data-wallpaper-canvas], [data-wallpaper-canvas] *) {
+  background-color: #f6faf7 !important;
+}
+
+[data-app-theme="light"] [class~="bg-[#0B100D]"]:not([data-wallpaper-canvas], [data-wallpaper-canvas] *),
+[data-app-theme="light"] [class~="bg-[#0C100E]"]:not([data-wallpaper-canvas], [data-wallpaper-canvas] *),
+[data-app-theme="light"] [class~="bg-[#0D110F]"]:not([data-wallpaper-canvas], [data-wallpaper-canvas] *),
+[data-app-theme="light"] [class~="bg-[#0D1210]"]:not([data-wallpaper-canvas], [data-wallpaper-canvas] *),
+[data-app-theme="light"] [class~="bg-[#0E1210]"]:not([data-wallpaper-canvas], [data-wallpaper-canvas] *),
+[data-app-theme="light"] [class~="bg-[#101511]"]:not([data-wallpaper-canvas], [data-wallpaper-canvas] *),
+[data-app-theme="light"] [class~="bg-[#102017]"]:not([data-wallpaper-canvas], [data-wallpaper-canvas] *),
+[data-app-theme="light"] [class~="bg-[#111713]"]:not([data-wallpaper-canvas], [data-wallpaper-canvas] *) {
+  background-color: #ffffff !important;
+}
+
+[data-app-theme="light"] [class~="bg-black/[0.14]"]:not([data-wallpaper-canvas], [data-wallpaper-canvas] *),
+[data-app-theme="light"] [class~="bg-black/[0.16]"]:not([data-wallpaper-canvas], [data-wallpaper-canvas] *),
+[data-app-theme="light"] [class~="bg-black/20"]:not([data-wallpaper-canvas], [data-wallpaper-canvas] *),
+[data-app-theme="light"] [class~="bg-black/40"]:not([data-wallpaper-canvas], [data-wallpaper-canvas] *),
+[data-app-theme="light"] [class~="bg-black/50"]:not([data-wallpaper-canvas], [data-wallpaper-canvas] *) {
+  background-color: rgba(9, 22, 14, 0.08) !important;
+}
+
+[data-app-theme="light"] [class~="bg-white/[0.02]"]:not([data-wallpaper-canvas], [data-wallpaper-canvas] *),
+[data-app-theme="light"] [class~="bg-white/[0.03]"]:not([data-wallpaper-canvas], [data-wallpaper-canvas] *),
+[data-app-theme="light"] [class~="bg-white/[0.04]"]:not([data-wallpaper-canvas], [data-wallpaper-canvas] *),
+[data-app-theme="light"] [class~="bg-white/[0.05]"]:not([data-wallpaper-canvas], [data-wallpaper-canvas] *),
+[data-app-theme="light"] [class~="bg-white/[0.06]"]:not([data-wallpaper-canvas], [data-wallpaper-canvas] *),
+[data-app-theme="light"] [class~="bg-white/[0.07]"]:not([data-wallpaper-canvas], [data-wallpaper-canvas] *),
+[data-app-theme="light"] [class~="bg-white/[0.08]"]:not([data-wallpaper-canvas], [data-wallpaper-canvas] *),
+[data-app-theme="light"] [class~="bg-white/10"]:not([data-wallpaper-canvas], [data-wallpaper-canvas] *),
+[data-app-theme="light"] [class~="bg-white/15"]:not([data-wallpaper-canvas], [data-wallpaper-canvas] *),
+[data-app-theme="light"] [class~="bg-white/20"]:not([data-wallpaper-canvas], [data-wallpaper-canvas] *) {
+  background-color: rgba(8, 28, 16, 0.06) !important;
+}
+
+[data-app-theme="light"] [class~="border-white/5"]:not([data-wallpaper-canvas], [data-wallpaper-canvas] *),
+[data-app-theme="light"] [class~="border-white/10"]:not([data-wallpaper-canvas], [data-wallpaper-canvas] *),
+[data-app-theme="light"] [class~="border-white/15"]:not([data-wallpaper-canvas], [data-wallpaper-canvas] *),
+[data-app-theme="light"] [class~="border-white/20"]:not([data-wallpaper-canvas], [data-wallpaper-canvas] *),
+[data-app-theme="light"] [class~="border-white/25"]:not([data-wallpaper-canvas], [data-wallpaper-canvas] *),
+[data-app-theme="light"] [class~="border-white/[0.06]"]:not([data-wallpaper-canvas], [data-wallpaper-canvas] *),
+[data-app-theme="light"] [class~="border-white/[0.07]"]:not([data-wallpaper-canvas], [data-wallpaper-canvas] *),
+[data-app-theme="light"] [class~="border-white/[0.08]"]:not([data-wallpaper-canvas], [data-wallpaper-canvas] *),
+[data-app-theme="light"] [class~="border-white/[0.10]"]:not([data-wallpaper-canvas], [data-wallpaper-canvas] *) {
+  border-color: rgba(8, 28, 16, 0.12) !important;
+}
+
+[data-app-theme="light"] [class~="text-white"]:not([data-wallpaper-canvas], [data-wallpaper-canvas] *) {
+  color: #0b1710 !important;
+}
+
+[data-app-theme="light"] [class~="text-white/20"]:not([data-wallpaper-canvas], [data-wallpaper-canvas] *),
+[data-app-theme="light"] [class~="text-white/30"]:not([data-wallpaper-canvas], [data-wallpaper-canvas] *),
+[data-app-theme="light"] [class~="text-white/35"]:not([data-wallpaper-canvas], [data-wallpaper-canvas] *),
+[data-app-theme="light"] [class~="text-white/40"]:not([data-wallpaper-canvas], [data-wallpaper-canvas] *),
+[data-app-theme="light"] [class~="text-white/45"]:not([data-wallpaper-canvas], [data-wallpaper-canvas] *),
+[data-app-theme="light"] [class~="text-white/50"]:not([data-wallpaper-canvas], [data-wallpaper-canvas] *),
+[data-app-theme="light"] [class~="text-white/55"]:not([data-wallpaper-canvas], [data-wallpaper-canvas] *),
+[data-app-theme="light"] [class~="text-white/60"]:not([data-wallpaper-canvas], [data-wallpaper-canvas] *),
+[data-app-theme="light"] [class~="text-white/65"]:not([data-wallpaper-canvas], [data-wallpaper-canvas] *),
+[data-app-theme="light"] [class~="text-white/70"]:not([data-wallpaper-canvas], [data-wallpaper-canvas] *),
+[data-app-theme="light"] [class~="text-white/72"]:not([data-wallpaper-canvas], [data-wallpaper-canvas] *),
+[data-app-theme="light"] [class~="text-white/75"]:not([data-wallpaper-canvas], [data-wallpaper-canvas] *),
+[data-app-theme="light"] [class~="text-white/80"]:not([data-wallpaper-canvas], [data-wallpaper-canvas] *),
+[data-app-theme="light"] [class~="text-white/90"]:not([data-wallpaper-canvas], [data-wallpaper-canvas] *) {
+  color: rgba(11, 23, 16, 0.65) !important;
+}
+
+[data-app-theme="light"] input:not([data-wallpaper-canvas], [data-wallpaper-canvas] *),
+[data-app-theme="light"] textarea:not([data-wallpaper-canvas], [data-wallpaper-canvas] *),
+[data-app-theme="light"] select:not([data-wallpaper-canvas], [data-wallpaper-canvas] *) {
+  color: #0b1710;
+}
+
+[data-app-theme="light"] [class~="bg-dlsu-vivid"] [class~="text-white"],
+[data-app-theme="light"] [class~="bg-dlsu-vivid"] [class~="text-white/60"],
+[data-app-theme="light"] [class~="bg-dlsu-vivid"] [class~="text-white/70"],
+[data-app-theme="light"] [class~="bg-dlsu-vivid"] [class~="text-white/80"] {
+  color: #ffffff !important;
+}
+
+[data-app-theme="light"] [class~="bg-dlsu-vivid"]:not([data-wallpaper-canvas], [data-wallpaper-canvas] *) {
+  background-color: #00703c !important;
+  color: #ffffff !important;
+}
+
+[data-app-theme="light"] [class~="bg-dlsu-vivid"] svg {
+  color: #ffffff !important;
+}
+
+[data-app-theme="light"] :not([data-wallpaper-canvas], [data-wallpaper-canvas] *)::placeholder {
+  color: rgba(11, 23, 16, 0.36);
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+button {
+  touch-action: manipulation;
+}
+
+:focus-visible {
+  outline: 2px solid rgba(0, 112, 60, 0.95);
+  outline-offset: 3px;
+}
+
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+::selection {
+  background: rgba(0, 112, 60, 0.55);
+  color: #ffffff;
+}
+
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.22) transparent;
+}
+
+[data-app-theme="light"] .scrollbar-thin {
+  scrollbar-color: rgba(0, 0, 0, 0.15) transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+  height: 8px;
+  width: 8px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.22);
+  border-radius: 999px;
+}
+
+[data-app-theme="light"] .scrollbar-thin::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.15);
+}
+
+.archers-range {
+  --range-progress: 0%;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 18px;
+  cursor: pointer;
+  background: transparent;
+}
+
+.archers-range:focus {
+  outline: none;
+}
+
+.archers-range::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 999px;
+  background:
+    linear-gradient(
+      to right,
+      #008c4d 0%,
+      #008c4d var(--range-progress),
+      rgba(255, 255, 255, 0.22) var(--range-progress),
+      rgba(255, 255, 255, 0.22) 100%
+    );
+}
+
+.archers-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 18px;
+  width: 18px;
+  margin-top: -6px;
+  border: 2px solid #008c4d;
+  border-radius: 999px;
+  background: #008c4d;
+  box-shadow: 0 0 0 3px rgba(0, 140, 77, 0.16);
+}
+
+.archers-range::-moz-range-track {
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.22);
+}
+
+.archers-range::-moz-range-progress {
+  height: 6px;
+  border-radius: 999px;
+  background: #008c4d;
+}
+
+.archers-range::-moz-range-thumb {
+  height: 18px;
+  width: 18px;
+  border: 2px solid #008c4d;
+  border-radius: 999px;
+  background: #008c4d;
+  box-shadow: 0 0 0 3px rgba(0, 140, 77, 0.16);
+}
+
+.archers-range:focus-visible::-webkit-slider-thumb {
+  box-shadow: 0 0 0 4px rgba(0, 140, 77, 0.28);
+}
+
+.archers-range:focus-visible::-moz-range-thumb {
+  box-shadow: 0 0 0 4px rgba(0, 140, 77, 0.28);
+}
+
+.archers-emoji-picker {
+  border: 0 !important;
+  font-family: inherit !important;
+}
+
+.archers-emoji-picker .epr-search-container input {
+  font: inherit;
+}
+
+[data-app-theme="light"] .archers-range::-webkit-slider-runnable-track {
+  background:
+    linear-gradient(
+      to right,
+      #008c4d 0%,
+      #008c4d var(--range-progress),
+      rgba(8, 28, 16, 0.18) var(--range-progress),
+      rgba(8, 28, 16, 0.18) 100%
+    );
+}
+
+[data-app-theme="light"] .archers-range::-moz-range-track {
+  background: rgba(8, 28, 16, 0.18);
+}
