@@ -1,5 +1,6 @@
 "use client";
 
+import { classNames, getTextColor, computeRowCells, formatTimeSlot, courseParts, getStartMinutes, toneFromRgb, toneFromHex, toneFromColors, getPaletteTextColor, buildGradientBackground, buildEmojiPatternBackground, buildGeometricBackground, normalizeHexColor, hexToRgb, estimateImageTone, courseKeyFromCode, courseKeyFromCourse, getExpandedCourseSet, formatMeetingDays, getSlotDurationMinutes, groupEntriesByCourse, rangeProgress, formatPixels } from "@/lib/utils";
 import html2canvas from "html2canvas";
 import JSZip from "jszip";
 import dynamic from "next/dynamic";
@@ -954,276 +955,6 @@ function autoColorByCourse(parsed: ScheduleEntry[], palette?: string[]): Schedul
   });
 }
 
-function classNames(...classes: Array<string | false | null | undefined>) {
-  return classes.filter(Boolean).join(" ");
-}
-
-function rangeProgress(value: number, min: number, max: number) {
-  return `${Math.max(0, Math.min(100, ((value - min) / (max - min)) * 100))}%`;
-}
-
-function formatPixels(width: number, height: number) {
-  return `${width} x ${height}px`;
-}
-
-function getTextColor(hex: string) {
-  const n = hex.replace("#", "");
-  const r = parseInt(n.slice(0, 2), 16);
-  const g = parseInt(n.slice(2, 4), 16);
-  const b = parseInt(n.slice(4, 6), 16);
-  return (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.55 ? "#000000" : "#FFFFFF";
-}
-
-function normalizeHexColor(hex: string) {
-  return hex.trim().toUpperCase();
-}
-
-function hexToRgb(hex: string) {
-  const n = hex.replace("#", "");
-  const r = parseInt(n.slice(0, 2), 16);
-  const g = parseInt(n.slice(2, 4), 16);
-  const b = parseInt(n.slice(4, 6), 16);
-  return { r, g, b };
-}
-
-function toneFromRgb(r: number, g: number, b: number): CalendarTone {
-  return (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.58 ? "light" : "dark";
-}
-
-function toneFromHex(hex: string): CalendarTone {
-  const { r, g, b } = hexToRgb(hex);
-  return toneFromRgb(r, g, b);
-}
-
-function toneFromColors(colors: string[]): CalendarTone {
-  const rgb = colors.map(hexToRgb);
-  const avg = rgb.reduce(
-    (sum, color) => ({ r: sum.r + color.r, g: sum.g + color.g, b: sum.b + color.b }),
-    { r: 0, g: 0, b: 0 }
-  );
-  return toneFromRgb(avg.r / rgb.length, avg.g / rgb.length, avg.b / rgb.length);
-}
-
-function getPaletteTextColor(colors: string[]) {
-  return toneFromColors(colors) === "light" ? "#000000" : "#FFFFFF";
-}
-
-function buildGradientBackground(gradient: GradientConfig) {
-  const colors = gradient.colors.join(", ");
-  return gradient.type === "radial"
-    ? `radial-gradient(circle at ${gradient.position}, ${colors})`
-    : `linear-gradient(${gradient.angle}deg, ${colors})`;
-}
-
-function buildEmojiPatternBackground(pattern: PatternConfig, tone: CalendarTone) {
-  const textColor = tone === "dark" ? "255,255,255" : "0,0,0";
-  const opacity = pattern.opacity.toFixed(2);
-  const size = pattern.spacing;
-  const emoji = pattern.emoji.replace(/[<>&"]/g, "");
-  const cells: Array<{ x: number; y: number; rotate?: number; opacity?: number }> =
-    pattern.preset === "diagonal"
-      ? [{ x: 24, y: 28, rotate: -12 }, { x: 74, y: 78, rotate: -12, opacity: 0.8 }]
-      : [{ x: 50, y: 54 }];
-
-  const text = cells.map((cell) => {
-    const transform = cell.rotate ? ` transform="rotate(${cell.rotate} ${cell.x} ${cell.y})"` : "";
-    const cellOpacity = typeof cell.opacity === "number" ? (pattern.opacity * cell.opacity).toFixed(2) : opacity;
-    return `<text x="${cell.x}" y="${cell.y}" text-anchor="middle" dominant-baseline="middle" font-size="${pattern.size}" opacity="${cellOpacity}" fill="rgb(${textColor})"${transform}>${emoji}</text>`;
-  }).join("");
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 100 100">${text}</svg>`;
-  return `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
-}
-
-function buildGeometricBackground(config: GeometricConfig) {
-  const { kind, color, size, spacing, opacity } = config;
-  const s = spacing;
-  const sw = size;
-  const op = opacity;
-  let content = "";
-
-  if (kind === "dots") {
-    content = `<circle cx="${s/2}" cy="${s/2}" r="${sw/2}" fill="${color}" fill-opacity="${op}" />`;
-  } else if (kind === "grid") {
-    content = `<path d="M ${s} 0 L 0 0 0 ${s}" fill="none" stroke="${color}" stroke-width="${sw}" stroke-opacity="${op}" />`;
-  } else if (kind === "lines") {
-    content = `<path d="M 0 ${s} L ${s} 0" fill="none" stroke="${color}" stroke-width="${sw}" stroke-opacity="${op}" />`;
-  } else if (kind === "plus") {
-    const h = s / 2;
-    const l = sw * 2;
-    content = `<path d="M ${h-l} ${h} L ${h+l} ${h} M ${h} ${h-l} L ${h} ${h+l}" fill="none" stroke="${color}" stroke-width="${sw}" stroke-opacity="${op}" />`;
-  } else if (kind === "blueprint") {
-    const sub = s / 4;
-    content = `
-      <path d="M ${s} 0 L 0 0 0 ${s}" fill="none" stroke="${color}" stroke-width="${sw}" stroke-opacity="${op}" />
-      <path d="M ${sub} 0 L ${sub} ${s} M ${sub*2} 0 L ${sub*2} ${s} M ${sub*3} 0 L ${sub*3} ${s} M 0 ${sub} L ${s} ${sub} M 0 ${sub*2} L ${s} ${sub*2} M 0 ${sub*3} L ${s} ${sub*3}" fill="none" stroke="${color}" stroke-width="${sw/2}" stroke-opacity="${op/2}" />
-    `;
-  }
-
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${s}" height="${s}">${content}</svg>`;
-  return `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
-}
-
-function estimateImageTone(canvas: HTMLCanvasElement) {
-  const ctx = canvas.getContext("2d");
-  if (!ctx) return "dark" as CalendarTone;
-  const sampleSize = 24;
-  const sample = document.createElement("canvas");
-  sample.width = sampleSize;
-  sample.height = sampleSize;
-  const sampleCtx = sample.getContext("2d");
-  if (!sampleCtx) return "dark" as CalendarTone;
-  sampleCtx.drawImage(canvas, 0, 0, sampleSize, sampleSize);
-  const data = sampleCtx.getImageData(0, 0, sampleSize, sampleSize).data;
-  let r = 0, g = 0, b = 0, count = 0;
-  for (let i = 0; i < data.length; i += 4) {
-    r += data[i];
-    g += data[i + 1];
-    b += data[i + 2];
-    count++;
-  }
-  return toneFromRgb(r / count, g / count, b / count);
-}
-
-function formatTimeSlot(slot: string): string {
-  const m = slot.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?\s*[-–]\s*(\d{1,2}):(\d{2})\s*(AM|PM)?$/i);
-  if (!m) return slot;
-  const [, h1, min1, p1 = "", h2, min2, p2 = ""] = m;
-  const t = (h: string, mn: string) => `${Number(h)}:${mn}`;
-  const s1 = p1.toUpperCase(), s2 = p2.toUpperCase();
-  return s1 === s2
-    ? `${t(h1, min1)} – ${t(h2, min2)} ${s2}`.trim()
-    : `${t(h1, min1)} ${s1} – ${t(h2, min2)} ${s2}`.trim();
-}
-
-function getStartMinutes(timeSlot: string) {
-  const match = timeSlot.match(/(\d{1,2})(?::(\d{2}))?\s*(AM|PM)?/i);
-  if (!match) return Number.MAX_SAFE_INTEGER;
-  let hour = Number(match[1]);
-  const minute = Number(match[2] ?? 0);
-  const period = match[3]?.toUpperCase();
-  if (period === "PM" && hour !== 12) hour += 12;
-  if (period === "AM" && hour === 12) hour = 0;
-  return hour * 60 + minute;
-}
-
-function courseParts(course: string) {
-  const [code, ...rest] = course.split(/\s+-\s+/);
-  return { code: (code || course).trim(), title: rest.join(" - ").trim() };
-}
-
-function courseKeyFromCode(code: string) {
-  return code.trim().toUpperCase();
-}
-
-function courseKeyFromCourse(course: string) {
-  return courseKeyFromCode(courseParts(course).code);
-}
-
-function getExpandedCourseSet(source: ScheduleEntry[]) {
-  if (source.length === 0) return new Set<string>();
-  return new Set([courseKeyFromCourse(source[0].course)]);
-}
-
-function formatMeetingDays(days: DayKey[]) {
-  return [...days]
-    .sort((a, b) => DAY_ORDER.indexOf(a) - DAY_ORDER.indexOf(b))
-    .join(" / ");
-}
-
-function computeRowCells(
-  visibleDayList: DayKey[],
-  timeSlot: string,
-  entriesByCell: Record<string, ScheduleEntry[]>
-): Array<{ days: DayKey[]; entries: ScheduleEntry[] }> {
-  const result: Array<{ days: DayKey[]; entries: ScheduleEntry[] }> = [];
-  let i = 0;
-  while (i < visibleDayList.length) {
-    const day = visibleDayList[i];
-    const cellEntries = entriesByCell[`${day}|${timeSlot}`] ?? [];
-    if (cellEntries.length === 1) {
-      const code = cellEntries[0].course.split(/\s+-\s+/)[0].trim().toUpperCase();
-      let span = 1;
-      while (i + span < visibleDayList.length) {
-        const next = entriesByCell[`${visibleDayList[i + span]}|${timeSlot}`] ?? [];
-        if (next.length === 1 && next[0].course.split(/\s+-\s+/)[0].trim().toUpperCase() === code) {
-          span++;
-        } else {
-          break;
-        }
-      }
-      result.push({ days: visibleDayList.slice(i, i + span), entries: cellEntries });
-      i += span;
-    } else {
-      result.push({ days: [day], entries: cellEntries });
-      i++;
-    }
-  }
-  return result;
-}
-
-function getSlotDurationMinutes(timeSlot: string): number {
-  const dash = timeSlot.indexOf(" - ");
-  if (dash < 0) return 90;
-  const start = getStartMinutes(timeSlot.slice(0, dash));
-  const end = getStartMinutes(timeSlot.slice(dash + 3));
-  if (start === Number.MAX_SAFE_INTEGER || end === Number.MAX_SAFE_INTEGER || end <= start) return 90;
-  return end - start;
-}
-
-// Group entries by course code, merging paired days (Mon+Thu, Tue+Fri, Wed+Sat)
-function groupEntriesByCourse(entries: ScheduleEntry[]): Array<{
-  id: string;
-  code: string;
-  title: string;
-  color: string;
-  slots: Array<{ timeSlot: string; days: DayKey[]; room: string; teacher: string; section: string }>;
-}> {
-  const groups = new Map<string, {
-    id: string;
-    code: string;
-    title: string;
-    color: string;
-    slots: Array<{ timeSlot: string; days: DayKey[]; room: string; teacher: string; section: string }>;
-  }>();
-
-  for (const entry of entries) {
-    const { code, title } = courseParts(entry.course);
-    const key = courseKeyFromCode(code);
-    if (!groups.has(key)) {
-      groups.set(key, { id: entry.id, code, title, color: entry.color, slots: [] });
-    }
-    const group = groups.get(key)!;
-    const day = (normalizeDay(entry.day) || entry.day) as DayKey;
-
-    // Find a matching slot (same time) to merge days into
-    const existing = group.slots.find((s) => s.timeSlot === entry.timeSlot);
-    
-    if (existing) {
-      if (!existing.days.includes(day)) existing.days.push(day);
-    } else {
-      group.slots.push({
-        timeSlot: entry.timeSlot,
-        days: [day],
-        room: entry.room,
-        teacher: entry.teacher,
-        section: entry.section
-      });
-    }
-  }
-
-  return Array.from(groups.values())
-    .map((group) => ({
-      ...group,
-      slots: group.slots
-        .map((slot) => ({
-          ...slot,
-          days: [...slot.days].sort((a, b) => DAY_ORDER.indexOf(a) - DAY_ORDER.indexOf(b))
-        }))
-        .sort((a, b) => getStartMinutes(a.timeSlot) - getStartMinutes(b.timeSlot))
-    }))
-    .sort((a, b) => getStartMinutes(a.slots[0]?.timeSlot ?? "") - getStartMinutes(b.slots[0]?.timeSlot ?? ""));
-}
-
 function openCreationsDb(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
     const request = indexedDB.open(CREATION_DB_NAME, CREATION_DB_VERSION);
@@ -1285,7 +1016,20 @@ async function deleteCreationFromDb(id: string) {
   });
 }
 
+import PreviewCanvas from "@/components/PreviewCanvas";
+import MobileControls from "@/components/MobileControls";
+import ExportOverlay from "@/components/ExportOverlay";
+import { ScheduleProvider, useSchedule } from "@/lib/ScheduleContext";
+
 export default function Home() {
+  return (
+    <ScheduleProvider>
+      <MainApp />
+    </ScheduleProvider>
+  );
+}
+
+function MainApp() {
   const ANIMO_PALETTE = COURSE_THEMES.find(t => t.name === "Animo")?.colors || BLOCK_PALETTES.map(p => p.hex);
   const [activeCoursePalette, setActiveCoursePalette] = useState<string[]>(ANIMO_PALETTE);
   const [rawText, setRawText] = useState("");
@@ -1519,6 +1263,7 @@ export default function Home() {
   const uniformCourseTextColor = shouldUseUniformAnimoText ? getPaletteTextColor(ANIMO_PALETTE) : undefined;
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLivePinCode("");
   }, [
     backgroundKind, background, backgroundImage, backgroundTone,
@@ -2196,7 +1941,7 @@ export default function Home() {
     await new Promise((resolve) => setTimeout(resolve, 120));
   }
 
-  async function captureExportCanvas(target: HTMLElement, size: { width: number; height: number }) {
+  async function captureExportCanvas(target: HTMLElement, size: { width: number; height: number }, scale: number = 4) {
     const wrapper = document.createElement("div");
     const clone = target.cloneNode(true) as HTMLElement;
     clone.querySelectorAll("[data-export-hidden='true']").forEach((node) => node.remove());
@@ -2237,7 +1982,7 @@ export default function Home() {
       await waitForExportFrame();
       return await html2canvas(clone, {
         backgroundColor: null,
-        scale: EXPORT_SCALE,
+        scale: scale,
         useCORS: true,
         logging: false,
         width: size.width,
@@ -2305,7 +2050,9 @@ export default function Home() {
     setIsExporting(true);
     try {
       await waitForExportFrame();
-      const exportedCanvas = await captureExportCanvas(canvasRef.current, canvasSize);
+      const isMobile = window.innerWidth <= 768;
+      const dynamicScale = isMobile ? 2 : 4;
+      const exportedCanvas = await captureExportCanvas(canvasRef.current, canvasSize, dynamicScale);
       await downloadCanvas(exportedCanvas, makeExportFilename(device, getExportVariantSuffix()));
       setTimeout(triggerShare, 500);
     } finally {
@@ -2325,7 +2072,9 @@ export default function Home() {
         await new Promise(r => setTimeout(r, 100));
         await waitForExportFrame();
         if (canvasRef.current) {
-          const exported = await captureExportCanvas(canvasRef.current, CANVAS_SIZES[deviceId]);
+          const isMobile = window.innerWidth <= 768;
+          const dynamicScale = isMobile ? 2 : 4;
+          const exported = await captureExportCanvas(canvasRef.current, CANVAS_SIZES[deviceId], dynamicScale);
           await downloadCanvas(exported, makeExportFilename(deviceId, getExportVariantSuffix()));
         }
       } else {
@@ -3778,199 +3527,10 @@ export default function Home() {
     </div>
   );
 
-  // ── Canvas ─────────────────────────────────────────────────────────────────
-  // Renders at a fixed pixel size (see CANVAS_SIZES). Preview wraps it in a
-  // CSS scale transform so the visual size fits the container — this means
-  // what you see in preview is EXACTLY what gets exported.
-  const canvas = (
-    <div
-      ref={canvasRef}
-      data-wallpaper-canvas="true"
-      className={classNames(
-        "relative flex overflow-hidden",
-        device === "share" || isTransparentExport || isBackgroundOnlyExport ? "border-0" : "border border-white/20",
-        activeCalendarFont.bodyClass,
-        gridPositionClasses
-      )}
-      style={{
-        ...exportPreviewStyle,
-        width: canvasSize.width,
-        height: canvasSize.height,
-        color: "#ffffff",
-        borderRadius: canvasRadius,
-        boxShadow: device === "share" || isTransparentExport || isBackgroundOnlyExport ? "none" : "0 18px 48px rgba(0,0,0,0.38)"
-      }}
-    >
-      {/* Visual textures */}
-      {!isTransparentExport && <div className="absolute inset-0 bg-black/5" />}
-      {!isTransparentExport && activeStyle.showLines && (
-        <div className="absolute inset-0 opacity-10 [background-image:linear-gradient(rgba(255,255,255,.07)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.07)_1px,transparent_1px)] [background-size:28px_28px]" />
-      )}
-
-      {/* Brand Watermark */}
-      {!isTransparentExport && !isBackgroundOnlyExport && (
-      <div className={classNames(
-        "absolute bottom-8 right-8 z-50 pointer-events-none opacity-15 transition-opacity hover:opacity-100",
-        device === "share" ? "bottom-6 right-6 opacity-10" : ""
-      )}>
-        <img src={logoSrc} alt="" className="h-8 w-auto object-contain" />
-      </div>
-      )}
-
-      {/* Content */}
-      {!isBackgroundOnlyExport && (
-      <div
-        className={classNames(
-          "relative z-10 flex max-h-full max-w-full flex-col",
-          device === "share" ? "h-full w-full" : ""
-        )}
-        style={{ padding: sz.pad }}
-      >
-        {/* iPhone only: push content to lower portion so clock area stays clear */}
-        {device === "iphone" && (gridPosition === "center" || gridPosition === "bottom") && (
-          <div style={{ flexShrink: 0, flexBasis: "55%" }} aria-hidden="true" />
-        )}
-
-        {/* Title block — hidden for share (rendered as overlay below) */}
-        {device !== "share" && (calendarTitle || calendarSubtitle) && (
-          <div className={classNames(
-            "flex flex-col",
-            gridPosition === "right" ? "items-end text-right" : "items-start"
-          )} style={{ marginBottom: sz.titleMb }}>
-            {calendarSubtitle && (
-              <p style={{ fontSize: sz.subtitle }} className={classNames("font-bold uppercase", activeCalendarFont.headingClass, headerStyleClass, subtitleText)}>
-                {calendarSubtitle}
-              </p>
-            )}
-            {calendarTitle && (
-              <h2 style={{ fontSize: sz.title, marginTop: sz.mt }} className={classNames("break-words font-black leading-none", activeCalendarFont.headingClass, headerStyleClass, titleText)}>
-                {calendarTitle}
-              </h2>
-            )}
-          </div>
-        )}
-
-        {/* Grid */}
-        <div
-          className={classNames(
-            "grid min-h-0",
-            wallpaperStyle === "clean" && device !== "share" ? "overflow-hidden rounded-[6px] border" : "overflow-visible rounded-none",
-            isBorderlessStyle ? "shadow-none" : "shadow-lg",
-            gridBg,
-            device === "share" ? "flex-1" : "",
-            gridBorder
-          )}
-          style={{
-            gridTemplateColumns: `repeat(${Math.max(visibleDayList.length, 1)}, minmax(0, 1fr))`,
-            gridTemplateRows: `${device === "share" ? "auto " : ""}auto ${slotRowTemplate}`
-          }}
-        >
-          {device === "share" && (calendarTitle || calendarSubtitle) && (
-            <div
-              className={classNames("flex min-w-0 items-end px-8 pb-5 pt-7", headerCellBg, headerBorder)}
-              style={{ gridColumn: "1 / -1" }}
-            >
-              <div className="min-w-0">
-                {calendarSubtitle && (
-                  <p style={{ fontSize: sz.subtitle }} className={classNames("font-bold uppercase", activeCalendarFont.headingClass, headerStyleClass, subtitleText)}>
-                    {calendarSubtitle}
-                  </p>
-                )}
-                {calendarTitle && (
-                  <h2 style={{ fontSize: sz.title }} className={classNames("mt-1 font-black leading-none", device === "share" ? "break-words" : "truncate", activeCalendarFont.headingClass, headerStyleClass, titleText)}>
-                    {calendarTitle}
-                  </h2>
-                )}
-              </div>
-            </div>
-          )}
-          {visibleDayList.map((day) => (
-            <div key={day} style={{ fontSize: sz.dayHeader, lineHeight: 1.2, paddingTop: sz.dayPy, paddingBottom: sz.dayPy, paddingLeft: sz.timePx, paddingRight: sz.timePx }} className={classNames("border-b border-r text-center font-bold uppercase", headerCellBg, headerBorder, headerText)}>
-              {day}
-            </div>
-          ))}
-
-          {timeSlots.length ? timeSlots.flatMap((timeSlot) => {
-            const rowCells = computeRowCells(visibleDayList, timeSlot, entriesByCell);
-
-            const timeLabel = (
-              <div
-                key={`time-${timeSlot}`}
-                className={classNames(
-                  "flex items-center",
-                  timeRowStyle,
-                  headerCellBg,
-                  headerBorder
-                )}
-                style={{ gridColumn: "1 / -1", gap: sz.gap, paddingLeft: sz.timePx, paddingRight: sz.timePx, paddingTop: sz.timePy, paddingBottom: sz.timePy }}
-              >
-                <span className={classNames("h-px shrink-0 rounded-full", timeRuleStyle)} style={{ width: sz.gap, minWidth: sz.gap }} />
-                <span
-                  style={{ fontSize: sz.meta, lineHeight: 1, letterSpacing: '-0.025em' }}
-                  className={classNames(
-                    "shrink-0 font-black uppercase tabular-nums whitespace-nowrap",
-                    timeTextStyle
-                  )}
-                >
-                  {formatTimeSlot(timeSlot)}
-                </span>
-                <span className={classNames("h-px flex-1 rounded-full", timeRuleStyle)} />
-              </div>
-            );
-
-            const gridCells = rowCells.map((cell) => {
-              const { days, entries } = cell;
-              const span = days.length;
-              return (
-                <div
-                  key={`${timeSlot}-${days[0]}`}
-                  className={classNames("min-w-0 border-b border-r", cellBorder)}
-                  style={{ padding: sz.cellPad, ...(span > 1 ? { gridColumn: `span ${span}` } : {}) }}
-                >
-                  <div className="flex h-full flex-col" style={{ gap: sz.gap }}>
-                    {entries.map((entry) => {
-                      const textColor = uniformCourseTextColor ?? getTextColor(entry.color);
-                      const parts = courseParts(entry.course);
-                      const meta = [showRoom ? entry.room : "", showSection ? entry.section : "", showProfessor ? entry.teacher : ""].filter(Boolean).join(" | ");
-                      const courseBlockStyle: CSSProperties = {
-                        backgroundColor: entry.color,
-                        color: textColor
-                      };
-                      return (
-                        <div key={entry.id} className={classNames("flex flex-1 flex-col justify-center overflow-visible transition-all", activeStyle.cellStyle)} style={{ ...courseBlockStyle, padding: sz.blockPad, lineHeight: 1.05 }}>
-                          <p style={{ fontSize: sz.courseCode, lineHeight: 1.05 }} className="font-black leading-tight tracking-tight">{parts.code}</p>
-                          {span > 1 && (
-                            <p style={{ fontSize: sz.meta, marginTop: sz.mt, lineHeight: 1.1 }} className="font-bold opacity-60">
-                              {days.join(" · ")}
-                            </p>
-                          )}
-                          {showCourseTitle && parts.title ? (
-                            <p style={{ fontSize: sz.courseTitle, marginTop: sz.mt, lineHeight: 1.1 }} className="font-semibold opacity-80 leading-tight">{parts.title}</p>
-                          ) : null}
-                          {meta ? <p style={{ fontSize: sz.meta, marginTop: sz.mt, lineHeight: 1.1 }} className="font-bold opacity-75">{meta}</p> : null}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              );
-            });
-
-            return [timeLabel, ...gridCells];
-          }) : (
-            <div className={classNames("col-span-full flex items-center justify-center p-12 text-center text-sm font-bold uppercase opacity-40", headerText)}>
-              No Classes Scheduled
-            </div>
-          )}
-        </div>
-      </div>
-      )}
-    </div>
-  );
-
   // ── Page ───────────────────────────────────────────────────────────────────
   return (
     <main data-app-theme={appTheme} className="h-dvh w-full overflow-hidden bg-[#080B09] text-white">
+      <ExportOverlay />
       <div className="flex h-full w-full min-w-0 flex-col md:grid md:grid-cols-[300px_minmax(0,1fr)] lg:grid-cols-[360px_minmax(0,1fr)]">
 
         {/* Desktop sidebar */}
@@ -4105,43 +3665,13 @@ export default function Home() {
                   transformOrigin: "top left"
                 }}
               >
-                {canvas}
+                <PreviewCanvas canvasRef={canvasRef} previewScale={previewScale} />
               </div>
             </div>
           </div>
           
-          {/* Mobile tab bar */}
-          <div className="flex shrink-0 flex-col border-t border-white/10 bg-[#090D0B]/95 pb-safe backdrop-blur-xl md:hidden">
-            <div className="flex gap-1.5 p-2">
-              {MOBILE_TABS.map((tab) => {
-                const TabIcon = tab.icon;
-                const active = mobileTab === tab.id;
-                return (
-                  <button
-                    key={tab.id}
-                    className={classNames(
-                      "flex min-h-12 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-lg px-2 text-[11px] font-bold transition-all",
-                      active ? "bg-dlsu-vivid text-white shadow-md shadow-dlsu-vivid/25" : "bg-white/[0.04] text-white/60 hover:bg-white/[0.08] hover:text-white"
-                    )}
-                    type="button"
-                    onClick={() => {
-                      setMobileTab(tab.id);
-                      setDesktopPanel(tab.id);
-                    }}
-                  >
-                    <TabIcon size={17} strokeWidth={active ? 2.5 : 2} />
-                    {tab.label}
-                  </button>
-                );
-              })}
-            </div>
-            {mobileTab !== "start" && (
-              <div className="max-h-[42dvh] overflow-y-auto border-t border-white/[0.06] scrollbar-thin">
-                {controls}
-              </div>
-            )}
-          </div>
-        </section>
+          <MobileControls>{controls}</MobileControls>
+</section>
 
       </div>
 

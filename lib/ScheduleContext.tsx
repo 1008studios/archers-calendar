@@ -163,7 +163,7 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
   const [calendarFont, setCalendarFont] = useState<CalendarFont>("geist");
   const [calendarSize, setCalendarSize] = useState(3);
   const [expandedCourses, setExpandedCourses] = useState<Set<string>>(new Set());
-  const [selectedExportDevices, setSelectedExportDevices] = useState<Set<DeviceId>>(new Set(["iphone", "macbook"]));
+  const [selectedExportDevices, setSelectedExportDevices] = useState<Set<DeviceId>>(new Set<DeviceId>(["iphone", "macbook"]));
 
   const value = useMemo(() => ({
     activeCoursePalette, setActiveCoursePalette,
