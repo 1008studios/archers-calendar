@@ -82,26 +82,28 @@ export function buildEmojiPatternBackground(pattern: PatternConfig, tone: Calend
 }
 
 export function buildGeometricBackground(config: GeometricConfig) {
-  const { kind, color, size, spacing, opacity } = config;
+  const { kind, color, size, spacing, opacity, dash = 0 } = config;
   const s = spacing;
   const sw = size;
   const op = opacity;
   let content = "";
 
+  const dashAttr = dash > 0 ? `stroke-dasharray="${dash}"` : "";
+
   if (kind === "dots") {
     content = `<circle cx="${s/2}" cy="${s/2}" r="${sw/2}" fill="${color}" fill-opacity="${op}" />`;
   } else if (kind === "grid") {
-    content = `<path d="M ${s} 0 L 0 0 0 ${s}" fill="none" stroke="${color}" stroke-width="${sw}" stroke-opacity="${op}" />`;
+    content = `<path d="M ${s} 0 L 0 0 0 ${s}" fill="none" stroke="${color}" stroke-width="${sw}" stroke-opacity="${op}" ${dashAttr} />`;
   } else if (kind === "lines") {
-    content = `<path d="M 0 ${s} L ${s} 0" fill="none" stroke="${color}" stroke-width="${sw}" stroke-opacity="${op}" />`;
+    content = `<path d="M 0 ${s} L ${s} 0" fill="none" stroke="${color}" stroke-width="${sw}" stroke-opacity="${op}" ${dashAttr} />`;
   } else if (kind === "plus") {
     const h = s / 2;
     const l = sw * 2;
-    content = `<path d="M ${h-l} ${h} L ${h+l} ${h} M ${h} ${h-l} L ${h} ${h+l}" fill="none" stroke="${color}" stroke-width="${sw}" stroke-opacity="${op}" />`;
+    content = `<path d="M ${h-l} ${h} L ${h+l} ${h} M ${h} ${h-l} L ${h} ${h+l}" fill="none" stroke="${color}" stroke-width="${sw}" stroke-opacity="${op}" ${dashAttr} />`;
   } else if (kind === "blueprint") {
     const sub = s / 4;
     content = `
-      <path d="M ${s} 0 L 0 0 0 ${s}" fill="none" stroke="${color}" stroke-width="${sw}" stroke-opacity="${op}" />
+      <path d="M ${s} 0 L 0 0 0 ${s}" fill="none" stroke="${color}" stroke-width="${sw}" stroke-opacity="${op}" ${dashAttr} />
       <path d="M ${sub} 0 L ${sub} ${s} M ${sub*2} 0 L ${sub*2} ${s} M ${sub*3} 0 L ${sub*3} ${s} M 0 ${sub} L ${s} ${sub} M 0 ${sub*2} L ${s} ${sub*2} M 0 ${sub*3} L ${s} ${sub*3}" fill="none" stroke="${color}" stroke-width="${sw/2}" stroke-opacity="${op/2}" />
     `;
   }

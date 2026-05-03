@@ -101,6 +101,7 @@ type GeometricConfig = {
   size: number;
   spacing: number;
   opacity: number;
+  dash: number;
 };
 
 const DEFAULT_GEOMETRIC: GeometricConfig = {
@@ -108,7 +109,8 @@ const DEFAULT_GEOMETRIC: GeometricConfig = {
   color: "#008c4d",
   size: 2.5,
   spacing: 32,
-  opacity: 0.25
+  opacity: 0.25,
+  dash: 0
 };
 
 const GEOMETRIC_KIND_OPTIONS: Array<{ value: GeometricKind; label: string }> = [
@@ -567,7 +569,8 @@ function normalizeGeometricConfig(value: unknown): GeometricConfig {
     color: typeof record.color === "string" && /^#[0-9A-F]{6}$/i.test(record.color) ? record.color : DEFAULT_GEOMETRIC.color,
     size: typeof record.size === "number" ? Math.max(0.5, Math.min(24, record.size)) : DEFAULT_GEOMETRIC.size,
     spacing: typeof record.spacing === "number" ? Math.max(8, Math.min(128, record.spacing)) : DEFAULT_GEOMETRIC.spacing,
-    opacity: typeof record.opacity === "number" ? Math.max(0.01, Math.min(1.0, record.opacity)) : DEFAULT_GEOMETRIC.opacity
+    opacity: typeof record.opacity === "number" ? Math.max(0.01, Math.min(1.0, record.opacity)) : DEFAULT_GEOMETRIC.opacity,
+    dash: typeof record.dash === "number" ? Math.max(0, Math.min(64, record.dash)) : DEFAULT_GEOMETRIC.dash
   };
 }
 
@@ -1031,36 +1034,47 @@ export default function Home() {
 
 function MainApp() {
   const ANIMO_PALETTE = COURSE_THEMES.find(t => t.name === "Animo")?.colors || BLOCK_PALETTES.map(p => p.hex);
-  const [activeCoursePalette, setActiveCoursePalette] = useState<string[]>(ANIMO_PALETTE);
-  const [rawText, setRawText] = useState("");
-  const [entries, setEntries] = useState<ScheduleEntry[]>(() => autoColorByCourse(parseScheduleText(SAMPLE_TEXT), ANIMO_PALETTE));
-  const [visibleDays, setVisibleDays] = useState(DEFAULT_VISIBLE_DAYS);
-  const [showRoom, setShowRoom] = useState(true);
-  const [showProfessor, setShowProfessor] = useState(false);
-  const [showSection, setShowSection] = useState(true);
-  const [showCourseTitle, setShowCourseTitle] = useState(false);
-  const [autoHideEmptyDays, setAutoHideEmptyDays] = useState(true);
-  const [device, setDevice] = useState<DeviceId>("laptop");
-  const [wallpaperStyle, setWallpaperStyle] = useState<WallpaperStyle>("clean");
-  const [appTheme, setAppTheme] = useState<AppTheme>("dark");
-  const [calendarThemeMode, setCalendarThemeMode] = useState<CalendarThemeMode>("normal");
-  const [gridPosition, setGridPosition] = useState<GridPosition>("center");
-  const [backgroundKind, setBackgroundKind] = useState<BackgroundKind>("solid");
-  const [background, setBackground] = useState(DEFAULT_BACKGROUND);
-  const [backgroundImage, setBackgroundImage] = useState<string>("");
-  const [backgroundTone, setBackgroundTone] = useState<CalendarTone>("dark");
-  const [gradient, setGradient] = useState<GradientConfig>(DEFAULT_GRADIENT);
-  const [pattern, setPattern] = useState<PatternConfig>(DEFAULT_PATTERN);
-  const [geometric, setGeometric] = useState<GeometricConfig>(DEFAULT_GEOMETRIC);
-  const [mobileTab, setMobileTab] = useState<MobileTab>("start");
-  const [desktopPanel, setDesktopPanel] = useState<SidebarPanel>("start");
-  const [calendarTitle, setCalendarTitle] = useState("Name's Schedule");
-  const [calendarSubtitle, setCalendarSubtitle] = useState("Term 3");
-  const [isExporting, setIsExporting] = useState(false);
-  const [isParsing, setIsParsing] = useState(false);
-  const [importError, setImportError] = useState("");
-  const [importSource, setImportSource] = useState<ImportSource | "">("");
-  const [saveNotice, setSaveNotice] = useState("");
+
+  // Shared state via context (consumed by PreviewCanvas and MobileControls)
+  const {
+    activeCoursePalette, setActiveCoursePalette,
+    rawText, setRawText,
+    entries, setEntries,
+    visibleDays, setVisibleDays,
+    showRoom, setShowRoom,
+    showProfessor, setShowProfessor,
+    showSection, setShowSection,
+    showCourseTitle, setShowCourseTitle,
+    autoHideEmptyDays, setAutoHideEmptyDays,
+    device, setDevice,
+    wallpaperStyle, setWallpaperStyle,
+    appTheme, setAppTheme,
+    calendarThemeMode, setCalendarThemeMode,
+    gridPosition, setGridPosition,
+    backgroundKind, setBackgroundKind,
+    background, setBackground,
+    backgroundImage, setBackgroundImage,
+    backgroundTone, setBackgroundTone,
+    gradient, setGradient,
+    pattern, setPattern,
+    geometric, setGeometric,
+    mobileTab, setMobileTab,
+    desktopPanel, setDesktopPanel,
+    calendarTitle, setCalendarTitle,
+    calendarSubtitle, setCalendarSubtitle,
+    isExporting, setIsExporting,
+    isParsing, setIsParsing,
+    importError, setImportError,
+    importSource, setImportSource,
+    saveNotice, setSaveNotice,
+    exportVariant, setExportVariant,
+    calendarFont, setCalendarFont,
+    calendarSize, setCalendarSize,
+    expandedCourses, setExpandedCourses,
+    selectedExportDevices, setSelectedExportDevices,
+  } = useSchedule();
+
+  // Local-only state (not needed by child components)
   const [designCode, setDesignCode] = useState("");
   const [livePinCode, setLivePinCode] = useState("");
   const [isGeneratingPin, setIsGeneratingPin] = useState(false);
@@ -1071,15 +1085,10 @@ function MainApp() {
   const [hasLoadedLocalSchedule, setHasLoadedLocalSchedule] = useState(false);
   const [activeCreationId, setActiveCreationId] = useState("");
   const [activeCreationCreatedAt, setActiveCreationCreatedAt] = useState(() => Date.now());
-  const [exportVariant, setExportVariant] = useState<ExportVariant>("full");
-  const [calendarFont, setCalendarFont] = useState<CalendarFont>("geist");
   const [showBetaPopup, setShowBetaPopup] = useState(false);
-  const [selectedExportDevices, setSelectedExportDevices] = useState<Set<DeviceId>>(
-    new Set<DeviceId>(["iphone", "macbook"])
-  );
   const [openDaysDropdown, setOpenDaysDropdown] = useState(false);
   const [openSlotDropdownId, setOpenSlotDropdownId] = useState<string | null>(null);
-  const [calendarSize, setCalendarSize] = useState(3); // 1=largest … 5=smallest
+  const [previewScale, setPreviewScale] = useState(1);
 
   useEffect(() => {
     const hasSeenBeta = sessionStorage.getItem("archers_calendar_beta_seen");
@@ -1089,11 +1098,9 @@ function MainApp() {
       return () => window.clearTimeout(timer);
     }
   }, []);
-  const [expandedCourses, setExpandedCourses] = useState<Set<string>>(() => getExpandedCourseSet(parseScheduleText(SAMPLE_TEXT)));
   const canvasRef = useRef<HTMLDivElement>(null);
   const previewContainerRef = useRef<HTMLDivElement>(null);
   const desktopImportTextAreaRef = useRef<HTMLTextAreaElement>(null);
-  const [previewScale, setPreviewScale] = useState(1);
 
   useEffect(() => {
     let cancelled = false;
@@ -1116,6 +1123,12 @@ function MainApp() {
           setActiveCreationCreatedAt(active.createdAt || active.updatedAt || Date.now());
           applySavedScheduleState(active.state);
           setSaveNotice(`Loaded ${active.name}.`);
+        } else {
+          // No saved data — show sample schedule for new users
+          const sampleEntries = autoColorByCourse(parseScheduleText(SAMPLE_TEXT), ANIMO_PALETTE);
+          setEntries(sampleEntries);
+          setExpandedCourses(getExpandedCourseSet(sampleEntries));
+          setActiveCoursePalette(ANIMO_PALETTE);
         }
       } catch {
         if (!cancelled) {
@@ -2542,16 +2555,16 @@ function MainApp() {
                   </div>
                 )}
               </div>
-              <Toggle compact checked={autoHideEmptyDays} icon={CalendarDays} label="Auto-hide" onChange={() => setAutoHideEmptyDays((v) => !v)} />
+              <Toggle compact checked={autoHideEmptyDays} icon={CalendarDays} label="Auto-hide" onChange={() => setAutoHideEmptyDays(!autoHideEmptyDays)} />
             </div>
           </div>
           <div>
             <SectionLabel className="mb-2">Cell Details</SectionLabel>
             <div className="grid grid-cols-1 gap-2 min-[340px]:grid-cols-2">
-              <Toggle compact checked={showCourseTitle} icon={AlignLeft}  label="Course title" onChange={() => setShowCourseTitle((v) => !v)} />
-              <Toggle compact checked={showRoom}        icon={MapPin}     label="Room"         onChange={() => setShowRoom((v) => !v)} />
-              <Toggle compact checked={showProfessor}   icon={UserRound}  label="Teacher"      onChange={() => setShowProfessor((v) => !v)} />
-              <Toggle compact checked={showSection}     icon={Eye}        label="Section"      onChange={() => setShowSection((v) => !v)} />
+              <Toggle compact checked={showCourseTitle} icon={AlignLeft}  label="Course title" onChange={() => setShowCourseTitle(!showCourseTitle)} />
+              <Toggle compact checked={showRoom}        icon={MapPin}     label="Room"         onChange={() => setShowRoom(!showRoom)} />
+              <Toggle compact checked={showProfessor}   icon={UserRound}  label="Teacher"      onChange={() => setShowProfessor(!showProfessor)} />
+              <Toggle compact checked={showSection}     icon={Eye}        label="Section"      onChange={() => setShowSection(!showSection)} />
             </div>
           </div>
         </div>
@@ -2561,12 +2574,11 @@ function MainApp() {
 
   // ── Controls (sidebar on desktop, panels on mobile) ──────────────────────
   const controls = (
-    <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-4 pb-6 pt-4 scrollbar-thin md:px-5 md:pb-5">
-
+   <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-4 pb-6 pt-4 scrollbar-thin md:px-5 md:pb-5 xl:grid xl:grid-cols-2 xl:content-start xl:items-start xl:gap-6">
       {/* ── Paste Schedule ─────────────────────── */}
       <section
         className={classNames(
-          "space-y-4",
+          "space-y-4 xl:contents",
           mobileTab === "start" ? "block" : "hidden",
           desktopPanel === "start" ? "md:block" : "md:hidden"
         )}
@@ -2622,7 +2634,7 @@ function MainApp() {
       {/* ── Courses (grouped, editable) ── */}
       <section
         className={classNames(
-          "flex-col gap-5",
+          "flex-col gap-5 xl:contents",
           mobileTab === "start" ? "flex" : "hidden",
           desktopPanel === "start" ? "md:flex" : "md:hidden"
         )}
@@ -2834,7 +2846,7 @@ function MainApp() {
       {/* ── Design ─────────────────────────────── */}
       <section
         className={classNames(
-          "flex-col gap-5",
+          "flex-col gap-5 xl:contents",
           mobileTab === "design" ? "flex" : "hidden",
           desktopPanel === "design" ? "md:flex" : "md:hidden"
         )}
@@ -3013,22 +3025,40 @@ function MainApp() {
                       />
                     </label>
                   </div>
-                  <label className="block">
-                    <span className="mb-1.5 flex justify-between text-[10px] font-bold text-white/40">
-                      <span>Visibility</span>
-                      <span>{geometric.opacity < 0.2 ? "Subtle" : geometric.opacity > 0.6 ? "Strong" : "Balanced"}</span>
-                    </span>
-                    <input
-                      type="range"
-                      min="0.05"
-                      max="1"
-                      step="0.05"
-                      value={geometric.opacity}
-                      onChange={(e) => setGeometric(prev => ({ ...prev, opacity: Number(e.target.value) }))}
-                      className="archers-range w-full"
-                      style={{ "--range-progress": rangeProgress(geometric.opacity, 0.05, 1) } as CSSProperties}
-                    />
-                  </label>
+                  <div className="grid grid-cols-2 gap-4">
+                    <label className="block">
+                      <span className="mb-1.5 flex justify-between text-[10px] font-bold text-white/40">
+                        <span>Visibility</span>
+                        <span>{Math.round(geometric.opacity * 100)}%</span>
+                      </span>
+                      <input
+                        type="range"
+                        min="0.05"
+                        max="1"
+                        step="0.05"
+                        value={geometric.opacity}
+                        onChange={(e) => setGeometric(prev => ({ ...prev, opacity: Number(e.target.value) }))}
+                        className="archers-range w-full"
+                        style={{ "--range-progress": rangeProgress(geometric.opacity, 0.05, 1) } as CSSProperties}
+                      />
+                    </label>
+                    <label className="block">
+                      <span className="mb-1.5 flex justify-between text-[10px] font-bold text-white/40">
+                        <span>Broken Lines</span>
+                        <span>{geometric.dash > 0 ? `${geometric.dash}px` : "Solid"}</span>
+                      </span>
+                      <input
+                        type="range"
+                        min="0"
+                        max="32"
+                        step="1"
+                        value={geometric.dash}
+                        onChange={(e) => setGeometric(prev => ({ ...prev, dash: Number(e.target.value) }))}
+                        className="archers-range w-full"
+                        style={{ "--range-progress": rangeProgress(geometric.dash, 0, 32) } as CSSProperties}
+                      />
+                    </label>
+                  </div>
                 </div>
               </div>
             )}
@@ -3354,7 +3384,7 @@ function MainApp() {
       {/* ── Export ─────────────────────────────── */}
       <section
         className={classNames(
-          "space-y-5",
+          "space-y-5 xl:contents",
           mobileTab === "export" ? "block" : "hidden",
           desktopPanel === "export" ? "md:block" : "md:hidden"
         )}
@@ -3531,7 +3561,7 @@ function MainApp() {
   return (
     <main data-app-theme={appTheme} className="h-dvh w-full overflow-hidden bg-[#080B09] text-white">
       <ExportOverlay />
-      <div className="flex h-full w-full min-w-0 flex-col md:grid md:grid-cols-[300px_minmax(0,1fr)] lg:grid-cols-[360px_minmax(0,1fr)]">
+      <div className="flex h-full w-full min-w-0 flex-col md:grid md:grid-cols-[300px_minmax(0,1fr)] lg:grid-cols-[360px_minmax(0,1fr)] xl:grid-cols-[680px_minmax(0,1fr)]">
 
         {/* Desktop sidebar */}
         <aside className="hidden min-h-0 border-r border-white/5 bg-[#070A08] md:flex md:flex-col">

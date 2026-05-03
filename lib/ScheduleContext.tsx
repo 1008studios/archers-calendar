@@ -42,10 +42,11 @@ export type GeometricConfig = {
   size: number;
   spacing: number;
   opacity: number;
+  dash: number;
 };
 
 // --- Defaults (Moved from page.tsx) ---
-export const DEFAULT_GEOMETRIC: GeometricConfig = { kind: "dots", color: "#008c4d", size: 2.5, spacing: 32, opacity: 0.25 };
+export const DEFAULT_GEOMETRIC: GeometricConfig = { kind: "dots", color: "#008c4d", size: 2.5, spacing: 32, opacity: 0.25, dash: 0 };
 export const DEFAULT_BACKGROUND = "#185A37";
 export const DEFAULT_GRADIENT: GradientConfig = { type: "linear", colors: ["#185A37", "#07120C"], angle: 135, position: "center" };
 export const DEFAULT_PATTERN: PatternConfig = { emoji: "✨", preset: "diagonal", size: 24, spacing: 64, opacity: 0.10 };
@@ -94,7 +95,7 @@ interface ScheduleContextType {
   pattern: PatternConfig;
   setPattern: React.Dispatch<React.SetStateAction<PatternConfig>>;
   geometric: GeometricConfig;
-  setGeometric: (val: GeometricConfig) => void;
+  setGeometric: React.Dispatch<React.SetStateAction<GeometricConfig>>;
   mobileTab: MobileTab;
   setMobileTab: (val: MobileTab) => void;
   desktopPanel: SidebarPanel;
