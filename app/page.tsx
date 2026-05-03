@@ -3627,26 +3627,13 @@ function MainApp() {
             </div>
           </header>
 
-          {/* Mobile: Start controls */}
-          <div className={classNames(
-            "min-h-0 w-full min-w-0 flex-1 overflow-y-auto overflow-x-hidden md:hidden",
-            mobileTab !== "start" && "hidden"
-          )}>
-            {controls}
-          </div>
-
-          {/* Preview — always on desktop; hidden on mobile input tab */}
+          {/* Preview — always visible */}
           {/* The canvas is rendered at its real fixed pixel size; a wrapper div
               sized to `canvasSize * previewScale` contains it at `scale(previewScale)`
               so the preview is pixel-perfect with the export output */}
           <div
             ref={previewContainerRef}
-            className={classNames(
-              "min-h-0 flex-1 overflow-hidden",
-              mobileTab === "start"
-                ? "hidden md:flex md:items-center md:justify-center md:p-6"
-                : "flex items-center justify-center p-4 md:p-6"
-            )}
+            className="flex min-h-0 flex-1 items-center justify-center overflow-hidden p-4 md:p-6"
           >
             <div
               style={{
