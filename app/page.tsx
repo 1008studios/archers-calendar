@@ -3637,23 +3637,15 @@ function MainApp() {
           >
             <div
               style={{
-                width: canvasSize.width * previewScale,
-                height: canvasSize.height * previewScale,
-                position: "relative",
+                width: canvasSize.width,
+                height: canvasSize.height,
+                transform: `scale(${previewScale})`,
+                transformOrigin: "center center",
                 flexShrink: 0
               }}
+              className="flex items-center justify-center"
             >
-              <div
-                style={{
-                  position: "absolute",
-                  top: 0,
-                  left: 0,
-                  transform: `scale(${previewScale})`,
-                  transformOrigin: "top left"
-                }}
-              >
-                <PreviewCanvas canvasRef={canvasRef} previewScale={previewScale} />
-              </div>
+              <PreviewCanvas canvasRef={canvasRef} previewScale={previewScale} />
             </div>
           </div>
           
