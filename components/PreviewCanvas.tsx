@@ -249,7 +249,8 @@ export default function PreviewCanvas({ canvasRef, previewScale }: { canvasRef: 
   const FONT_SCALE = { 1: 1.3, 2: 1.12, 3: 1.0, 4: 0.9, 5: 0.82 };
   const MIN_FONT_PX = device === "iphone" ? 7 : 0;
   const fsScale = device === "share" ? 1 : (FONT_SCALE[calendarSize as keyof typeof FONT_SCALE] || 1.0);
-  const scalePx = (val: number) => `${Math.round(Math.max(MIN_FONT_PX, val * fsScale))}px`;
+  const scalePx  = (val: number) => `${Math.round(Math.max(MIN_FONT_PX, val * fsScale))}px`;
+  const scalePad = (val: number) => `${Math.round(val * fsScale)}px`; // no font minimum — for spacing/padding only
   const sz = {
     pad:        device === "share" ? "0px" : `${Math.round(szBase.pad * (PAD_SCALE[calendarSize as keyof typeof PAD_SCALE] || 1.0))}px`,
     subtitle:   scalePx(szBase.subtitle),
@@ -258,14 +259,14 @@ export default function PreviewCanvas({ canvasRef, previewScale }: { canvasRef: 
     courseCode: scalePx(szBase.courseCode),
     courseTitle: scalePx(szBase.courseTitle),
     meta:       scalePx(szBase.meta),
-    cellPad:    scalePx(szBase.cellPad),
-    blockPad:   scalePx(szBase.blockPad),
-    titleMb:    scalePx(szBase.titleMb),
-    gap:        scalePx(szBase.gap),
-    mt:         scalePx(szBase.mt),
-    timePx:     scalePx(szBase.timePx),
-    timePy:     scalePx(szBase.timePy),
-    dayPy:      scalePx(szBase.dayPy)
+    cellPad:    scalePad(szBase.cellPad),
+    blockPad:   scalePad(szBase.blockPad),
+    titleMb:    scalePad(szBase.titleMb),
+    gap:        scalePad(szBase.gap),
+    mt:         scalePad(szBase.mt),
+    timePx:     scalePad(szBase.timePx),
+    timePy:     scalePad(szBase.timePy),
+    dayPy:      scalePad(szBase.dayPy)
   };
   const canvasRadius =
     device === "share"    ? "0px" :
