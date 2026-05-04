@@ -1090,6 +1090,7 @@ function MainApp() {
   const [openDaysDropdown, setOpenDaysDropdown] = useState(false);
   const [openSlotDropdownId, setOpenSlotDropdownId] = useState<string | null>(null);
   const [previewScale, setPreviewScale] = useState(1);
+  const [showDesignApplyConfirm, setShowDesignApplyConfirm] = useState(false);
 
   useEffect(() => {
     const hasSeenBeta = sessionStorage.getItem("archers_calendar_beta_seen");
@@ -2869,106 +2870,103 @@ function MainApp() {
         )}
       >
 
-        <div className="order-1 space-y-5">
-          <ControlGroup title="Load Design">
+        <div className="order-1">
+          <ControlGroup title="Design Code">
+            {/* Load */}
             <div className="flex gap-2">
               <input
                 className="min-h-10 min-w-0 flex-1 rounded-lg border border-white/[0.08] bg-black/[0.16] px-3 font-mono text-xs text-white/80 outline-none transition placeholder:text-white/25 focus:border-dlsu-vivid"
                 value={designCode}
                 onChange={(event) => setDesignCode(event.target.value)}
-                placeholder="Paste design code or PIN here..."
+                placeholder="Paste design code or PIN..."
                 spellCheck={false}
               />
               <button
                 type="button"
                 className="flex min-h-10 items-center justify-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.035] px-4 text-xs font-bold text-white/72 transition hover:border-white/25 hover:bg-white/[0.06] hover:text-white disabled:opacity-40"
-                onClick={handleApplyDesignCode}
+                onClick={() => setShowDesignApplyConfirm(true)}
                 disabled={!designCode.trim()}
               >
                 <Wand2 size={14} />
                 Apply
               </button>
             </div>
-            {designShareNotice && (
-              <p className="mt-2 text-[10px] font-bold text-dlsu-vivid">{designShareNotice}</p>
-            )}
-          </ControlGroup>
 
-          <ControlGroup title="Share Design">
-            <div className="rounded-lg border border-white/10 bg-white/[0.03] p-2.5">
-              <div className="mb-2 flex items-center justify-between gap-2 px-1">
-                <span className="text-[10px] font-black uppercase text-white/40">Numeric Design Code</span>
-                <div className="flex gap-1">
-                  {livePinCode && (
-                    <>
-                      <button
-                        type="button"
-                        className="flex items-center gap-1.5 rounded-full bg-white/[0.08] px-2.5 py-1 text-[10px] font-bold text-white transition hover:bg-white/[0.15]"
-                        onClick={() => {
-                          copyTextToClipboard(livePinCode);
-                          setDesignShareNotice("PIN copied!");
-                          setTimeout(() => setDesignShareNotice(""), 3000);
-                        }}
-                      >
-                        <Copy size={10} />
-                        PIN
-                      </button>
-                      <button
-                        type="button"
-                        className="flex items-center gap-1.5 rounded-full bg-dlsu-vivid/80 px-2.5 py-1 text-[10px] font-bold text-white transition hover:bg-dlsu-vivid"
-                        onClick={() => {
-                          const url = `${window.location.origin}/?pin=${livePinCode}`;
-                          copyTextToClipboard(url);
-                          setDesignShareNotice("Share link copied!");
-                          setTimeout(() => setDesignShareNotice(""), 3000);
-                        }}
-                      >
-                        <Link2 size={10} />
-                        Link
-                      </button>
-                    </>
-                  )}
-                  <button
-                    type="button"
-                    className="flex items-center gap-1.5 rounded-full bg-white/[0.08] px-2.5 py-1 text-[10px] font-bold text-white transition hover:bg-white/[0.15] disabled:opacity-50"
-                    onClick={handleGeneratePinCode}
-                    disabled={isGeneratingPin}
-                  >
-                    {isGeneratingPin ? <Loader2 size={10} className="animate-spin" /> : <Hash size={10} />}
-                    {livePinCode ? "Regenerate" : "Get PIN"}
-                  </button>
-                </div>
-              </div>
-              <div className="flex min-h-16 flex-col items-center justify-center gap-1 rounded-md border border-white/[0.08] bg-black/[0.16] p-3">
-                <div className="text-2xl font-black tracking-[0.2em] text-white/90 font-mono">
-                  {livePinCode || "----"}
-                </div>
-                {livePinCode && (
-                  <p className="text-[9px] font-bold text-white/30">Valid for 30 days · archers-calendar.vercel.app/?pin={livePinCode}</p>
-                )}
-              </div>
-              <details className="mt-3 group">
-                <summary className="flex cursor-pointer items-center gap-1.5 text-[9px] font-bold uppercase tracking-wider text-white/25 transition hover:text-white/40">
-                  <ChevronDown size={10} className="transition-transform group-open:rotate-180" />
-                  Show Manual Design Code
-                </summary>
-                <div className="mt-2 space-y-2">
-                  <div className="rounded-md border border-white/5 bg-black/40 p-2 text-[9px] font-mono leading-relaxed text-white/30 break-all">
-                    Manual code is much longer but works without internet.
-                  </div>
-                  <button
-                    type="button"
-                    className="flex w-full items-center justify-center gap-1.5 rounded-md border border-white/10 py-1.5 text-[9px] font-bold text-white/50 transition hover:bg-white/5 hover:text-white"
-                    onClick={handleCopyDesignCode}
-                  >
-                    <Copy size={10} />
-                    Copy Manual Code
-                  </button>
-                </div>
-              </details>
+            {/* Divider */}
+            <div className="flex items-center gap-2.5">
+              <div className="h-px flex-1 bg-white/[0.06]" />
+              <span className="text-[10px] font-bold text-white/25">share yours</span>
+              <div className="h-px flex-1 bg-white/[0.06]" />
             </div>
+
+            {/* Generate link / PIN display */}
+            {!livePinCode ? (
+              <button
+                type="button"
+                className="flex min-h-10 w-full items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/[0.03] text-xs font-bold text-white/60 transition hover:border-white/25 hover:bg-white/[0.06] hover:text-white disabled:opacity-50"
+                onClick={handleGeneratePinCode}
+                disabled={isGeneratingPin}
+              >
+                {isGeneratingPin ? <Loader2 size={14} className="animate-spin" /> : <Link2 size={14} />}
+                {isGeneratingPin ? "Generating…" : "Generate Share Link"}
+              </button>
+            ) : (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 rounded-lg border border-white/[0.08] bg-black/[0.16] px-3 py-2">
+                  <span className="flex-1 font-mono text-xl font-black tracking-[0.2em] text-white/90">{livePinCode}</span>
+                  <div className="flex gap-1">
+                    <button
+                      type="button"
+                      className="flex items-center gap-1 rounded-full bg-white/[0.08] px-2.5 py-1 text-[10px] font-bold text-white transition hover:bg-white/[0.15]"
+                      onClick={() => { copyTextToClipboard(livePinCode); setDesignShareNotice("PIN copied!"); setTimeout(() => setDesignShareNotice(""), 3000); }}
+                    >
+                      <Copy size={10} /> PIN
+                    </button>
+                    <button
+                      type="button"
+                      className="flex items-center gap-1 rounded-full bg-dlsu-vivid/80 px-2.5 py-1 text-[10px] font-bold text-white transition hover:bg-dlsu-vivid"
+                      onClick={() => { const url = `${window.location.origin}/?pin=${livePinCode}`; copyTextToClipboard(url); setDesignShareNotice("Link copied!"); setTimeout(() => setDesignShareNotice(""), 3000); }}
+                    >
+                      <Link2 size={10} /> Link
+                    </button>
+                    <button
+                      type="button"
+                      className="flex items-center gap-1 rounded-full bg-white/[0.06] px-2 py-1 text-[10px] font-bold text-white/50 transition hover:bg-white/[0.12] hover:text-white disabled:opacity-40"
+                      onClick={handleGeneratePinCode}
+                      disabled={isGeneratingPin}
+                      title="Regenerate"
+                    >
+                      {isGeneratingPin ? <Loader2 size={10} className="animate-spin" /> : <RotateCcw size={10} />}
+                    </button>
+                  </div>
+                </div>
+                <p className="text-center text-[9px] font-bold text-white/25">Valid 30 days · /?pin={livePinCode}</p>
+              </div>
+            )}
+
+            {/* Manual code */}
+            <details className="group">
+              <summary className="flex cursor-pointer items-center gap-1.5 text-[9px] font-bold uppercase tracking-wider text-white/25 transition hover:text-white/40">
+                <ChevronDown size={10} className="transition-transform group-open:rotate-180" />
+                Manual Design Code (offline)
+              </summary>
+              <div className="mt-2 space-y-2">
+                <div className="rounded-md border border-white/5 bg-black/40 p-2 text-[9px] font-mono leading-relaxed text-white/30 break-all">
+                  Longer but works without internet.
+                </div>
+                <button
+                  type="button"
+                  className="flex w-full items-center justify-center gap-1.5 rounded-md border border-white/10 py-1.5 text-[9px] font-bold text-white/50 transition hover:bg-white/5 hover:text-white"
+                  onClick={handleCopyDesignCode}
+                >
+                  <Copy size={10} />
+                  Copy Manual Code
+                </button>
+              </div>
+            </details>
+
             {designShareNotice && (
-              <p className="mt-1 text-center text-[10px] font-bold text-dlsu-vivid">{designShareNotice}</p>
+              <p className="text-center text-[10px] font-bold text-dlsu-vivid">{designShareNotice}</p>
             )}
           </ControlGroup>
         </div>
@@ -3585,6 +3583,35 @@ function MainApp() {
   return (
     <main data-app-theme={appTheme} className="h-dvh w-full overflow-hidden bg-[#080B09] text-white">
       <ExportOverlay />
+
+      {/* Design apply confirmation modal */}
+      {showDesignApplyConfirm && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/70 backdrop-blur-sm px-4">
+          <div className="w-full max-w-sm rounded-2xl border border-white/10 bg-[#0E1410] p-6 shadow-2xl">
+            <div className="mb-1 text-base font-black text-white">Apply this design?</div>
+            <p className="mb-5 text-sm leading-relaxed text-white/50">
+              Only your visual design will change — background, colors, fonts, and layout. Your schedule and courses stay exactly the same.
+            </p>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                className="flex-1 rounded-lg border border-white/10 py-2.5 text-sm font-bold text-white/60 transition hover:bg-white/[0.06] hover:text-white"
+                onClick={() => setShowDesignApplyConfirm(false)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-dlsu-vivid py-2.5 text-sm font-bold text-white transition hover:bg-dlsu active:scale-95"
+                onClick={() => { setShowDesignApplyConfirm(false); void handleApplyDesignCode(); }}
+              >
+                <Wand2 size={14} />
+                Apply Design
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="flex h-full w-full min-w-0 flex-col md:grid md:grid-cols-[300px_minmax(0,1fr)] lg:grid-cols-[360px_minmax(0,1fr)]">
 
         {/* Desktop sidebar */}
