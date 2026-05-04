@@ -2574,11 +2574,11 @@ function MainApp() {
 
   // ── Controls (sidebar on desktop, panels on mobile) ──────────────────────
   const controls = (
-   <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-4 pb-6 pt-4 scrollbar-thin md:px-5 md:pb-5 xl:grid xl:grid-cols-2 xl:content-start xl:items-start xl:gap-6">
+   <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-4 pb-6 pt-4 scrollbar-thin md:px-5 md:pb-5">
       {/* ── Paste Schedule ─────────────────────── */}
       <section
         className={classNames(
-          "space-y-4 xl:contents",
+          "space-y-4",
           mobileTab === "start" ? "block" : "hidden",
           desktopPanel === "start" ? "md:block" : "md:hidden"
         )}
@@ -2634,7 +2634,7 @@ function MainApp() {
       {/* ── Courses (grouped, editable) ── */}
       <section
         className={classNames(
-          "flex-col gap-5 xl:contents",
+          "flex-col gap-5",
           mobileTab === "start" ? "flex" : "hidden",
           desktopPanel === "start" ? "md:flex" : "md:hidden"
         )}
@@ -2846,7 +2846,7 @@ function MainApp() {
       {/* ── Design ─────────────────────────────── */}
       <section
         className={classNames(
-          "flex-col gap-5 xl:contents",
+          "flex-col gap-5",
           mobileTab === "design" ? "flex" : "hidden",
           desktopPanel === "design" ? "md:flex" : "md:hidden"
         )}
@@ -3384,7 +3384,7 @@ function MainApp() {
       {/* ── Export ─────────────────────────────── */}
       <section
         className={classNames(
-          "space-y-5 xl:contents",
+          "space-y-5",
           mobileTab === "export" ? "block" : "hidden",
           desktopPanel === "export" ? "md:block" : "md:hidden"
         )}
@@ -3561,7 +3561,7 @@ function MainApp() {
   return (
     <main data-app-theme={appTheme} className="h-dvh w-full overflow-hidden bg-[#080B09] text-white">
       <ExportOverlay />
-      <div className="flex h-full w-full min-w-0 flex-col md:grid md:grid-cols-[300px_minmax(0,1fr)] lg:grid-cols-[360px_minmax(0,1fr)] xl:grid-cols-[680px_minmax(0,1fr)]">
+      <div className="flex h-full w-full min-w-0 flex-col md:grid md:grid-cols-[300px_minmax(0,1fr)] lg:grid-cols-[360px_minmax(0,1fr)]">
 
         {/* Desktop sidebar */}
         <aside className="hidden min-h-0 border-r border-white/5 bg-[#070A08] md:flex md:flex-col">
