@@ -2622,10 +2622,6 @@ function MainApp() {
           )}
         </ControlGroup>
 
-        <ControlGroup title="Saved">
-          {renderSavedScheduleActions()}
-        </ControlGroup>
-
         <ControlGroup title="Schedule">
           {renderScheduleDetails()}
         </ControlGroup>
