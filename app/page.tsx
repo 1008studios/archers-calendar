@@ -2869,7 +2869,7 @@ function MainApp() {
         )}
       >
 
-        <div className="order-1">
+        <div className="order-1 space-y-5">
           <ControlGroup title="Load Design">
             <div className="flex gap-2">
               <input
@@ -2891,6 +2891,84 @@ function MainApp() {
             </div>
             {designShareNotice && (
               <p className="mt-2 text-[10px] font-bold text-dlsu-vivid">{designShareNotice}</p>
+            )}
+          </ControlGroup>
+
+          <ControlGroup title="Share Design">
+            <div className="rounded-lg border border-white/10 bg-white/[0.03] p-2.5">
+              <div className="mb-2 flex items-center justify-between gap-2 px-1">
+                <span className="text-[10px] font-black uppercase text-white/40">Numeric Design Code</span>
+                <div className="flex gap-1">
+                  {livePinCode && (
+                    <>
+                      <button
+                        type="button"
+                        className="flex items-center gap-1.5 rounded-full bg-white/[0.08] px-2.5 py-1 text-[10px] font-bold text-white transition hover:bg-white/[0.15]"
+                        onClick={() => {
+                          copyTextToClipboard(livePinCode);
+                          setDesignShareNotice("PIN copied!");
+                          setTimeout(() => setDesignShareNotice(""), 3000);
+                        }}
+                      >
+                        <Copy size={10} />
+                        PIN
+                      </button>
+                      <button
+                        type="button"
+                        className="flex items-center gap-1.5 rounded-full bg-dlsu-vivid/80 px-2.5 py-1 text-[10px] font-bold text-white transition hover:bg-dlsu-vivid"
+                        onClick={() => {
+                          const url = `${window.location.origin}/?pin=${livePinCode}`;
+                          copyTextToClipboard(url);
+                          setDesignShareNotice("Share link copied!");
+                          setTimeout(() => setDesignShareNotice(""), 3000);
+                        }}
+                      >
+                        <Link2 size={10} />
+                        Link
+                      </button>
+                    </>
+                  )}
+                  <button
+                    type="button"
+                    className="flex items-center gap-1.5 rounded-full bg-white/[0.08] px-2.5 py-1 text-[10px] font-bold text-white transition hover:bg-white/[0.15] disabled:opacity-50"
+                    onClick={handleGeneratePinCode}
+                    disabled={isGeneratingPin}
+                  >
+                    {isGeneratingPin ? <Loader2 size={10} className="animate-spin" /> : <Hash size={10} />}
+                    {livePinCode ? "Regenerate" : "Get PIN"}
+                  </button>
+                </div>
+              </div>
+              <div className="flex min-h-16 flex-col items-center justify-center gap-1 rounded-md border border-white/[0.08] bg-black/[0.16] p-3">
+                <div className="text-2xl font-black tracking-[0.2em] text-white/90 font-mono">
+                  {livePinCode || "----"}
+                </div>
+                {livePinCode && (
+                  <p className="text-[9px] font-bold text-white/30">Valid for 30 days · archers-calendar.vercel.app/?pin={livePinCode}</p>
+                )}
+              </div>
+              <details className="mt-3 group">
+                <summary className="flex cursor-pointer items-center gap-1.5 text-[9px] font-bold uppercase tracking-wider text-white/25 transition hover:text-white/40">
+                  <ChevronDown size={10} className="transition-transform group-open:rotate-180" />
+                  Show Manual Design Code
+                </summary>
+                <div className="mt-2 space-y-2">
+                  <div className="rounded-md border border-white/5 bg-black/40 p-2 text-[9px] font-mono leading-relaxed text-white/30 break-all">
+                    Manual code is much longer but works without internet.
+                  </div>
+                  <button
+                    type="button"
+                    className="flex w-full items-center justify-center gap-1.5 rounded-md border border-white/10 py-1.5 text-[9px] font-bold text-white/50 transition hover:bg-white/5 hover:text-white"
+                    onClick={handleCopyDesignCode}
+                  >
+                    <Copy size={10} />
+                    Copy Manual Code
+                  </button>
+                </div>
+              </details>
+            </div>
+            {designShareNotice && (
+              <p className="mt-1 text-center text-[10px] font-bold text-dlsu-vivid">{designShareNotice}</p>
             )}
           </ControlGroup>
         </div>
@@ -3402,88 +3480,6 @@ function MainApp() {
           desktopPanel === "export" ? "md:block" : "md:hidden"
         )}
       >
-        <ControlGroup title="Share Design">
-          <div className="rounded-lg border border-white/10 bg-white/[0.03] p-2.5">
-            <div className="mb-2 flex items-center justify-between gap-2 px-1">
-              <span className="text-[10px] font-black uppercase text-white/40">Numeric Design Code</span>
-              <div className="flex gap-1">
-                {livePinCode && (
-                  <>
-                    <button
-                      type="button"
-                      className="flex items-center gap-1.5 rounded-full bg-white/[0.08] px-2.5 py-1 text-[10px] font-bold text-white transition hover:bg-white/[0.15]"
-                      onClick={() => {
-                        copyTextToClipboard(livePinCode);
-                        setDesignShareNotice("PIN copied!");
-                        setTimeout(() => setDesignShareNotice(""), 3000);
-                      }}
-                    >
-                      <Copy size={10} />
-                      PIN
-                    </button>
-                    <button
-                      type="button"
-                      className="flex items-center gap-1.5 rounded-full bg-dlsu-vivid/80 px-2.5 py-1 text-[10px] font-bold text-white transition hover:bg-dlsu-vivid"
-                      onClick={() => {
-                        const url = `${window.location.origin}/?pin=${livePinCode}`;
-                        copyTextToClipboard(url);
-                        setDesignShareNotice("Share link copied!");
-                        setTimeout(() => setDesignShareNotice(""), 3000);
-                      }}
-                    >
-                      <Link2 size={10} />
-                      Link
-                    </button>
-                  </>
-                )}
-                <button
-                  type="button"
-                  className="flex items-center gap-1.5 rounded-full bg-white/[0.08] px-2.5 py-1 text-[10px] font-bold text-white transition hover:bg-white/[0.15] disabled:opacity-50"
-                  onClick={handleGeneratePinCode}
-                  disabled={isGeneratingPin}
-                >
-                  {isGeneratingPin ? <Loader2 size={10} className="animate-spin" /> : <Hash size={10} />}
-                  {livePinCode ? "Regenerate" : "Get PIN"}
-                </button>
-              </div>
-            </div>
-            <div className="flex min-h-16 flex-col items-center justify-center gap-1 rounded-md border border-white/[0.08] bg-black/[0.16] p-3">
-              <div className="text-2xl font-black tracking-[0.2em] text-white/90 font-mono">
-                {livePinCode || "----"}
-              </div>
-              {livePinCode && (
-                <p className="text-[9px] font-bold text-white/30">Valid for 30 days · archers-calendar.vercel.app/?pin={livePinCode}</p>
-              )}
-            </div>
-            
-            <details className="mt-3 group">
-              <summary className="flex cursor-pointer items-center gap-1.5 text-[9px] font-bold uppercase tracking-wider text-white/25 transition hover:text-white/40">
-                <ChevronDown size={10} className="transition-transform group-open:rotate-180" />
-                Show Manual Design Code
-              </summary>
-              <div className="mt-2 space-y-2">
-                <div className="rounded-md border border-white/5 bg-black/40 p-2 text-[9px] font-mono leading-relaxed text-white/30 break-all">
-                  {/* We call encodeDesignCodeV3 directly here if we want it real-time, 
-                      but since we already have the state, we can just use a memo or state */}
-                  {/* For now, just a button to copy it */}
-                  Manual code is much longer but works without internet.
-                </div>
-                <button
-                  type="button"
-                  className="flex w-full items-center justify-center gap-1.5 rounded-md border border-white/10 py-1.5 text-[9px] font-bold text-white/50 transition hover:bg-white/5 hover:text-white"
-                  onClick={handleCopyDesignCode}
-                >
-                  <Copy size={10} />
-                  Copy Manual Code
-                </button>
-              </div>
-            </details>
-          </div>
-          {designShareNotice && (
-            <p className="mt-1 text-center text-[10px] font-bold text-dlsu-vivid">{designShareNotice}</p>
-          )}
-        </ControlGroup>
-
         <ControlGroup title="Output">
           <div className="grid gap-2">
             {EXPORT_VARIANT_OPTIONS.map(({ value, label, description, icon: VariantIcon }) => (
