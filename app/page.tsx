@@ -2979,20 +2979,17 @@ function MainApp() {
 
         <div className="order-3">
           <ControlGroup title="Layout">
-            <div className="flex items-center justify-between">
-              <SectionLabel>Size</SectionLabel>
-              <span className="text-[10px] font-bold text-white/40">{CALENDAR_SIZE_LABELS[calendarSize]}</span>
-            </div>
-            <div className="flex gap-1.5">
+            <SectionLabel>Size</SectionLabel>
+            <div className="flex rounded-lg border border-white/[0.06] bg-white/[0.02] p-0.5">
               {CALENDAR_SIZE_OPTIONS.map(({ value, label }) => (
                 <button
                   key={value}
                   type="button"
                   className={classNames(
-                    "min-h-9 flex-1 rounded-lg border text-[11px] font-bold transition-all active:scale-95",
+                    "flex-1 rounded-md py-2 text-[11px] font-bold transition-all",
                     calendarSize === value
-                      ? "border-dlsu-vivid bg-dlsu-vivid text-white"
-                      : "border-white/10 bg-white/[0.03] text-white/50 hover:border-white/25 hover:bg-white/[0.06] hover:text-white/80"
+                      ? "bg-white/[0.08] text-white shadow-sm"
+                      : "text-white/35 hover:text-white/65"
                   )}
                   onClick={() => setCalendarSize(value)}
                 >
