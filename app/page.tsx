@@ -422,7 +422,6 @@ const MOBILE_TABS: Array<{ id: MobileTab; label: string; icon: LucideIcon }> = [
 const SIDEBAR_PANELS: Array<{ id: SidebarPanel; label: string; icon: LucideIcon }> = [
   { id: "start",    label: "Courses",  icon: CalendarDays },
   { id: "design",   label: "Design",   icon: Palette },
-  { id: "export",   label: "Export",   icon: Download },
 ];
 
 const CALENDAR_SIZE_LABELS: Record<number, string> = { 1: "XL", 2: "L", 3: "M", 4: "S", 5: "XS" };
