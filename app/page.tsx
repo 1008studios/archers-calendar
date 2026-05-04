@@ -34,7 +34,8 @@ import {
   Trash2,
   UserRound,
   Wand2,
-  FileInput
+  FileInput,
+  Link2
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { EmojiClickData, PickerProps } from "emoji-picker-react";
@@ -1144,6 +1145,26 @@ function MainApp() {
       cancelled = true;
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Auto-load design from ?pin= URL param (runs after local state is ready)
+  useEffect(() => {
+    if (!hasLoadedLocalSchedule) return;
+    const params = new URLSearchParams(window.location.search);
+    const pin = params.get("pin");
+    if (!pin || !/^\d{4,8}$/.test(pin)) return;
+    window.history.replaceState({}, "", window.location.pathname);
+    fetch(`/api/design/get?id=${pin}`)
+      .then((r) => r.json())
+      .then(async (data) => {
+        if (!data.code) return;
+        const decoded = await decodeDesignCodeAsync(data.code);
+        applySharedDesignState(decoded);
+        setLivePinCode(pin);
+        setDesktopPanel("export");
+        setMobileTab("export");
+      })
+      .catch(() => {});
+  }, [hasLoadedLocalSchedule]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!hasLoadedLocalSchedule) return;
@@ -3387,18 +3408,33 @@ function MainApp() {
               <span className="text-[10px] font-black uppercase text-white/40">Numeric Design Code</span>
               <div className="flex gap-1">
                 {livePinCode && (
-                  <button
-                    type="button"
-                    className="flex items-center gap-1.5 rounded-full bg-white/[0.08] px-2.5 py-1 text-[10px] font-bold text-white transition hover:bg-white/[0.15]"
-                    onClick={() => {
-                      copyTextToClipboard(livePinCode);
-                      setDesignShareNotice("PIN copied!");
-                      setTimeout(() => setDesignShareNotice(""), 3000);
-                    }}
-                  >
-                    <Copy size={10} />
-                    Copy
-                  </button>
+                  <>
+                    <button
+                      type="button"
+                      className="flex items-center gap-1.5 rounded-full bg-white/[0.08] px-2.5 py-1 text-[10px] font-bold text-white transition hover:bg-white/[0.15]"
+                      onClick={() => {
+                        copyTextToClipboard(livePinCode);
+                        setDesignShareNotice("PIN copied!");
+                        setTimeout(() => setDesignShareNotice(""), 3000);
+                      }}
+                    >
+                      <Copy size={10} />
+                      PIN
+                    </button>
+                    <button
+                      type="button"
+                      className="flex items-center gap-1.5 rounded-full bg-dlsu-vivid/80 px-2.5 py-1 text-[10px] font-bold text-white transition hover:bg-dlsu-vivid"
+                      onClick={() => {
+                        const url = `${window.location.origin}/?pin=${livePinCode}`;
+                        copyTextToClipboard(url);
+                        setDesignShareNotice("Share link copied!");
+                        setTimeout(() => setDesignShareNotice(""), 3000);
+                      }}
+                    >
+                      <Link2 size={10} />
+                      Link
+                    </button>
+                  </>
                 )}
                 <button
                   type="button"
@@ -3416,7 +3452,7 @@ function MainApp() {
                 {livePinCode || "----"}
               </div>
               {livePinCode && (
-                <p className="text-[9px] font-bold text-white/30">Valid for 30 days</p>
+                <p className="text-[9px] font-bold text-white/30">Valid for 30 days · archers-calendar.vercel.app/?pin={livePinCode}</p>
               )}
             </div>
             
