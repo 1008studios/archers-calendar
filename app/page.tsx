@@ -3390,43 +3390,39 @@ function MainApp() {
         {/* Layout */}
         <div className="order-1">
           <ControlGroup title="Style">
-          <div className="grid grid-cols-2 gap-2">
-            {(Object.keys(STYLE_PRESETS) as WallpaperStyle[]).map((style) => {
-              const active = wallpaperStyle === style;
-              return (
-                <button
-                  key={style}
-                  className={classNames(
-                    "group flex items-center gap-3 rounded-lg border p-2 text-left transition-all duration-150 active:scale-[0.98]",
-                    active
-                      ? "border-dlsu-vivid bg-[#102017] text-white shadow-md shadow-dlsu-vivid/20"
-                      : "border-white/10 bg-white/[0.03] text-white/60 hover:border-white/25 hover:bg-white/[0.07] hover:text-white/90"
-                  )}
-                  type="button"
-                  onClick={() => setWallpaperStyle(style)}
-                >
-                  <div className={classNames(
-                    "grid h-8 w-12 shrink-0 grid-cols-3 gap-0.5 rounded-md border p-1",
-                    active ? "border-dlsu-vivid/50 bg-dlsu-vivid/10" : "border-white/10 bg-black/20"
-                  )}>
-                    {[0, 1, 2, 3, 4, 5].map((i) => (
-	                      <span
-	                        key={i}
-	                        className={classNames(
-	                          "rounded-[1px]",
-	                          style === "compact" ? "bg-white/[0.16]" :
-	                          style === "bold" ? "bg-white/[0.24] shadow-sm" :
-	                          style === "glass" ? "border border-white/25 bg-white/[0.18] shadow-[0_1px_3px_rgba(0,0,0,0.18)]" :
-	                          "border border-white/10 bg-white/10"
-	                        )}
-	                      />
-                    ))}
-                  </div>
-                  <p className="text-xs font-black">{STYLE_PRESETS[style].name}</p>
-                </button>
-              );
-            })}
-          </div>
+          {(() => {
+            const hints: Record<WallpaperStyle, string> = {
+              clean:   "Subtle borders",
+              compact: "Flat & minimal",
+              bold:    "Soft shadows",
+              glass:   "Frosted look",
+            };
+            return (
+              <div className="grid grid-cols-2 gap-1.5">
+                {(Object.keys(STYLE_PRESETS) as WallpaperStyle[]).map((style) => {
+                  const active = wallpaperStyle === style;
+                  return (
+                    <button
+                      key={style}
+                      type="button"
+                      className={classNames(
+                        "flex flex-col items-start gap-0.5 rounded-lg border px-3 py-2.5 text-left transition-all duration-150 active:scale-[0.98]",
+                        active
+                          ? "border-dlsu-vivid bg-[#102017] text-white shadow-md shadow-dlsu-vivid/20"
+                          : "border-white/10 bg-white/[0.03] text-white/65 hover:border-white/25 hover:bg-white/[0.07] hover:text-white"
+                      )}
+                      onClick={() => setWallpaperStyle(style)}
+                    >
+                      <span className="text-xs font-black">{STYLE_PRESETS[style].name}</span>
+                      <span className={classNames("text-[10px] font-medium leading-tight", active ? "text-white/45" : "text-white/30")}>
+                        {hints[style]}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            );
+          })()}
           <div className="grid grid-cols-5 gap-1.5">
             {(["left", "center", "right", "top", "bottom"] as GridPosition[]).map((pos) => (
               <button
