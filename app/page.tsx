@@ -2998,20 +2998,19 @@ function MainApp() {
             ))}
           </div>
           <SectionLabel className="pt-1">Calendar Mode</SectionLabel>
-          <div className="grid grid-cols-3 gap-2">
-            {CALENDAR_THEME_OPTIONS.map(({ value, label, icon: ThemeIcon }) => (
+          <div className="flex rounded-lg border border-white/[0.06] bg-white/[0.02] p-0.5">
+            {CALENDAR_THEME_OPTIONS.map(({ value, label }) => (
               <button
                 key={value}
                 className={classNames(
-                  "flex min-h-10 items-center justify-center gap-2 rounded-lg border px-2 text-xs font-bold transition-all duration-150 active:scale-95",
+                  "flex-1 rounded-md py-2 text-[11px] font-bold transition-all",
                   calendarThemeMode === value
-                    ? "border-dlsu-vivid bg-dlsu-vivid text-white shadow-md shadow-dlsu-vivid/20"
-                    : "border-white/10 bg-white/[0.03] text-white/60 hover:border-white/25 hover:bg-white/[0.07] hover:text-white/90"
+                    ? "bg-white/[0.08] text-white shadow-sm"
+                    : "text-white/35 hover:text-white/65"
                 )}
                 type="button"
                 onClick={() => setCalendarThemeMode(value)}
               >
-                <ThemeIcon size={14} strokeWidth={2.4} />
                 {label}
               </button>
             ))}
@@ -3022,240 +3021,172 @@ function MainApp() {
         {/* Background */}
         <div className="order-4">
           <ControlGroup title="Background">
-            <div className="grid grid-cols-5 gap-1.5">
-              {(["solid", "gradient", "pattern", "geometric", "image"] as BackgroundKind[]).map((kind) => (
+
+            {/* Type tab switcher */}
+            <div className="flex rounded-lg border border-white/[0.06] bg-white/[0.02] p-0.5">
+              {([
+                { kind: "solid",     label: "Color"    },
+                { kind: "gradient",  label: "Gradient" },
+                { kind: "pattern",   label: "Emoji"    },
+                { kind: "geometric", label: "Lines"    },
+                { kind: "image",     label: "Photo"    },
+              ] as { kind: BackgroundKind; label: string }[]).map(({ kind, label }) => (
                 <button
                   key={kind}
                   type="button"
                   className={classNames(
-                    "min-h-10 rounded-lg border px-1 text-[10px] font-bold capitalize transition active:scale-95",
+                    "flex-1 rounded-md py-2 text-[10px] font-bold transition-all",
                     backgroundKind === kind
-                      ? "border-dlsu-vivid bg-dlsu-vivid text-white"
-                      : "border-white/10 bg-white/[0.03] text-white/55 hover:border-white/25 hover:bg-white/[0.06] hover:text-white/80"
+                      ? "bg-white/[0.09] text-white shadow-sm"
+                      : "text-white/35 hover:text-white/65"
                   )}
                   onClick={() => {
                     if (kind === "solid") handleSolidBackgroundChange(background);
-                    if (kind === "gradient") applyGradientPreset(gradient);
-                    if (kind === "pattern") updatePattern(pattern);
-                    if (kind === "geometric") setBackgroundKind("geometric");
-                    if (kind === "image" && backgroundImage) setBackgroundKind("image");
+                    else if (kind === "gradient") applyGradientPreset(gradient);
+                    else if (kind === "pattern") updatePattern(pattern);
+                    else if (kind === "geometric") setBackgroundKind("geometric");
+                    else if (kind === "image" && backgroundImage) setBackgroundKind("image");
+                    else if (kind === "image") setBackgroundKind("image");
                   }}
                 >
-                  {kind}
+                  {label}
                 </button>
               ))}
             </div>
 
-            {backgroundKind === "geometric" && (
-              <div className="space-y-4 rounded-lg border border-white/[0.08] bg-white/[0.025] p-3">
-                <div className="flex items-center justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="text-[10px] font-black uppercase tracking-wide text-white/45">Geometric Pattern</p>
-                    <p className="mt-1 truncate text-xs font-bold text-white/75">{GEOMETRIC_KIND_OPTIONS.find(o => o.value === geometric.kind)?.label} preset</p>
-                  </div>
-                  <label className="relative flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-full border border-white/15 bg-white/[0.05] shadow-sm transition hover:border-white/30">
-                    <input
-                      type="color"
-                      value={geometric.color}
-                      onChange={(e) => setGeometric(prev => ({ ...prev, color: e.target.value }))}
-                      className="absolute inset-0 cursor-pointer opacity-0"
-                    />
-                    <div className="h-6 w-6 rounded-full border border-white/20" style={{ backgroundColor: geometric.color }} />
-                  </label>
-                </div>
-
-                <div className="grid grid-cols-5 gap-1.5">
-                  {GEOMETRIC_KIND_OPTIONS.map((opt) => (
+            {/* ── Solid ── */}
+            {backgroundKind === "solid" && (
+              <div className="space-y-3">
+                <label className="relative flex min-h-11 cursor-pointer items-center gap-3 overflow-hidden rounded-lg border border-white/10 bg-white/[0.03] px-3 transition hover:border-white/25">
+                  <div className="h-6 w-6 shrink-0 rounded-full border border-white/20 shadow-sm" style={{ backgroundColor: background.startsWith("#") ? background : DEFAULT_BACKGROUND }} />
+                  <span className="flex-1 font-mono text-xs text-white/60">{background.startsWith("#") ? background.toUpperCase() : DEFAULT_BACKGROUND}</span>
+                  <span className="text-[10px] font-bold text-white/35">tap to change</span>
+                  <input className="absolute inset-0 cursor-pointer opacity-0" type="color" value={background.startsWith("#") ? background : DEFAULT_BACKGROUND} onChange={(e) => handleSolidBackgroundChange(e.target.value)} />
+                </label>
+                <div className="grid grid-cols-4 gap-1.5">
+                  {BACKGROUND_CATEGORIES.flatMap((cat) => cat.colors.slice(0, 4)).slice(0, 16).map((preset) => (
                     <button
-                      key={opt.value}
+                      key={`${preset.name}-${preset.value}`}
                       type="button"
                       className={classNames(
-                        "min-h-9 rounded-lg border px-1 text-[10px] font-bold transition active:scale-95",
-                        geometric.kind === opt.value
-                          ? "border-dlsu-vivid bg-dlsu-vivid text-white"
-                          : "border-white/10 bg-white/[0.03] text-white/50 hover:border-white/20"
+                        "min-h-9 rounded-lg border text-[10px] font-bold transition-all hover:scale-105 active:scale-95",
+                        backgroundKind === "solid" && background === preset.value
+                          ? "ring-2 ring-white ring-offset-1 ring-offset-[#090D0B] border-transparent"
+                          : "border-white/5"
                       )}
-                      onClick={() => setGeometric(prev => ({ ...prev, kind: opt.value }))}
+                      style={{ backgroundColor: preset.value, color: getTextColor(preset.value) }}
+                      onClick={() => handleSolidBackgroundChange(preset.value)}
                     >
-                      {opt.label}
+                      {preset.name}
                     </button>
                   ))}
-                </div>
-
-                <div className="space-y-3">
-                  <div className="grid grid-cols-2 gap-4">
-                    <label className="block">
-                      <span className="mb-1.5 flex justify-between text-[10px] font-bold text-white/40">
-                        <span>Thickness</span>
-                        <span>{geometric.size < 5 ? "Thin" : geometric.size > 12 ? "Thick" : "Medium"}</span>
-                      </span>
-                      <input
-                        type="range"
-                        min="1"
-                        max="20"
-                        step="1"
-                        value={geometric.size}
-                        onChange={(e) => setGeometric(prev => ({ ...prev, size: Number(e.target.value) }))}
-                        className="archers-range w-full"
-                        style={{ "--range-progress": rangeProgress(geometric.size, 1, 20) } as CSSProperties}
-                      />
-                    </label>
-                    <label className="block">
-                      <span className="mb-1.5 flex justify-between text-[10px] font-bold text-white/40">
-                        <span>Density</span>
-                        <span>{geometric.spacing < 30 ? "Dense" : geometric.spacing > 80 ? "Spaced" : "Normal"}</span>
-                      </span>
-                      <input
-                        type="range"
-                        min="16"
-                        max="128"
-                        step="4"
-                        value={geometric.spacing}
-                        onChange={(e) => setGeometric(prev => ({ ...prev, spacing: Number(e.target.value) }))}
-                        className="archers-range w-full"
-                        style={{ "--range-progress": rangeProgress(geometric.spacing, 16, 128) } as CSSProperties}
-                      />
-                    </label>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <label className="block">
-                      <span className="mb-1.5 flex justify-between text-[10px] font-bold text-white/40">
-                        <span>Visibility</span>
-                        <span>{Math.round(geometric.opacity * 100)}%</span>
-                      </span>
-                      <input
-                        type="range"
-                        min="0.05"
-                        max="1"
-                        step="0.05"
-                        value={geometric.opacity}
-                        onChange={(e) => setGeometric(prev => ({ ...prev, opacity: Number(e.target.value) }))}
-                        className="archers-range w-full"
-                        style={{ "--range-progress": rangeProgress(geometric.opacity, 0.05, 1) } as CSSProperties}
-                      />
-                    </label>
-                    <label className="block">
-                      <span className="mb-1.5 flex justify-between text-[10px] font-bold text-white/40">
-                        <span>Broken Lines</span>
-                        <span>{geometric.dash > 0 ? `${geometric.dash}px` : "Solid"}</span>
-                      </span>
-                      <input
-                        type="range"
-                        min="0"
-                        max="32"
-                        step="1"
-                        value={geometric.dash}
-                        onChange={(e) => setGeometric(prev => ({ ...prev, dash: Number(e.target.value) }))}
-                        className="archers-range w-full"
-                        style={{ "--range-progress": rangeProgress(geometric.dash, 0, 32) } as CSSProperties}
-                      />
-                    </label>
-                  </div>
                 </div>
               </div>
             )}
 
-            <div className="grid grid-cols-2 gap-2">
-              <label className="relative flex min-h-10 cursor-pointer items-center justify-center gap-2 overflow-hidden rounded-lg border border-white/10 bg-[#0E1210] px-3 text-xs font-bold text-white transition hover:border-dlsu-vivid">
-                <Palette size={15} />
-                Solid Color
-                <input
-                  className="absolute inset-0 cursor-pointer opacity-0"
-                  type="color"
-                  value={background.startsWith("#") ? background : DEFAULT_BACKGROUND}
-                  onChange={(e) => handleSolidBackgroundChange(e.target.value)}
-                />
-              </label>
-              <label className="flex min-h-10 cursor-pointer items-center justify-center gap-2 rounded-lg border border-white/10 bg-[#0E1210] px-3 text-xs font-bold text-white transition hover:border-dlsu-vivid">
-                <ImagePlus size={15} />
-                Upload
-                <input className="sr-only" type="file" accept="image/*" onChange={handleBackgroundUpload} />
-              </label>
-            </div>
-
-            <div className="space-y-1.5">
-              <p className="text-[10px] font-bold text-white/40">Solid Presets</p>
-              <div className="grid grid-cols-4 gap-2">
-                {BACKGROUND_CATEGORIES.flatMap((cat) => cat.colors.slice(0, 4)).slice(0, 16).map((preset) => (
-                  <button
-                    key={`${preset.name}-${preset.value}`}
-                    className={classNames(
-                      "min-h-10 rounded-lg border px-1 text-[10px] font-bold transition-all duration-150 hover:border-white/40 active:scale-95",
-                      backgroundKind === "solid" && background === preset.value
-                        ? "ring-2 ring-white ring-offset-2 ring-offset-[#090D0B] border-transparent"
-                        : "border-white/5 hover:bg-white/[0.04]"
-                    )}
-                    type="button"
-                    style={{ backgroundColor: preset.value, color: getTextColor(preset.value) }}
-                    onClick={() => handleSolidBackgroundChange(preset.value)}
-                  >
-                    {preset.name}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="space-y-2 rounded-lg border border-white/[0.06] bg-white/[0.02] p-3">
-              <div className="flex items-center justify-between">
-                <p className="text-[10px] font-bold text-white/40">Gradient Generator</p>
-                <div className="flex gap-1">
+            {/* ── Gradient ── */}
+            {backgroundKind === "gradient" && (
+              <div className="space-y-3">
+                <div className="flex rounded-lg border border-white/[0.06] bg-white/[0.02] p-0.5">
                   {(["linear", "radial"] as GradientType[]).map((type) => (
-                    <button
-                      key={type}
-                      type="button"
-                      className={classNames(
-                        "rounded-md px-2 py-1 text-[10px] font-bold capitalize transition",
-                        gradient.type === type && backgroundKind === "gradient" ? "bg-dlsu-vivid text-white" : "bg-white/[0.05] text-white/45 hover:text-white"
+                    <button key={type} type="button"
+                      className={classNames("flex-1 rounded-md py-2 text-[10px] font-bold capitalize transition-all",
+                        gradient.type === type ? "bg-white/[0.09] text-white shadow-sm" : "text-white/35 hover:text-white/65"
                       )}
                       onClick={() => updateGradient({ type })}
-                    >
-                      {type}
-                    </button>
+                    >{type}</button>
+                  ))}
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  {gradient.colors.slice(0, 2).map((color, index) => (
+                    <label key={index} className="relative flex min-h-10 cursor-pointer items-center gap-2 overflow-hidden rounded-lg border border-white/10 bg-white/[0.02] px-3 transition hover:border-white/25">
+                      <div className="h-5 w-5 rounded-full border border-white/20 shadow-sm" style={{ backgroundColor: color }} />
+                      <span className="flex-1 font-mono text-[10px] uppercase text-white/60">{color}</span>
+                      <input className="absolute inset-0 cursor-pointer opacity-0" type="color" value={color} onChange={(e) => updateGradientColor(index, e.target.value)} />
+                    </label>
+                  ))}
+                </div>
+                {gradient.type === "linear" && (
+                  <label className="block">
+                    <span className="mb-1 flex justify-between text-[10px] font-bold text-white/40">
+                      <span>Angle</span><span>{gradient.angle}°</span>
+                    </span>
+                    <input type="range" min="0" max="360" value={gradient.angle} onChange={(e) => updateGradient({ angle: Number(e.target.value) })} className="w-full accent-dlsu-vivid" />
+                  </label>
+                )}
+                <div className="grid grid-cols-2 gap-1.5">
+                  {GRADIENT_PRESETS.map((preset) => (
+                    <button key={preset.name} type="button"
+                      className="min-h-9 rounded-lg border border-white/10 px-2 text-[10px] font-bold text-white transition hover:border-white/30 active:scale-95"
+                      style={{ backgroundImage: buildGradientBackground(preset.gradient) }}
+                      onClick={() => applyGradientPreset(preset.gradient)}
+                    >{preset.name}</button>
                   ))}
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-2">
-                {gradient.colors.slice(0, 2).map((color, index) => (
-                  <label key={index} className="relative flex min-h-10 cursor-pointer items-center gap-2 overflow-hidden rounded-lg border border-white/10 bg-white/[0.02] px-3 text-xs font-bold transition hover:border-white/25">
-                    <div className="h-5 w-5 rounded-full border border-white/20 shadow-sm" style={{ backgroundColor: color }} />
-                    <span className="flex-1 font-mono uppercase text-white/70">{color}</span>
-                    <input
-                      className="absolute inset-0 cursor-pointer opacity-0"
-                      type="color"
-                      value={color}
-                      onChange={(event) => updateGradientColor(index, event.target.value)}
-                    />
-                  </label>
-                ))}
-              </div>
-              {gradient.type === "linear" && (
-                <label className="block">
-                  <span className="mb-1 block text-[10px] font-bold text-white/40">Angle</span>
-                  <input
-                    type="range"
-                    min="0"
-                    max="360"
-                    value={gradient.angle}
-                    onChange={(event) => updateGradient({ angle: Number(event.target.value) })}
-                    className="w-full accent-dlsu-vivid"
-                  />
-                </label>
-              )}
-              <div className="grid grid-cols-2 gap-2">
-                {GRADIENT_PRESETS.map((preset) => (
-                  <button
-                    key={preset.name}
-                    type="button"
-                    className="min-h-9 rounded-lg border border-white/10 px-2 text-[10px] font-bold text-white shadow-sm transition hover:border-white/25"
-                    style={{ backgroundImage: buildGradientBackground(preset.gradient) }}
-                    onClick={() => applyGradientPreset(preset.gradient)}
-                  >
-                    {preset.name}
-                  </button>
-                ))}
-              </div>
-            </div>
+            )}
 
+            {/* ── Geometric ── */}
+            {backgroundKind === "geometric" && (
+              <div className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <div className="flex flex-1 rounded-lg border border-white/[0.06] bg-white/[0.02] p-0.5">
+                    {GEOMETRIC_KIND_OPTIONS.map((opt) => (
+                      <button key={opt.value} type="button"
+                        className={classNames("flex-1 rounded-md py-1.5 text-[10px] font-bold transition-all",
+                          geometric.kind === opt.value ? "bg-white/[0.09] text-white shadow-sm" : "text-white/35 hover:text-white/65"
+                        )}
+                        onClick={() => setGeometric(prev => ({ ...prev, kind: opt.value }))}
+                      >{opt.label}</button>
+                    ))}
+                  </div>
+                  <label className="relative flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-full border border-white/15 bg-white/[0.05] transition hover:border-white/30">
+                    <input type="color" value={geometric.color} onChange={(e) => setGeometric(prev => ({ ...prev, color: e.target.value }))} className="absolute inset-0 cursor-pointer opacity-0" />
+                    <div className="h-5 w-5 rounded-full border border-white/20" style={{ backgroundColor: geometric.color }} />
+                  </label>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <label className="block">
+                    <span className="mb-1.5 flex justify-between text-[10px] font-bold text-white/40">
+                      <span>Thickness</span><span>{geometric.size < 5 ? "Thin" : geometric.size > 12 ? "Thick" : "Medium"}</span>
+                    </span>
+                    <input type="range" min="1" max="20" step="1" value={geometric.size} onChange={(e) => setGeometric(prev => ({ ...prev, size: Number(e.target.value) }))} className="archers-range w-full" style={{ "--range-progress": rangeProgress(geometric.size, 1, 20) } as CSSProperties} />
+                  </label>
+                  <label className="block">
+                    <span className="mb-1.5 flex justify-between text-[10px] font-bold text-white/40">
+                      <span>Density</span><span>{geometric.spacing < 30 ? "Dense" : geometric.spacing > 80 ? "Spaced" : "Normal"}</span>
+                    </span>
+                    <input type="range" min="16" max="128" step="4" value={geometric.spacing} onChange={(e) => setGeometric(prev => ({ ...prev, spacing: Number(e.target.value) }))} className="archers-range w-full" style={{ "--range-progress": rangeProgress(geometric.spacing, 16, 128) } as CSSProperties} />
+                  </label>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <label className="block">
+                    <span className="mb-1.5 flex justify-between text-[10px] font-bold text-white/40">
+                      <span>Opacity</span><span>{Math.round(geometric.opacity * 100)}%</span>
+                    </span>
+                    <input type="range" min="0.05" max="1" step="0.05" value={geometric.opacity} onChange={(e) => setGeometric(prev => ({ ...prev, opacity: Number(e.target.value) }))} className="archers-range w-full" style={{ "--range-progress": rangeProgress(geometric.opacity, 0.05, 1) } as CSSProperties} />
+                  </label>
+                  <label className="block">
+                    <span className="mb-1.5 flex justify-between text-[10px] font-bold text-white/40">
+                      <span>Broken</span><span>{geometric.dash > 0 ? `${geometric.dash}px` : "Solid"}</span>
+                    </span>
+                    <input type="range" min="0" max="32" step="1" value={geometric.dash} onChange={(e) => setGeometric(prev => ({ ...prev, dash: Number(e.target.value) }))} className="archers-range w-full" style={{ "--range-progress": rangeProgress(geometric.dash, 0, 32) } as CSSProperties} />
+                  </label>
+                </div>
+              </div>
+            )}
+
+            {/* ── Image ── */}
+            {backgroundKind === "image" && (
+              <label className="flex min-h-20 cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-white/20 bg-white/[0.02] text-white/50 transition hover:border-white/40 hover:text-white/80">
+                <ImagePlus size={20} />
+                <span className="text-[11px] font-bold">{backgroundImage ? "Replace photo" : "Upload a photo"}</span>
+                <input className="sr-only" type="file" accept="image/*" onChange={handleBackgroundUpload} />
+              </label>
+            )}
+
+            {/* ── Emoji Pattern ── */}
+            {backgroundKind === "pattern" && (
             <div className="space-y-3 rounded-lg border border-white/[0.08] bg-white/[0.025] p-3">
               {/* Header: emoji preview + layout presets side by side */}
               <div className="flex items-start gap-3">
@@ -3384,6 +3315,8 @@ function MainApp() {
                 </label>
               </div>
             </div>
+            )}
+
           </ControlGroup>
         </div>
 
@@ -3423,15 +3356,15 @@ function MainApp() {
               </div>
             );
           })()}
-          <div className="grid grid-cols-5 gap-1.5">
+          <div className="flex rounded-lg border border-white/[0.06] bg-white/[0.02] p-0.5">
             {(["left", "center", "right", "top", "bottom"] as GridPosition[]).map((pos) => (
               <button
                 key={pos}
                 className={classNames(
-                  "flex min-h-10 items-center justify-center rounded-lg border text-[10px] font-bold capitalize transition-all",
+                  "flex-1 rounded-md py-2 text-[10px] font-bold capitalize transition-all",
                   gridPosition === pos
-                    ? "border-dlsu-vivid bg-dlsu-vivid text-white"
-                    : "border-white/10 bg-white/[0.03] text-white/50 hover:border-white/20"
+                    ? "bg-white/[0.08] text-white shadow-sm"
+                    : "text-white/35 hover:text-white/65"
                 )}
                 type="button"
                 onClick={() => setGridPosition(pos)}
