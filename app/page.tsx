@@ -362,9 +362,9 @@ const DEFAULT_GRADIENT: GradientConfig = {
 const DEFAULT_PATTERN: PatternConfig = {
   emoji: "✨",
   preset: "diagonal",
-  size: 24,
+  size: 40,
   spacing: 64,
-  opacity: 0.10
+  opacity: 0.15
 };
 
 const GRADIENT_PRESETS: Array<{ name: string; gradient: GradientConfig }> = [
@@ -383,12 +383,7 @@ const PATTERN_PRESETS: Array<{ value: PatternPreset; label: string }> = [
   { value: "diagonal", label: "Diagonal" }
 ];
 
-const EMOJI_PRESET_GROUPS: Array<{ name: string; emojis: string[] }> = [
-  { name: "Animo", emojis: ["🏹", "💚", "✨", "📚", "🏛️", "🗓️", "⭐", "🌿"] },
-  { name: "Study", emojis: ["📚", "✏️", "📝", "💻", "🧠", "☕", "📌", "🧪"] },
-  { name: "Cute", emojis: ["🌸", "💗", "🎀", "🦋", "🧸", "🍓", "🌷", "🫧"] },
-  { name: "Energy", emojis: ["🔥", "⚡", "🚀", "💫", "🏀", "🏐", "🎧", "🎮"] }
-];
+const QUICK_EMOJI_PICKS = ["✨", "🏹", "💚", "🌿", "🌸", "💗", "🔥", "⚡", "📚", "💻", "☕", "🎧"];
 
 const EMOJI_PICKER_DARK_STYLE = {
   "--epr-bg-color": "#0B100D",
@@ -3219,30 +3214,23 @@ function MainApp() {
               </div>
 
               {/* Quick picks */}
-              <div className="rounded-md border border-white/[0.06] bg-black/[0.14] p-2.5">
-                <p className="mb-2 text-[10px] font-black uppercase tracking-wide text-white/35">Quick Picks</p>
-                <div className="space-y-1.5">
-                  {EMOJI_PRESET_GROUPS.map((group) => (
-                    <div key={group.name} className="flex flex-wrap gap-1">
-                      {group.emojis.map((emoji) => (
-                        <button
-                          key={`${group.name}-${emoji}`}
-                          type="button"
-                          className={classNames(
-                            "grid h-8 w-8 place-items-center rounded-lg border text-lg transition hover:border-white/25 hover:bg-white/[0.07] active:scale-95",
-                            pattern.emoji === emoji
-                              ? "border-dlsu-vivid bg-dlsu-vivid/20 shadow-sm shadow-dlsu-vivid/20"
-                              : "border-white/[0.06] bg-white/[0.03]"
-                          )}
-                          onClick={() => updatePattern({ emoji })}
-                          aria-label={`Use ${emoji}`}
-                        >
-                          {emoji}
-                        </button>
-                      ))}
-                    </div>
-                  ))}
-                </div>
+              <div className="flex flex-wrap gap-1.5">
+                {QUICK_EMOJI_PICKS.map((emoji) => (
+                  <button
+                    key={emoji}
+                    type="button"
+                    className={classNames(
+                      "grid h-10 w-10 place-items-center rounded-xl border text-xl transition hover:border-white/25 hover:bg-white/[0.07] active:scale-95",
+                      pattern.emoji === emoji
+                        ? "border-dlsu-vivid bg-dlsu-vivid/20 shadow-sm shadow-dlsu-vivid/20"
+                        : "border-white/[0.06] bg-white/[0.03]"
+                    )}
+                    onClick={() => updatePattern({ emoji })}
+                    aria-label={`Use ${emoji}`}
+                  >
+                    {emoji}
+                  </button>
+                ))}
               </div>
 
               {/* Full emoji picker */}
