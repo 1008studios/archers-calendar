@@ -1,14 +1,18 @@
 import { NextResponse } from "next/server";
 import { Redis } from "@upstash/redis";
 
-const redis = new Redis({
-  url: process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL || '',
-  token: process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN || '',
-});
+const REDIS_URL = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL || '';
+const REDIS_TOKEN = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN || '';
 
 export const runtime = "edge";
 
 export async function POST(req: Request) {
+  if (!REDIS_URL || !REDIS_TOKEN) {
+    return NextResponse.json({ error: "Share links are not configured on this server." }, { status: 503 });
+  }
+
+  const redis = new Redis({ url: REDIS_URL, token: REDIS_TOKEN });
+
   try {
     const { code } = await req.json();
     if (!code || typeof code !== "string" || code.length > 500) {
