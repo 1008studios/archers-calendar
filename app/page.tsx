@@ -2882,7 +2882,7 @@ function MainApp() {
           {renderCourseColorThemes()}
         </div>
 
-        <div className="order-4">
+        <div className="order-3">
           <ControlGroup title="Layout">
             <div className="flex items-center justify-between">
               <SectionLabel>Calendar Size</SectionLabel>
@@ -2928,7 +2928,7 @@ function MainApp() {
         </div>
 
         {/* Background */}
-        <div className="order-3">
+        <div className="order-4">
           <ControlGroup title="Background">
             <div className="grid grid-cols-5 gap-1.5">
               {(["solid", "gradient", "pattern", "geometric", "image"] as BackgroundKind[]).map((kind) => (
@@ -3165,46 +3165,40 @@ function MainApp() {
             </div>
 
             <div className="space-y-3 rounded-lg border border-white/[0.08] bg-white/[0.025] p-3">
-              <div className="flex items-center justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="text-[10px] font-black uppercase tracking-wide text-white/45">Emoji Pattern</p>
-                  <p className="mt-1 truncate text-xs font-bold text-white/75">Full emoji library</p>
+              {/* Header: emoji preview + layout presets side by side */}
+              <div className="flex items-start gap-3">
+                <div className="flex shrink-0 flex-col items-center gap-1.5">
+                  <div className="grid h-14 w-14 place-items-center rounded-xl border border-white/10 bg-black/25 text-3xl shadow-inner">
+                    {pattern.emoji}
+                  </div>
+                  <span className="text-[9px] font-bold uppercase tracking-wide text-white/30">Current</span>
                 </div>
-                <label className="grid h-16 w-20 shrink-0 place-items-center overflow-hidden rounded-xl border border-white/10 bg-white/[0.04] shadow-sm transition focus-within:border-dlsu-vivid">
-                  <span className="sr-only">Pattern emoji</span>
-                  <input
-                    className="h-full w-full bg-transparent text-center text-3xl outline-none"
-                    value={pattern.emoji}
-                    onChange={(event) => updatePattern({ emoji: event.target.value })}
-                    aria-label="Pattern emoji"
-                  />
-                </label>
+                <div className="flex-1 min-w-0">
+                  <p className="mb-2 text-[10px] font-black uppercase tracking-wide text-white/45">Emoji Pattern</p>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {PATTERN_PRESETS.map((preset) => (
+                      <button
+                        key={preset.value}
+                        type="button"
+                        className={classNames(
+                          "min-h-8 rounded-lg border px-2 text-[10px] font-bold transition active:scale-95",
+                          backgroundKind === "pattern" && pattern.preset === preset.value
+                            ? "border-dlsu-vivid bg-dlsu-vivid text-white"
+                            : "border-white/10 bg-white/[0.03] text-white/50 hover:border-white/20 hover:text-white/80"
+                        )}
+                        onClick={() => applyPatternPreset(preset.value)}
+                      >
+                        {preset.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
 
-              <div className="grid grid-cols-4 gap-1.5">
-                {PATTERN_PRESETS.map((preset) => (
-                  <button
-                    key={preset.value}
-                    type="button"
-                    className={classNames(
-                      "min-h-9 rounded-lg border px-1 text-[10px] font-bold transition active:scale-95",
-                      backgroundKind === "pattern" && pattern.preset === preset.value
-                        ? "border-dlsu-vivid bg-dlsu-vivid text-white"
-                        : "border-white/10 bg-white/[0.03] text-white/50 hover:border-white/20"
-                    )}
-                    onClick={() => applyPatternPreset(preset.value)}
-                  >
-                    {preset.label}
-                  </button>
-                ))}
-              </div>
-
-              <div className="space-y-2 rounded-lg border border-white/[0.06] bg-black/[0.12] p-2.5">
-                <div className="flex items-center justify-between">
-                  <p className="text-[10px] font-black uppercase tracking-wide text-white/40">Presets</p>
-                  <span className="text-lg leading-none">{pattern.emoji}</span>
-                </div>
-                <div className="space-y-2">
+              {/* Quick picks */}
+              <div className="rounded-md border border-white/[0.06] bg-black/[0.14] p-2.5">
+                <p className="mb-2 text-[10px] font-black uppercase tracking-wide text-white/35">Quick Picks</p>
+                <div className="space-y-1.5">
                   {EMOJI_PRESET_GROUPS.map((group) => (
                     <div key={group.name} className="flex flex-wrap gap-1">
                       {group.emojis.map((emoji) => (
@@ -3228,10 +3222,11 @@ function MainApp() {
                 </div>
               </div>
 
+              {/* Full emoji picker */}
               <div className="overflow-hidden rounded-lg border border-white/[0.08] bg-[#0B100D]">
                 <EmojiPicker
                   width="100%"
-                  height={318}
+                  height={300}
                   theme={(appTheme === "light" ? "light" : "dark") as PickerProps["theme"]}
                   emojiStyle={"native" as PickerProps["emojiStyle"]}
                   lazyLoadEmojis
@@ -3245,8 +3240,9 @@ function MainApp() {
                 />
               </div>
 
+              {/* Sliders */}
               <div className="space-y-3">
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-2 gap-4">
                   <label className="block">
                     <span className="mb-1.5 flex justify-between text-[10px] font-bold text-white/40">
                       <span>Size</span>
