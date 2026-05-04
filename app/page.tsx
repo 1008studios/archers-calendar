@@ -75,7 +75,8 @@ type GridPosition = "center" | "left" | "right" | "top" | "bottom";
 type ExportVariant = "full" | "transparent" | "background";
 type CalendarFont = "geist" | "inter" | "poppins" | "system";
 type AppTheme = "dark" | "light";
-type BackgroundKind = "solid" | "image" | "gradient" | "pattern" | "geometric";
+type BackgroundKind = "solid" | "image" | "gradient";
+type OverlayKind = "none" | "pattern" | "geometric";
 type GradientType = "linear" | "radial";
 type PatternPreset = "grid" | "diagonal";
 type GeometricKind = "dots" | "grid" | "lines" | "plus" | "blueprint";
@@ -140,6 +141,7 @@ type SavedScheduleState = {
   calendarThemeMode: CalendarThemeMode;
   gridPosition: GridPosition;
   backgroundKind: BackgroundKind;
+  overlayKind?: OverlayKind;
   background: string;
   backgroundImage: string;
   backgroundTone: CalendarTone;
@@ -164,6 +166,7 @@ type SavedScheduleSnapshot = {
 type SharedDesignState = {
   version: 1;
   backgroundKind: BackgroundKind;
+  overlayKind: OverlayKind;
   background: string;
   backgroundImage: string;
   backgroundTone: CalendarTone;
@@ -570,9 +573,17 @@ function normalizeGeometricConfig(value: unknown): GeometricConfig {
 }
 
 function normalizeBackgroundKind(value: unknown): BackgroundKind {
-  return value === "image" || value === "gradient" || value === "pattern" || value === "geometric"
-    ? value
-    : "solid";
+  return value === "image" || value === "gradient" ? value : "solid";
+}
+
+function normalizeOverlayKind(value: unknown): OverlayKind {
+  return value === "pattern" || value === "geometric" ? value : "none";
+}
+
+function migrateBackgroundKind(value: unknown): { base: BackgroundKind; overlay: OverlayKind } {
+  if (value === "pattern") return { base: "solid", overlay: "pattern" };
+  if (value === "geometric") return { base: "solid", overlay: "geometric" };
+  return { base: normalizeBackgroundKind(value), overlay: "none" };
 }
 
 function normalizeGradientConfig(value: unknown): GradientConfig {
@@ -636,7 +647,7 @@ const DESIGN_SHARE_PREFIX_V3 = "ac3."; // ultra-short query string format
 
 // Key shortening map for smaller design codes
 const KEY_SHORT: Record<string, string> = {
-  backgroundKind: "bk", background: "bg", backgroundImage: "bi", backgroundTone: "bt",
+  backgroundKind: "bk", overlayKind: "ok", background: "bg", backgroundImage: "bi", backgroundTone: "bt",
   wallpaperStyle: "ws", appTheme: "at", calendarThemeMode: "ct", gridPosition: "gp",
   calendarFont: "cf", calendarSize: "cs", device: "dv", exportVariant: "ev",
   gradient: "gr", pattern: "pa", geometric: "ge", version: "v",
@@ -647,6 +658,7 @@ const KEY_LONG: Record<string, string> = Object.fromEntries(Object.entries(KEY_S
 
 const DEFAULT_STATE: Partial<SharedDesignState> = {
   backgroundKind: "solid",
+  overlayKind: "none",
   background: "#0B100D",
   backgroundImage: "",
   backgroundTone: "dark",
@@ -1053,6 +1065,7 @@ function MainApp() {
     gradient, setGradient,
     pattern, setPattern,
     geometric, setGeometric,
+    overlayKind, setOverlayKind,
     mobileTab, setMobileTab,
     desktopPanel, setDesktopPanel,
     calendarTitle, setCalendarTitle,
@@ -1296,7 +1309,7 @@ function MainApp() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setLivePinCode("");
   }, [
-    backgroundKind, background, backgroundImage, backgroundTone,
+    backgroundKind, overlayKind, background, backgroundImage, backgroundTone,
     gradient, pattern, geometric, wallpaperStyle, appTheme,
     calendarThemeMode, gridPosition, calendarFont, calendarSize,
     device, exportVariant
@@ -1330,17 +1343,12 @@ function MainApp() {
       ? `url(${backgroundImage})`
       : backgroundKind === "gradient"
       ? buildGradientBackground(gradient)
-      : backgroundKind === "pattern"
-      ? buildEmojiPatternBackground(pattern, backgroundTone)
-      : backgroundKind === "geometric"
-      ? buildGeometricBackground(geometric)
       : undefined;
   const previewStyle = {
     backgroundColor: backgroundKind === "gradient" ? gradient.colors[0] : background,
     backgroundImage: backgroundCssImage,
-    backgroundSize: backgroundKind === "pattern" ? `${pattern.spacing}px ${pattern.spacing}px` : backgroundKind === "geometric" ? `${geometric.spacing}px ${geometric.spacing}px` : backgroundKind === "image" ? "cover" : undefined,
+    backgroundSize: backgroundKind === "image" ? "cover" : undefined,
     backgroundPosition: backgroundKind === "gradient" ? gradient.position : "center",
-    backgroundRepeat: backgroundKind === "pattern" || backgroundKind === "geometric" ? "repeat" : undefined
   } as CSSProperties;
   const isTransparentExport = exportVariant === "transparent";
   const isBackgroundOnlyExport = exportVariant === "background";
@@ -1481,6 +1489,7 @@ function MainApp() {
     return {
       version: 1,
       backgroundKind,
+      overlayKind,
       background,
       backgroundImage,
       backgroundTone,
@@ -1503,12 +1512,15 @@ function MainApp() {
     const hasBackground = "background" in state;
     const hasGradient = "gradient" in state;
     const nextGradient = hasGradient ? normalizeGradientConfig(state.gradient) : gradient;
-    const nextBackgroundKind = hasBackgroundKind ? normalizeBackgroundKind(state.backgroundKind) : backgroundKind;
+    const migrated = hasBackgroundKind ? migrateBackgroundKind(state.backgroundKind) : { base: backgroundKind, overlay: overlayKind };
+    const nextBackgroundKind = migrated.base;
+    const nextOverlayKind = "overlayKind" in state ? normalizeOverlayKind(state.overlayKind) : migrated.overlay;
     const nextBackground = hasBackground && typeof state.background === "string" && /^#[0-9A-F]{6}$/i.test(state.background)
       ? state.background
       : background;
 
     if (hasBackgroundKind) setBackgroundKind(nextBackgroundKind);
+    setOverlayKind(nextOverlayKind);
     if (hasBackground) setBackground(nextBackground);
     if ("backgroundImage" in state) setBackgroundImage(typeof state.backgroundImage === "string" ? state.backgroundImage : "");
     if (hasGradient) setGradient(nextGradient);
@@ -1538,9 +1550,10 @@ function MainApp() {
       : ANIMO_PALETTE;
     const nextGradient = normalizeGradientConfig(state.gradient);
     const nextPattern = normalizePatternConfig(state.pattern);
-    const nextBackgroundKind = normalizeBackgroundKind(
-      state.backgroundKind ?? (state.backgroundImage ? "image" : "solid")
-    );
+    const rawBgKind = state.backgroundKind ?? (state.backgroundImage ? "image" : "solid");
+    const migrated = migrateBackgroundKind(rawBgKind);
+    const nextBackgroundKind = migrated.base;
+    const nextOverlayKind = state.overlayKind ? normalizeOverlayKind(state.overlayKind) : migrated.overlay;
     const nextBackground = typeof state.background === "string" && /^#[0-9A-F]{6}$/i.test(state.background)
       ? state.background
       : DEFAULT_BACKGROUND;
@@ -1568,6 +1581,7 @@ function MainApp() {
     setCalendarThemeMode(state.calendarThemeMode ?? "normal");
     setGridPosition(state.gridPosition ?? "center");
     setBackgroundKind(nextBackgroundKind);
+    setOverlayKind(nextOverlayKind);
     setBackground(nextBackground);
     setBackgroundImage(state.backgroundImage ?? "");
     setBackgroundTone(nextBackgroundTone);
@@ -1667,18 +1681,12 @@ function MainApp() {
   }
 
   function applyPatternPreset(preset: PatternPreset) {
-    setBackgroundKind("pattern");
-    setBackgroundImage("");
     setPattern((current) => ({ ...current, preset }));
-    setBackgroundTone(toneFromHex(background));
   }
 
   function updatePattern(next: Partial<PatternConfig>) {
     const updated = normalizePatternConfig({ ...pattern, ...next });
-    setBackgroundKind("pattern");
-    setBackgroundImage("");
     setPattern(updated);
-    setBackgroundTone(toneFromHex(background));
   }
 
   function applyParsedEntries(parsed: ScheduleEntry[]) {
@@ -2577,7 +2585,7 @@ function MainApp() {
           <div>
             <SectionLabel className="mb-2">Cell Details</SectionLabel>
             <div className="grid grid-cols-1 gap-2 min-[340px]:grid-cols-2">
-              <Toggle compact checked={showCourseTitle} icon={AlignLeft}  label="Course title" onChange={() => setShowCourseTitle(!showCourseTitle)} />
+              <Toggle compact checked={showCourseTitle} icon={AlignLeft}  label="Title" onChange={() => setShowCourseTitle(!showCourseTitle)} />
               <Toggle compact checked={showRoom}        icon={MapPin}     label="Room"         onChange={() => setShowRoom(!showRoom)} />
               <Toggle compact checked={showProfessor}   icon={UserRound}  label="Teacher"      onChange={() => setShowProfessor(!showProfessor)} />
               <Toggle compact checked={showSection}     icon={Eye}        label="Section"      onChange={() => setShowSection(!showSection)} />
@@ -2972,44 +2980,62 @@ function MainApp() {
         <div className="order-3">
           <ControlGroup title="Layout">
             <div className="flex items-center justify-between">
-              <SectionLabel>Calendar Size</SectionLabel>
+              <SectionLabel>Size</SectionLabel>
               <span className="text-[10px] font-bold text-white/40">{CALENDAR_SIZE_LABELS[calendarSize]}</span>
             </div>
-          <div className="flex gap-1.5">
-            {CALENDAR_SIZE_OPTIONS.map(({ value, label }) => (
-              <button
-                key={value}
-                type="button"
-                className={classNames(
-                  "min-h-9 flex-1 rounded-lg border text-[11px] font-bold transition-all active:scale-95",
-                  calendarSize === value
-                    ? "border-dlsu-vivid bg-dlsu-vivid text-white"
-                    : "border-white/10 bg-white/[0.03] text-white/50 hover:border-white/25 hover:bg-white/[0.06] hover:text-white/80"
-                )}
-                onClick={() => setCalendarSize(value)}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-          <SectionLabel className="pt-1">Calendar Mode</SectionLabel>
-          <div className="flex rounded-lg border border-white/[0.06] bg-white/[0.02] p-0.5">
-            {CALENDAR_THEME_OPTIONS.map(({ value, label }) => (
-              <button
-                key={value}
-                className={classNames(
-                  "flex-1 rounded-md py-2 text-[11px] font-bold transition-all",
-                  calendarThemeMode === value
-                    ? "bg-white/[0.08] text-white shadow-sm"
-                    : "text-white/35 hover:text-white/65"
-                )}
-                type="button"
-                onClick={() => setCalendarThemeMode(value)}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
+            <div className="flex gap-1.5">
+              {CALENDAR_SIZE_OPTIONS.map(({ value, label }) => (
+                <button
+                  key={value}
+                  type="button"
+                  className={classNames(
+                    "min-h-9 flex-1 rounded-lg border text-[11px] font-bold transition-all active:scale-95",
+                    calendarSize === value
+                      ? "border-dlsu-vivid bg-dlsu-vivid text-white"
+                      : "border-white/10 bg-white/[0.03] text-white/50 hover:border-white/25 hover:bg-white/[0.06] hover:text-white/80"
+                  )}
+                  onClick={() => setCalendarSize(value)}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            <SectionLabel className="pt-1">Mode</SectionLabel>
+            <div className="flex rounded-lg border border-white/[0.06] bg-white/[0.02] p-0.5">
+              {CALENDAR_THEME_OPTIONS.map(({ value, label }) => (
+                <button
+                  key={value}
+                  className={classNames(
+                    "flex-1 rounded-md py-2 text-[11px] font-bold transition-all",
+                    calendarThemeMode === value
+                      ? "bg-white/[0.08] text-white shadow-sm"
+                      : "text-white/35 hover:text-white/65"
+                  )}
+                  type="button"
+                  onClick={() => setCalendarThemeMode(value)}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            <SectionLabel className="pt-1">Position</SectionLabel>
+            <div className="flex rounded-lg border border-white/[0.06] bg-white/[0.02] p-0.5">
+              {(["left", "center", "right", "top", "bottom"] as GridPosition[]).map((pos) => (
+                <button
+                  key={pos}
+                  className={classNames(
+                    "flex-1 rounded-md py-2 text-[10px] font-bold capitalize transition-all",
+                    gridPosition === pos
+                      ? "bg-white/[0.08] text-white shadow-sm"
+                      : "text-white/35 hover:text-white/65"
+                  )}
+                  type="button"
+                  onClick={() => setGridPosition(pos)}
+                >
+                  {pos}
+                </button>
+              ))}
+            </div>
           </ControlGroup>
         </div>
 
@@ -3017,14 +3043,12 @@ function MainApp() {
         <div className="order-4">
           <ControlGroup title="Background">
 
-            {/* Type tab switcher */}
+            {/* ── Base background tabs: Color / Gradient / Photo ── */}
             <div className="flex rounded-lg border border-white/[0.06] bg-white/[0.02] p-0.5">
               {([
-                { kind: "solid",     label: "Color"    },
-                { kind: "gradient",  label: "Gradient" },
-                { kind: "pattern",   label: "Emoji"    },
-                { kind: "geometric", label: "Lines"    },
-                { kind: "image",     label: "Photo"    },
+                { kind: "solid",    label: "Color"    },
+                { kind: "gradient", label: "Gradient" },
+                { kind: "image",    label: "Photo"    },
               ] as { kind: BackgroundKind; label: string }[]).map(({ kind, label }) => (
                 <button
                   key={kind}
@@ -3038,10 +3062,7 @@ function MainApp() {
                   onClick={() => {
                     if (kind === "solid") handleSolidBackgroundChange(background);
                     else if (kind === "gradient") applyGradientPreset(gradient);
-                    else if (kind === "pattern") updatePattern(pattern);
-                    else if (kind === "geometric") setBackgroundKind("geometric");
-                    else if (kind === "image" && backgroundImage) setBackgroundKind("image");
-                    else if (kind === "image") setBackgroundKind("image");
+                    else setBackgroundKind("image");
                   }}
                 >
                   {label}
@@ -3121,8 +3142,138 @@ function MainApp() {
               </div>
             )}
 
-            {/* ── Geometric ── */}
-            {backgroundKind === "geometric" && (
+            {/* ── Image ── */}
+            {backgroundKind === "image" && (
+              <label className="flex min-h-20 cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-white/20 bg-white/[0.02] text-white/50 transition hover:border-white/40 hover:text-white/80">
+                <ImagePlus size={20} />
+                <span className="text-[11px] font-bold">{backgroundImage ? "Replace photo" : "Upload a photo"}</span>
+                <input className="sr-only" type="file" accept="image/*" onChange={handleBackgroundUpload} />
+              </label>
+            )}
+
+
+
+            {/* ── Overlay section: None / Emoji / Lines ── */}
+            <div className="border-t border-white/[0.06] pt-3">
+              <SectionLabel className="mb-2">Overlay</SectionLabel>
+              <div className="flex rounded-lg border border-white/[0.06] bg-white/[0.02] p-0.5">
+                {([
+                  { kind: "none",      label: "None"  },
+                  { kind: "pattern",   label: "Emoji" },
+                  { kind: "geometric", label: "Lines" },
+                ] as { kind: OverlayKind; label: string }[]).map(({ kind, label }) => (
+                  <button
+                    key={kind}
+                    type="button"
+                    className={classNames(
+                      "flex-1 rounded-md py-2 text-[10px] font-bold transition-all",
+                      overlayKind === kind
+                        ? "bg-white/[0.09] text-white shadow-sm"
+                        : "text-white/35 hover:text-white/65"
+                    )}
+                    onClick={() => setOverlayKind(kind)}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* ── Overlay: Emoji Pattern ── */}
+            {overlayKind === "pattern" && (
+            <div className="space-y-3 rounded-lg border border-white/[0.08] bg-white/[0.025] p-3">
+              <div className="flex items-start gap-3">
+                <div className="flex shrink-0 flex-col items-center gap-1.5">
+                  <div className="grid h-14 w-14 place-items-center rounded-xl border border-white/10 bg-black/25 text-3xl shadow-inner">
+                    {pattern.emoji}
+                  </div>
+                  <span className="text-[9px] font-bold uppercase tracking-wide text-white/30">Current</span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="mb-2 text-[10px] font-black uppercase tracking-wide text-white/45">Layout</p>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {PATTERN_PRESETS.map((preset) => (
+                      <button
+                        key={preset.value}
+                        type="button"
+                        className={classNames(
+                          "min-h-8 rounded-lg border px-2 text-[10px] font-bold transition active:scale-95",
+                          pattern.preset === preset.value
+                            ? "border-dlsu-vivid bg-dlsu-vivid text-white"
+                            : "border-white/10 bg-white/[0.03] text-white/50 hover:border-white/20 hover:text-white/80"
+                        )}
+                        onClick={() => applyPatternPreset(preset.value)}
+                      >
+                        {preset.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap gap-1.5">
+                {QUICK_EMOJI_PICKS.map((emoji) => (
+                  <button
+                    key={emoji}
+                    type="button"
+                    className={classNames(
+                      "grid h-10 w-10 place-items-center rounded-xl border text-xl transition hover:border-white/25 hover:bg-white/[0.07] active:scale-95",
+                      pattern.emoji === emoji
+                        ? "border-dlsu-vivid bg-dlsu-vivid/20 shadow-sm shadow-dlsu-vivid/20"
+                        : "border-white/[0.06] bg-white/[0.03]"
+                    )}
+                    onClick={() => updatePattern({ emoji })}
+                    aria-label={`Use ${emoji}`}
+                  >
+                    {emoji}
+                  </button>
+                ))}
+              </div>
+
+              <div className="overflow-hidden rounded-lg border border-white/[0.08] bg-[#0B100D]">
+                <EmojiPicker
+                  width="100%"
+                  height={280}
+                  theme={(appTheme === "light" ? "light" : "dark") as PickerProps["theme"]}
+                  emojiStyle={"native" as PickerProps["emojiStyle"]}
+                  lazyLoadEmojis
+                  skinTonesDisabled
+                  autoFocusSearch={false}
+                  searchPlaceholder="Search emoji"
+                  previewConfig={{ showPreview: false }}
+                  className="archers-emoji-picker"
+                  style={appTheme === "light" ? EMOJI_PICKER_LIGHT_STYLE : EMOJI_PICKER_DARK_STYLE}
+                  onEmojiClick={(emojiData: EmojiClickData) => updatePattern({ emoji: emojiData.emoji })}
+                />
+              </div>
+
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-4">
+                  <label className="block">
+                    <span className="mb-1.5 flex justify-between text-[10px] font-bold text-white/40">
+                      <span>Size</span><span>{pattern.size}px</span>
+                    </span>
+                    <input type="range" min="12" max="72" value={pattern.size} onChange={(e) => updatePattern({ size: Number(e.target.value) })} className="archers-range w-full" style={{ "--range-progress": rangeProgress(pattern.size, 12, 72) } as CSSProperties} />
+                  </label>
+                  <label className="block">
+                    <span className="mb-1.5 flex justify-between text-[10px] font-bold text-white/40">
+                      <span>Spacing</span><span>{pattern.spacing}px</span>
+                    </span>
+                    <input type="range" min="36" max="180" value={pattern.spacing} onChange={(e) => updatePattern({ spacing: Number(e.target.value) })} className="archers-range w-full" style={{ "--range-progress": rangeProgress(pattern.spacing, 36, 180) } as CSSProperties} />
+                  </label>
+                </div>
+                <label className="block">
+                  <span className="mb-1.5 flex justify-between text-[10px] font-bold text-white/40">
+                    <span>Opacity</span><span>{Math.round(pattern.opacity * 100)}%</span>
+                  </span>
+                  <input type="range" min="0.04" max="1" step="0.01" value={pattern.opacity} onChange={(e) => updatePattern({ opacity: Number(e.target.value) })} className="archers-range w-full" style={{ "--range-progress": rangeProgress(pattern.opacity, 0.04, 1) } as CSSProperties} />
+                </label>
+              </div>
+            </div>
+            )}
+
+            {/* ── Overlay: Geometric Lines ── */}
+            {overlayKind === "geometric" && (
               <div className="space-y-3">
                 <div className="flex items-center gap-3">
                   <div className="flex flex-1 rounded-lg border border-white/[0.06] bg-white/[0.02] p-0.5">
@@ -3171,140 +3322,6 @@ function MainApp() {
               </div>
             )}
 
-            {/* ── Image ── */}
-            {backgroundKind === "image" && (
-              <label className="flex min-h-20 cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-white/20 bg-white/[0.02] text-white/50 transition hover:border-white/40 hover:text-white/80">
-                <ImagePlus size={20} />
-                <span className="text-[11px] font-bold">{backgroundImage ? "Replace photo" : "Upload a photo"}</span>
-                <input className="sr-only" type="file" accept="image/*" onChange={handleBackgroundUpload} />
-              </label>
-            )}
-
-            {/* ── Emoji Pattern ── */}
-            {backgroundKind === "pattern" && (
-            <div className="space-y-3 rounded-lg border border-white/[0.08] bg-white/[0.025] p-3">
-              {/* Header: emoji preview + layout presets side by side */}
-              <div className="flex items-start gap-3">
-                <div className="flex shrink-0 flex-col items-center gap-1.5">
-                  <div className="grid h-14 w-14 place-items-center rounded-xl border border-white/10 bg-black/25 text-3xl shadow-inner">
-                    {pattern.emoji}
-                  </div>
-                  <span className="text-[9px] font-bold uppercase tracking-wide text-white/30">Current</span>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="mb-2 text-[10px] font-black uppercase tracking-wide text-white/45">Emoji Pattern</p>
-                  <div className="grid grid-cols-2 gap-1.5">
-                    {PATTERN_PRESETS.map((preset) => (
-                      <button
-                        key={preset.value}
-                        type="button"
-                        className={classNames(
-                          "min-h-8 rounded-lg border px-2 text-[10px] font-bold transition active:scale-95",
-                          backgroundKind === "pattern" && pattern.preset === preset.value
-                            ? "border-dlsu-vivid bg-dlsu-vivid text-white"
-                            : "border-white/10 bg-white/[0.03] text-white/50 hover:border-white/20 hover:text-white/80"
-                        )}
-                        onClick={() => applyPatternPreset(preset.value)}
-                      >
-                        {preset.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              {/* Quick picks */}
-              <div className="flex flex-wrap gap-1.5">
-                {QUICK_EMOJI_PICKS.map((emoji) => (
-                  <button
-                    key={emoji}
-                    type="button"
-                    className={classNames(
-                      "grid h-10 w-10 place-items-center rounded-xl border text-xl transition hover:border-white/25 hover:bg-white/[0.07] active:scale-95",
-                      pattern.emoji === emoji
-                        ? "border-dlsu-vivid bg-dlsu-vivid/20 shadow-sm shadow-dlsu-vivid/20"
-                        : "border-white/[0.06] bg-white/[0.03]"
-                    )}
-                    onClick={() => updatePattern({ emoji })}
-                    aria-label={`Use ${emoji}`}
-                  >
-                    {emoji}
-                  </button>
-                ))}
-              </div>
-
-              {/* Full emoji picker */}
-              <div className="overflow-hidden rounded-lg border border-white/[0.08] bg-[#0B100D]">
-                <EmojiPicker
-                  width="100%"
-                  height={300}
-                  theme={(appTheme === "light" ? "light" : "dark") as PickerProps["theme"]}
-                  emojiStyle={"native" as PickerProps["emojiStyle"]}
-                  lazyLoadEmojis
-                  skinTonesDisabled
-                  autoFocusSearch={false}
-                  searchPlaceholder="Search emoji"
-                  previewConfig={{ showPreview: false }}
-                  className="archers-emoji-picker"
-                  style={appTheme === "light" ? EMOJI_PICKER_LIGHT_STYLE : EMOJI_PICKER_DARK_STYLE}
-                  onEmojiClick={(emojiData: EmojiClickData) => updatePattern({ emoji: emojiData.emoji })}
-                />
-              </div>
-
-              {/* Sliders */}
-              <div className="space-y-3">
-                <div className="grid grid-cols-2 gap-4">
-                  <label className="block">
-                    <span className="mb-1.5 flex justify-between text-[10px] font-bold text-white/40">
-                      <span>Size</span>
-                      <span>{pattern.size}px</span>
-                    </span>
-                    <input
-                      type="range"
-                      min="12"
-                      max="72"
-                      value={pattern.size}
-                      onChange={(event) => updatePattern({ size: Number(event.target.value) })}
-                      className="archers-range w-full"
-                      style={{ "--range-progress": rangeProgress(pattern.size, 12, 72) } as CSSProperties}
-                    />
-                  </label>
-                  <label className="block">
-                    <span className="mb-1.5 flex justify-between text-[10px] font-bold text-white/40">
-                      <span>Spacing</span>
-                      <span>{pattern.spacing}px</span>
-                    </span>
-                    <input
-                      type="range"
-                      min="36"
-                      max="180"
-                      value={pattern.spacing}
-                      onChange={(event) => updatePattern({ spacing: Number(event.target.value) })}
-                      className="archers-range w-full"
-                      style={{ "--range-progress": rangeProgress(pattern.spacing, 36, 180) } as CSSProperties}
-                    />
-                  </label>
-                </div>
-                <label className="block">
-                  <span className="mb-1.5 flex justify-between text-[10px] font-bold text-white/40">
-                    <span>Opacity</span>
-                    <span>{Math.round(pattern.opacity * 100)}%</span>
-                  </span>
-                  <input
-                    type="range"
-                    min="0.04"
-                    max="1"
-                    step="0.01"
-                    value={pattern.opacity}
-                    onChange={(event) => updatePattern({ opacity: Number(event.target.value) })}
-                    className="archers-range w-full"
-                    style={{ "--range-progress": rangeProgress(pattern.opacity, 0.04, 1) } as CSSProperties}
-                  />
-                </label>
-              </div>
-            </div>
-            )}
-
           </ControlGroup>
         </div>
 
@@ -3344,23 +3361,6 @@ function MainApp() {
               </div>
             );
           })()}
-          <div className="flex rounded-lg border border-white/[0.06] bg-white/[0.02] p-0.5">
-            {(["left", "center", "right", "top", "bottom"] as GridPosition[]).map((pos) => (
-              <button
-                key={pos}
-                className={classNames(
-                  "flex-1 rounded-md py-2 text-[10px] font-bold capitalize transition-all",
-                  gridPosition === pos
-                    ? "bg-white/[0.08] text-white shadow-sm"
-                    : "text-white/35 hover:text-white/65"
-                )}
-                type="button"
-                onClick={() => setGridPosition(pos)}
-              >
-                {pos}
-              </button>
-            ))}
-          </div>
           <SectionLabel className="pt-1">Font</SectionLabel>
           <div className="grid grid-cols-2 gap-2">
             {CALENDAR_FONT_OPTIONS.map((option) => (

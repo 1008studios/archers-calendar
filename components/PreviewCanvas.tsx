@@ -126,7 +126,7 @@ export default function PreviewCanvas({ canvasRef, previewScale }: { canvasRef: 
     entries, visibleDays, autoHideEmptyDays,
     device, wallpaperStyle, calendarThemeMode, backgroundTone,
     calendarFont, backgroundKind, backgroundImage, gradient,
-    pattern, geometric, background, exportVariant,
+    pattern, geometric, background, exportVariant, overlayKind,
     gridPosition, calendarTitle, calendarSubtitle,
     showRoom, showSection, showProfessor, showCourseTitle, calendarSize
   } = useSchedule();
@@ -190,18 +190,13 @@ export default function PreviewCanvas({ canvasRef, previewScale }: { canvasRef: 
       ? `url(${backgroundImage})`
       : backgroundKind === "gradient"
       ? buildGradientBackground(gradient)
-      : backgroundKind === "pattern"
-      ? buildEmojiPatternBackground(pattern, backgroundTone)
-      : backgroundKind === "geometric"
-      ? buildGeometricBackground(geometric)
       : undefined;
-      
+
   const previewStyle = {
     backgroundColor: backgroundKind === "gradient" ? gradient.colors[0] : background,
     backgroundImage: backgroundCssImage,
-    backgroundSize: backgroundKind === "pattern" ? `${pattern.spacing}px ${pattern.spacing}px` : backgroundKind === "geometric" ? `${geometric.spacing}px ${geometric.spacing}px` : backgroundKind === "image" ? "cover" : undefined,
+    backgroundSize: backgroundKind === "image" ? "cover" : undefined,
     backgroundPosition: backgroundKind === "gradient" ? gradient.position : "center",
-    backgroundRepeat: backgroundKind === "pattern" || backgroundKind === "geometric" ? "repeat" : undefined
   };
   
   const isTransparentExport = exportVariant === "transparent";
@@ -296,6 +291,22 @@ export default function PreviewCanvas({ canvasRef, previewScale }: { canvasRef: 
         boxShadow: device === "share" || isTransparentExport || isBackgroundOnlyExport ? "none" : "0 18px 48px rgba(0,0,0,0.38)"
       }}
     >
+      {/* Overlay (emoji pattern or geometric lines on top of base background) */}
+      {overlayKind !== "none" && !isTransparentExport && (
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            backgroundImage: overlayKind === "pattern"
+              ? buildEmojiPatternBackground(pattern, backgroundTone)
+              : buildGeometricBackground(geometric),
+            backgroundSize: overlayKind === "pattern"
+              ? `${pattern.spacing}px ${pattern.spacing}px`
+              : `${geometric.spacing}px ${geometric.spacing}px`,
+            backgroundRepeat: "repeat"
+          }}
+        />
+      )}
+
       {/* Visual textures */}
       {!isTransparentExport && <div className="absolute inset-0 bg-black/5" />}
       {!isTransparentExport && activeStyle.showLines && (

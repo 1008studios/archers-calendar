@@ -14,7 +14,8 @@ export type GridPosition = "center" | "left" | "right" | "top" | "bottom";
 export type ExportVariant = "full" | "transparent" | "background";
 export type CalendarFont = "geist" | "inter" | "poppins" | "system";
 export type AppTheme = "dark" | "light";
-export type BackgroundKind = "solid" | "image" | "gradient" | "pattern" | "geometric";
+export type BackgroundKind = "solid" | "image" | "gradient";
+export type OverlayKind = "none" | "pattern" | "geometric";
 export type GradientType = "linear" | "radial";
 export type PatternPreset = "grid" | "diagonal";
 export type GeometricKind = "dots" | "grid" | "lines" | "plus" | "blueprint";
@@ -96,6 +97,8 @@ interface ScheduleContextType {
   setPattern: React.Dispatch<React.SetStateAction<PatternConfig>>;
   geometric: GeometricConfig;
   setGeometric: React.Dispatch<React.SetStateAction<GeometricConfig>>;
+  overlayKind: OverlayKind;
+  setOverlayKind: (val: OverlayKind) => void;
   mobileTab: MobileTab;
   setMobileTab: (val: MobileTab) => void;
   desktopPanel: SidebarPanel;
@@ -151,6 +154,7 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
   const [gradient, setGradient] = useState<GradientConfig>(DEFAULT_GRADIENT);
   const [pattern, setPattern] = useState<PatternConfig>(DEFAULT_PATTERN);
   const [geometric, setGeometric] = useState<GeometricConfig>(DEFAULT_GEOMETRIC);
+  const [overlayKind, setOverlayKind] = useState<OverlayKind>("none");
   const [mobileTab, setMobileTab] = useState<MobileTab>("start");
   const [desktopPanel, setDesktopPanel] = useState<SidebarPanel>("start");
   const [calendarTitle, setCalendarTitle] = useState("Name's Schedule");
@@ -188,6 +192,7 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
     gradient, setGradient,
     pattern, setPattern,
     geometric, setGeometric,
+    overlayKind, setOverlayKind,
     mobileTab, setMobileTab,
     desktopPanel, setDesktopPanel,
     calendarTitle, setCalendarTitle,
@@ -203,7 +208,7 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
     expandedCourses, setExpandedCourses,
     selectedExportDevices, setSelectedExportDevices
   }), [
-    activeCoursePalette, rawText, entries, visibleDays, showRoom, showProfessor, showSection, showCourseTitle, autoHideEmptyDays, device, wallpaperStyle, appTheme, calendarThemeMode, gridPosition, backgroundKind, background, backgroundImage, backgroundTone, gradient, pattern, geometric, mobileTab, desktopPanel, calendarTitle, calendarSubtitle, isExporting, isParsing, importError, importSource, saveNotice, exportVariant, calendarFont, calendarSize, expandedCourses, selectedExportDevices
+    activeCoursePalette, rawText, entries, visibleDays, showRoom, showProfessor, showSection, showCourseTitle, autoHideEmptyDays, device, wallpaperStyle, appTheme, calendarThemeMode, gridPosition, backgroundKind, background, backgroundImage, backgroundTone, gradient, pattern, geometric, overlayKind, mobileTab, desktopPanel, calendarTitle, calendarSubtitle, isExporting, isParsing, importError, importSource, saveNotice, exportVariant, calendarFont, calendarSize, expandedCourses, selectedExportDevices
   ]);
 
   return <ScheduleContext.Provider value={value}>{children}</ScheduleContext.Provider>;
