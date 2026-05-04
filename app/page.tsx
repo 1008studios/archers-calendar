@@ -2901,7 +2901,7 @@ function MainApp() {
                 onClick={handleGeneratePinCode}
                 disabled={isGeneratingPin}
               >
-                {isGeneratingPin ? <Loader2 size={14} className="animate-spin" /> : <Link2 size={14} />}
+                {isGeneratingPin && <Loader2 size={14} className="animate-spin" />}
                 {isGeneratingPin ? "Generating…" : "Generate Share Link"}
               </button>
             ) : (
