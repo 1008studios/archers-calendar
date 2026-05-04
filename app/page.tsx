@@ -2322,14 +2322,14 @@ function MainApp() {
 
   const sidebarPanelTabs = (
     <div className="shrink-0 border-b border-white/[0.06] px-4 py-3">
-      <div className="grid grid-cols-3 gap-1 rounded-lg border border-white/[0.06] bg-white/[0.03] p-1">
-        {SIDEBAR_PANELS.map(({ id, label, icon: PanelIcon }) => {
+      <div className="grid grid-cols-2 gap-1 rounded-lg border border-white/[0.06] bg-white/[0.03] p-1">
+        {SIDEBAR_PANELS.map(({ id, label }) => {
           const active = desktopPanel === id;
           return (
             <button
               key={id}
               className={classNames(
-                "flex min-h-10 items-center justify-center gap-1.5 rounded-lg px-2 text-[11px] font-bold transition-all",
+                "flex min-h-10 items-center justify-center rounded-lg px-2 text-[11px] font-bold transition-all",
                 active
                   ? "bg-dlsu-vivid text-white shadow-sm shadow-dlsu-vivid/20"
                   : "text-white/50 hover:bg-white/[0.05] hover:text-white/80"
@@ -2340,7 +2340,6 @@ function MainApp() {
                 setMobileTab(id);
               }}
             >
-              <PanelIcon size={14} strokeWidth={active ? 2.5 : 2} />
               {label}
             </button>
           );
