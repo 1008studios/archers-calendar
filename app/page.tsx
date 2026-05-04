@@ -2767,8 +2767,7 @@ function MainApp() {
                                   )}
                                 </div>
                               </div>
-                              <CourseField
-                                label="Time"
+                              <TimeField
                                 value={slot.timeSlot}
                                 onBlur={(v) => updateCourseSlot(course.code, slot.timeSlot, slot.days, v, formatMeetingDays(slot.days))}
                               />
@@ -3773,6 +3772,68 @@ function CourseField({ label, value, onBlur, className }: { label: string; value
         onBlur={(e) => onBlur(e.currentTarget.value)}
       />
     </label>
+  );
+}
+
+function parseTimeSlotTo24h(slot: string): { start: string; end: string } {
+  const m = slot.match(/(\d{1,2})(?::(\d{2}))?\s*(AM|PM)?\s*[-–]\s*(\d{1,2})(?::(\d{2}))?\s*(AM|PM)?/i);
+  if (!m) return { start: "07:30", end: "09:00" };
+  let h1 = parseInt(m[1]), h2 = parseInt(m[4]);
+  const min1 = m[2] ?? "00", min2 = m[5] ?? "00";
+  const p1 = (m[3] ?? "").toUpperCase(), p2 = (m[6] ?? "").toUpperCase();
+  if (p1 === "PM" && h1 !== 12) h1 += 12;
+  else if (p1 === "AM" && h1 === 12) h1 = 0;
+  if (p2 === "PM" && h2 !== 12) h2 += 12;
+  else if (p2 === "AM" && h2 === 12) h2 = 0;
+  const pad = (n: number) => n.toString().padStart(2, "0");
+  return { start: `${pad(h1)}:${min1}`, end: `${pad(h2)}:${min2}` };
+}
+
+function format24hToAmPm(t: string): string {
+  const [hStr, mStr = "00"] = t.split(":");
+  const h = parseInt(hStr);
+  const period = h >= 12 ? "PM" : "AM";
+  const h12 = h % 12 || 12;
+  return `${h12}:${mStr} ${period}`;
+}
+
+function TimeField({ value, onBlur }: { value: string; onBlur: (v: string) => void }) {
+  const parsed = useMemo(() => parseTimeSlotTo24h(value), [value]);
+  const [start, setStart] = useState(parsed.start);
+  const [end, setEnd] = useState(parsed.end);
+
+  useEffect(() => {
+    setStart(parsed.start);
+    setEnd(parsed.end);
+  }, [parsed.start, parsed.end]);
+
+  const emit = (s: string, e: string) => {
+    if (s && e) onBlur(`${format24hToAmPm(s)} - ${format24hToAmPm(e)}`);
+  };
+
+  const inputCls = "min-h-9 w-full rounded-md border border-white/10 bg-white/[0.03] px-1.5 text-center text-xs text-white outline-none transition hover:border-white/20 focus:border-dlsu-vivid";
+
+  return (
+    <div>
+      <span className="mb-1 block text-[10px] font-bold text-white/40">Time</span>
+      <div className="flex items-center gap-1.5">
+        <input
+          type="time"
+          value={start}
+          onChange={(e) => setStart(e.target.value)}
+          onBlur={() => emit(start, end)}
+          className={inputCls}
+        />
+        <span className="shrink-0 text-[10px] font-bold text-white/25">–</span>
+        <input
+          type="time"
+          value={end}
+          onChange={(e) => setEnd(e.target.value)}
+          onBlur={() => emit(start, end)}
+          className={inputCls}
+        />
+      </div>
+    </div>
   );
 }
 
