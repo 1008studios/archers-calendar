@@ -1091,6 +1091,7 @@ function MainApp() {
   const [openSlotDropdownId, setOpenSlotDropdownId] = useState<string | null>(null);
   const [previewScale, setPreviewScale] = useState(1);
   const [showDesignApplyConfirm, setShowDesignApplyConfirm] = useState(false);
+  const [showExportPopup, setShowExportPopup] = useState(false);
 
   useEffect(() => {
     const hasSeenBeta = sessionStorage.getItem("archers_calendar_beta_seen");
@@ -3479,98 +3480,38 @@ function MainApp() {
         )}
       >
         <ControlGroup title="Output">
-          <div className="grid gap-2">
+          <div className="grid grid-cols-3 gap-1.5">
             {EXPORT_VARIANT_OPTIONS.map(({ value, label, description, icon: VariantIcon }) => (
               <button
                 key={value}
                 type="button"
                 title={description}
                 className={classNames(
-                  "flex min-h-14 items-center gap-3 rounded-lg border p-3 text-left transition-all duration-150 active:scale-[0.98]",
+                  "flex flex-col items-center gap-1.5 rounded-lg border py-2.5 px-1 text-center transition-all active:scale-95",
                   exportVariant === value
                     ? "border-dlsu-vivid bg-dlsu-vivid/20 text-white shadow-md shadow-dlsu-vivid/20"
-                    : "border-white/10 bg-white/[0.03] text-white/65 hover:border-white/25 hover:bg-white/[0.07] hover:text-white/90"
+                    : "border-white/10 bg-white/[0.03] text-white/55 hover:border-white/25 hover:bg-white/[0.06] hover:text-white/80"
                 )}
                 onClick={() => setExportVariant(value)}
               >
-                <span className={classNames(
-                  "grid h-9 w-9 shrink-0 place-items-center rounded-lg border",
-                  exportVariant === value ? "border-dlsu-vivid/40 bg-dlsu-vivid/20" : "border-white/10 bg-black/20"
-                )}>
-                  <VariantIcon size={16} />
-                </span>
-                <span className="min-w-0">
-                  <span className="block text-xs font-black">{label}</span>
-                  <span className="mt-0.5 block text-[10px] font-semibold leading-snug text-white/45">{description}</span>
-                </span>
+                <VariantIcon size={15} />
+                <span className="text-[10px] font-black">{label}</span>
               </button>
             ))}
-          </div>
-        </ControlGroup>
-
-        <ControlGroup
-          title="Formats"
-          action={
-            <button
-              type="button"
-              className="flex min-h-7 items-center gap-1.5 rounded-md border border-white/10 bg-white/[0.03] px-2 text-[10px] font-bold text-white/50 transition hover:border-white/25 hover:bg-white/[0.06] hover:text-white"
-              onClick={() => setSelectedExportDevices((prev) => prev.size === COMMON_EXPORT_DEVICES.length ? new Set() : new Set(COMMON_EXPORT_DEVICES))}
-            >
-              {selectedExportDevices.size === COMMON_EXPORT_DEVICES.length ? "Clear" : "All"}
-            </button>
-          }
-        >
-          <div className="grid grid-cols-3 gap-1.5">
-            {(Object.keys(DEVICES) as DeviceId[]).map((deviceId) => {
-              const DeviceIcon = DEVICES[deviceId].icon;
-              const checked = selectedExportDevices.has(deviceId);
-              return (
-                <label
-                  key={deviceId}
-                  className={classNames(
-                    "relative flex cursor-pointer flex-col items-center gap-1.5 rounded-lg border px-2 py-2.5 text-center transition active:scale-[0.97]",
-                    checked
-                      ? "border-dlsu-vivid/60 bg-dlsu-vivid/10 text-white"
-                      : "border-white/[0.07] bg-white/[0.025] text-white/50 hover:border-white/20 hover:bg-white/[0.045] hover:text-white/70"
-                  )}
-                >
-                  <DeviceIcon size={16} className={checked ? "text-dlsu-vivid" : ""} />
-                  <span className="block text-[10px] font-bold leading-tight">{EXPORT_DEVICE_LABELS[deviceId]}</span>
-                  <input
-                    type="checkbox"
-                    checked={checked}
-                    onChange={(event) => {
-                      const next = new Set(selectedExportDevices);
-                      if (event.target.checked) next.add(deviceId);
-                      else next.delete(deviceId);
-                      setSelectedExportDevices(next);
-                    }}
-                    className="sr-only"
-                  />
-                </label>
-              );
-            })}
           </div>
         </ControlGroup>
 
         <ControlGroup title="Download">
           <button
             type="button"
-            className="group flex min-h-14 w-full items-center justify-center gap-3 rounded-xl bg-dlsu-vivid px-4 text-white shadow-lg shadow-dlsu-vivid/25 transition-all duration-200 hover:bg-dlsu active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-60"
-            onClick={selectedExportDevices.size > 0 ? handleExportSelected : handleExport}
+            className="group flex min-h-12 w-full items-center justify-center gap-2.5 rounded-xl bg-dlsu-vivid px-4 text-white shadow-lg shadow-dlsu-vivid/25 transition-all duration-200 hover:bg-dlsu active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-60"
+            onClick={() => setShowExportPopup(true)}
             disabled={isExporting}
           >
             {isExporting
-              ? <Loader2 size={20} className="animate-spin" />
-              : <Download size={20} className="transition-transform group-hover:-translate-y-0.5" />}
-            <span className="min-w-0">
-              <span className="block text-sm font-black">{isExporting ? "Exporting…" : "Download"}</span>
-              <span className="block truncate text-[10px] font-semibold text-white/60">
-                {selectedExportDevices.size > 0
-                  ? `${selectedExportDevices.size} format${selectedExportDevices.size > 1 ? "s" : ""} · ${activeExportVariant.label}`
-                  : `${EXPORT_DEVICE_LABELS[device]} · ${activeExportVariant.label}`}
-              </span>
-            </span>
+              ? <Loader2 size={18} className="animate-spin" />
+              : <Download size={18} className="transition-transform group-hover:-translate-y-0.5" />}
+            <span className="text-sm font-black">{isExporting ? "Exporting…" : "Download"}</span>
           </button>
         </ControlGroup>
       </section>
@@ -3583,6 +3524,105 @@ function MainApp() {
   return (
     <main data-app-theme={appTheme} className="h-dvh w-full overflow-hidden bg-[#080B09] text-white">
       <ExportOverlay />
+
+      {/* Export device picker popup */}
+      {showExportPopup && (
+        <div className="fixed inset-0 z-[200] flex items-end justify-center bg-black/70 backdrop-blur-sm sm:items-center px-4 pb-safe">
+          <div className="w-full max-w-sm rounded-2xl border border-white/10 bg-[#0E1410] p-5 shadow-2xl">
+            <h3 className="mb-4 text-base font-black text-white">Download Wallpaper</h3>
+
+            {/* Output variant */}
+            <p className="mb-2 text-[10px] font-black uppercase tracking-wide text-white/40">Output</p>
+            <div className="mb-4 grid grid-cols-3 gap-1.5">
+              {EXPORT_VARIANT_OPTIONS.map(({ value, label, icon: VariantIcon }) => (
+                <button
+                  key={value}
+                  type="button"
+                  className={classNames(
+                    "flex flex-col items-center gap-1.5 rounded-lg border py-2.5 px-1 text-center transition-all active:scale-95",
+                    exportVariant === value
+                      ? "border-dlsu-vivid bg-dlsu-vivid/20 text-white"
+                      : "border-white/10 bg-white/[0.03] text-white/55 hover:border-white/25 hover:text-white/80"
+                  )}
+                  onClick={() => setExportVariant(value)}
+                >
+                  <VariantIcon size={15} />
+                  <span className="text-[10px] font-black">{label}</span>
+                </button>
+              ))}
+            </div>
+
+            {/* Device selection */}
+            <div className="mb-1 flex items-center justify-between">
+              <p className="text-[10px] font-black uppercase tracking-wide text-white/40">Formats</p>
+              <button
+                type="button"
+                className="text-[10px] font-bold text-white/40 transition hover:text-white"
+                onClick={() => setSelectedExportDevices(
+                  (prev) => prev.size === COMMON_EXPORT_DEVICES.length ? new Set() : new Set(COMMON_EXPORT_DEVICES)
+                )}
+              >
+                {selectedExportDevices.size === COMMON_EXPORT_DEVICES.length ? "Clear all" : "Select all"}
+              </button>
+            </div>
+            <div className="mb-5 grid grid-cols-3 gap-1.5">
+              {(Object.keys(DEVICES) as DeviceId[]).map((deviceId) => {
+                const DeviceIcon = DEVICES[deviceId].icon;
+                const checked = selectedExportDevices.has(deviceId);
+                return (
+                  <label
+                    key={deviceId}
+                    className={classNames(
+                      "relative flex cursor-pointer flex-col items-center gap-1.5 rounded-lg border px-2 py-2.5 text-center transition active:scale-[0.97]",
+                      checked
+                        ? "border-dlsu-vivid/60 bg-dlsu-vivid/10 text-white"
+                        : "border-white/[0.07] bg-white/[0.025] text-white/50 hover:border-white/20 hover:text-white/70"
+                    )}
+                  >
+                    <DeviceIcon size={16} className={checked ? "text-dlsu-vivid" : ""} />
+                    <span className="text-[10px] font-bold leading-tight">{EXPORT_DEVICE_LABELS[deviceId]}</span>
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={(e) => {
+                        const next = new Set(selectedExportDevices);
+                        if (e.target.checked) next.add(deviceId); else next.delete(deviceId);
+                        setSelectedExportDevices(next);
+                      }}
+                      className="sr-only"
+                    />
+                  </label>
+                );
+              })}
+            </div>
+
+            <div className="flex gap-2">
+              <button
+                type="button"
+                className="flex-1 rounded-lg border border-white/10 py-2.5 text-sm font-bold text-white/60 transition hover:bg-white/[0.06] hover:text-white"
+                onClick={() => setShowExportPopup(false)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-dlsu-vivid py-2.5 text-sm font-bold text-white transition hover:bg-dlsu active:scale-95 disabled:opacity-60"
+                disabled={isExporting}
+                onClick={() => {
+                  setShowExportPopup(false);
+                  if (selectedExportDevices.size > 0) handleExportSelected();
+                  else handleExport();
+                }}
+              >
+                {isExporting ? <Loader2 size={15} className="animate-spin" /> : <Download size={15} />}
+                {selectedExportDevices.size > 0
+                  ? `Download ${selectedExportDevices.size} file${selectedExportDevices.size > 1 ? "s" : ""}`
+                  : "Download"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Design apply confirmation modal */}
       {showDesignApplyConfirm && (
@@ -3651,7 +3691,7 @@ function MainApp() {
               <button
                 className="flex h-10 items-center gap-1.5 rounded-lg bg-dlsu-vivid px-3 text-xs font-bold text-white shadow-lg shadow-dlsu-vivid/20 transition hover:bg-dlsu disabled:opacity-60 active:scale-95"
                 type="button"
-                onClick={handleExport}
+                onClick={() => setShowExportPopup(true)}
                 disabled={isExporting}
               >
                 <Download size={15} />
@@ -3696,7 +3736,7 @@ function MainApp() {
                 <button
                   className="group flex h-12 items-center gap-2.5 rounded-xl bg-dlsu-vivid px-6 text-sm font-black text-white shadow-lg shadow-dlsu-vivid/25 transition-all duration-200 hover:bg-dlsu active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed"
                   type="button"
-                  onClick={handleExport}
+                  onClick={() => setShowExportPopup(true)}
                   disabled={isExporting}
                 >
                   {isExporting
