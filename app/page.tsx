@@ -35,7 +35,8 @@ import {
   UserRound,
   Wand2,
   FileInput,
-  Link2
+  Link2,
+  X
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { EmojiClickData, PickerProps } from "emoji-picker-react";
@@ -140,6 +141,8 @@ type SavedScheduleState = {
   appTheme: AppTheme;
   calendarThemeMode: CalendarThemeMode;
   gridPosition: GridPosition;
+  gridOffsetX: number;
+  gridOffsetY: number;
   backgroundKind: BackgroundKind;
   overlayKind?: OverlayKind;
   background: string;
@@ -177,6 +180,8 @@ type SharedDesignState = {
   appTheme: AppTheme;
   calendarThemeMode: CalendarThemeMode;
   gridPosition: GridPosition;
+  gridOffsetX: number;
+  gridOffsetY: number;
   calendarFont: CalendarFont;
   calendarSize: number;
   device: DeviceId;
@@ -267,16 +272,25 @@ const BLOCK_PALETTES = [
   { name: "Blush",       hex: "#FFB3C1" },
   { name: "Rose",        hex: "#FF85A1" },
   { name: "Strawberry",  hex: "#FF6B8A" },
+  { name: "Hot Pink",    hex: "#FF4D9E" },
+  { name: "Fuchsia",     hex: "#E040FB" },
   { name: "Coral",       hex: "#FF9080" },
+  { name: "Red",         hex: "#EF5350" },
+  { name: "Crimson",     hex: "#C62828" },
   { name: "Peach",       hex: "#FFCBA4" },
   { name: "Honey",       hex: "#FFDA8A" },
+  { name: "Amber",       hex: "#FFAB40" },
   { name: "Butter",      hex: "#FFF3A3" },
+  { name: "Lime",        hex: "#B5F03B" },
   { name: "Dew",         hex: "#C8F0D8" },
   { name: "Matcha",      hex: "#B5D5A0" },
   { name: "Sage",        hex: "#A8C8A0" },
+  { name: "Teal",        hex: "#4DB6AC" },
   { name: "Mint",        hex: "#A8EED5" },
   { name: "Sky",         hex: "#A8D8F0" },
+  { name: "Cobalt",      hex: "#5C82E8" },
   { name: "Periwinkle",  hex: "#A0B8F0" },
+  { name: "Slate",       hex: "#90A4B8" },
   { name: "Lavender",    hex: "#D4BFFF" },
   { name: "Iris",        hex: "#B8A0F0" },
   { name: "Lilac",       hex: "#E8C8F8" },
@@ -284,19 +298,28 @@ const BLOCK_PALETTES = [
   { name: "Mochi",       hex: "#F0D8F8" },
   { name: "Cream",       hex: "#F5ECD8" },
   { name: "Latte",       hex: "#D8C0A8" },
+  { name: "Tan",         hex: "#C4A07A" },
+  { name: "Sienna",      hex: "#A0522D" },
+  { name: "Charcoal",    hex: "#455A64" },
 ];
 
 const COURSE_THEMES: Array<{ name: string; colors: string[] }> = [
-  { name: "Blossom",  colors: ["#FFB3C1","#FF85A1","#FFD6E7","#F5A0B8","#FFCCE0","#FFC4D6","#FF9BB5","#FFDDE8"] },
-  { name: "Pastel",   colors: ["#FFB3C1","#FFCBA4","#FFF3A3","#A8EED5","#A8D8F0","#D4BFFF","#B5D5A0","#E8C8F8"] },
-  { name: "Lavender", colors: ["#D4BFFF","#E8C8F8","#C4B0E8","#B8A8FF","#EAD5FF","#CDB8F8","#F0E0FF","#DDD0FF"] },
-  { name: "Peach",    colors: ["#FFCBA4","#FFB899","#FFD4B0","#F5A888","#FFBFA8","#F0C0A0","#FFD8C0","#F5B898"] },
-  { name: "Ocean",    colors: ["#A8D8F0","#85C1E9","#B3E5FC","#5DADE2","#81D4FA","#29B6F6","#B2EBF2","#4FC3F7"] },
-  { name: "Sunset",   colors: ["#FFDAB9","#FFCC80","#FFB74D","#FFA726","#FF9800","#FB8C00","#F57C00","#EF6C00"] },
-  { name: "Forest",   colors: ["#C8E6C9","#B2DFDB","#80CBC4","#4DB6AC","#26A69A","#009688","#00897B","#00796B"] },
+  { name: "Blossom",    colors: ["#FFB3C1","#FF85A1","#FFD6E7","#F5A0B8","#FFCCE0","#FFC4D6","#FF9BB5","#FFDDE8"] },
+  { name: "Candy",      colors: ["#FF6B9D","#FF8ED3","#C084FC","#F472B6","#E879F9","#FF70A0","#A78BFA","#FB7185"] },
+  { name: "Berry",      colors: ["#C62828","#AD1457","#7B1FA2","#880E4F","#B71C1C","#8E24AA","#6A1B9A","#C2185B"] },
+  { name: "Pastel",     colors: ["#FFB3C1","#FFCBA4","#FFF3A3","#A8EED5","#A8D8F0","#D4BFFF","#B5D5A0","#E8C8F8"] },
+  { name: "Lavender",   colors: ["#D4BFFF","#E8C8F8","#C4B0E8","#B8A8FF","#EAD5FF","#CDB8F8","#F0E0FF","#DDD0FF"] },
+  { name: "Peach",      colors: ["#FFCBA4","#FFB899","#FFD4B0","#F5A888","#FFBFA8","#F0C0A0","#FFD8C0","#F5B898"] },
+  { name: "Citrus",     colors: ["#FACC15","#FB923C","#A3E635","#FCD34D","#86EFAC","#FDE68A","#4ADE80","#FCA5A5"] },
+  { name: "Ocean",      colors: ["#A8D8F0","#85C1E9","#B3E5FC","#5DADE2","#81D4FA","#29B6F6","#B2EBF2","#4FC3F7"] },
+  { name: "Dusk",       colors: ["#94A3B8","#7B8FAD","#A8B4C0","#8EA3B4","#B8C5D0","#7B9BAE","#A0AEBC","#5A7A9A"] },
+  { name: "Sunset",     colors: ["#FFDAB9","#FFCC80","#FFB74D","#FFA726","#FF9800","#FB8C00","#F57C00","#EF6C00"] },
+  { name: "Forest",     colors: ["#C8E6C9","#B2DFDB","#80CBC4","#4DB6AC","#26A69A","#009688","#00897B","#00796B"] },
+  { name: "Earth",      colors: ["#D4A96A","#A07840","#C49A70","#8B6240","#B8825A","#D4B08A","#986040","#C4A07A"] },
+  { name: "Neon",       colors: ["#00FF88","#00D4FF","#FF6B6B","#FFD700","#FF00CC","#7C3AFF","#00E5FF","#FF8C00"] },
   { name: "Monochrome", colors: ["#F5F5F5","#E0E0E0","#EEEEEE","#BDBDBD","#E0E0E0","#9E9E9E","#757575","#616161"] },
-  { name: "Black",    colors: ["#000000","#111111","#1A1A1A","#222222","#0A0A0A","#141414","#1C1C1C","#262626"] },
-  { name: "Animo",    colors: ["#90C878","#B5D5A0","#68B058","#D4EDC5","#5AB050","#A8D890","#3A9040","#C8E8B0"] },
+  { name: "Black",      colors: ["#000000","#111111","#1A1A1A","#222222","#0A0A0A","#141414","#1C1C1C","#262626"] },
+  { name: "Animo",      colors: ["#90C878","#B5D5A0","#68B058","#D4EDC5","#5AB050","#A8D890","#3A9040","#C8E8B0"] },
 ];
 
 const BACKGROUND_CATEGORIES = [
@@ -310,11 +333,15 @@ const BACKGROUND_CATEGORIES = [
       { name: "Navy",       value: "#080F1F" },
       { name: "Midnight",   value: "#10101E" },
       { name: "Blackberry", value: "#180B28" },
-      { name: "Thunder",    value: "#111C28" }
+      { name: "Thunder",    value: "#111C28" },
+      { name: "Obsidian",   value: "#0D0D0F" },
+      { name: "Onyx",       value: "#1C1A20" },
+      { name: "Graphite",   value: "#1E2024" },
+      { name: "Abyss",      value: "#050A14" }
     ]
   },
   {
-    label: "Vivid",
+    label: "Deep",
     colors: [
       { name: "Archer",   value: "#185A37" },
       { name: "Fern",     value: "#0C2010" },
@@ -323,7 +350,11 @@ const BACKGROUND_CATEGORIES = [
       { name: "Cobalt",   value: "#0D3D6E" },
       { name: "Seafoam",  value: "#133E3A" },
       { name: "Mocha",    value: "#2C1A10" },
-      { name: "Merlot",   value: "#3D0F20" }
+      { name: "Merlot",   value: "#3D0F20" },
+      { name: "Denim",    value: "#1A2D5A" },
+      { name: "Plum",     value: "#2D1040" },
+      { name: "Walnut",   value: "#3A2010" },
+      { name: "Pine",     value: "#0F3020" }
     ]
   },
   {
@@ -336,7 +367,11 @@ const BACKGROUND_CATEGORIES = [
       { name: "Linen",   value: "#EDE0D0" },
       { name: "Sand",    value: "#D6BC9E" },
       { name: "Sage",    value: "#C4D5BA" },
-      { name: "Clay",    value: "#C4877E" }
+      { name: "Clay",    value: "#C4877E" },
+      { name: "Pearl",   value: "#F2EEF5" },
+      { name: "Cotton",  value: "#F5F0FF" },
+      { name: "Haze",    value: "#E8F0EC" },
+      { name: "Blush",   value: "#FCE8EC" }
     ]
   },
   {
@@ -349,7 +384,28 @@ const BACKGROUND_CATEGORIES = [
       { name: "Mint",     value: "#B8EDD0" },
       { name: "Sky",      value: "#B0D4F0" },
       { name: "Lilac",    value: "#C8B8E0" },
-      { name: "Lavender", value: "#E0DFF5" }
+      { name: "Lavender", value: "#E0DFF5" },
+      { name: "Mauve",    value: "#E8C8D8" },
+      { name: "Dew",      value: "#C8F0E0" },
+      { name: "Periwinkle", value: "#C8D0F0" },
+      { name: "Mango",    value: "#FFE0B0" }
+    ]
+  },
+  {
+    label: "Warm",
+    colors: [
+      { name: "Copper",   value: "#8B4513" },
+      { name: "Rust",     value: "#7C2D12" },
+      { name: "Mahogany", value: "#4A1C10" },
+      { name: "Sienna",   value: "#5A2A14" },
+      { name: "Burgundy", value: "#4A0E1A" },
+      { name: "Maroon",   value: "#3C0A10" },
+      { name: "Amber",    value: "#7A4A08" },
+      { name: "Caramel",  value: "#6B3A18" },
+      { name: "Dusty Rose", value: "#7A3040" },
+      { name: "Brick",    value: "#6E2218" },
+      { name: "Terracotta", value: "#8C3A20" },
+      { name: "Bronze",   value: "#6B4010" }
     ]
   }
 ];
@@ -498,6 +554,8 @@ const CREATION_DB_NAME = "archers_calendar";
 const CREATION_STORE_NAME = "creations";
 const CREATION_DB_VERSION = 1;
 const DESIGN_SHARE_PREFIX = "archers-design-v1.";
+const DESIGN_SHARE_QUERY_PARAM = "design";
+const DESIGN_SHARE_QUERY_ALIASES = [DESIGN_SHARE_QUERY_PARAM, "code", "d"];
 
 const DAY_NAMES_FULL: Record<DayKey, string> = {
   Mon: "Monday", Tue: "Tuesday", Wed: "Wednesday", Thu: "Thursday", Fri: "Friday", Sat: "Saturday", Sun: "Sunday"
@@ -533,6 +591,12 @@ function normalizeCalendarThemeMode(value: unknown): CalendarThemeMode {
 
 function normalizeGridPosition(value: unknown): GridPosition {
   return value === "left" || value === "right" || value === "top" || value === "bottom" || value === "center" ? value : "center";
+}
+
+function normalizeGridOffset(value: unknown): number {
+  return typeof value === "number" && Number.isFinite(value)
+    ? Math.max(-30, Math.min(30, Math.round(value)))
+    : 0;
 }
 
 function normalizeExportVariant(value: unknown): ExportVariant {
@@ -648,7 +712,7 @@ const DESIGN_SHARE_PREFIX_V3 = "ac3."; // ultra-short query string format
 // Key shortening map for smaller design codes
 const KEY_SHORT: Record<string, string> = {
   backgroundKind: "bk", overlayKind: "ok", background: "bg", backgroundImage: "bi", backgroundTone: "bt",
-  wallpaperStyle: "ws", appTheme: "at", calendarThemeMode: "ct", gridPosition: "gp",
+  wallpaperStyle: "ws", appTheme: "at", calendarThemeMode: "ct", gridPosition: "gp", gridOffsetX: "gx", gridOffsetY: "gy",
   calendarFont: "cf", calendarSize: "cs", device: "dv", exportVariant: "ev",
   gradient: "gr", pattern: "pa", geometric: "ge", version: "v",
   type: "t", colors: "c", angle: "a", position: "p", preset: "pr",
@@ -669,6 +733,8 @@ const DEFAULT_STATE: Partial<SharedDesignState> = {
   appTheme: "dark",
   calendarThemeMode: "normal",
   gridPosition: "center",
+  gridOffsetX: 0,
+  gridOffsetY: 0,
   calendarFont: "geist",
   calendarSize: 3,
 };
@@ -824,12 +890,12 @@ async function decodeDesignCodeAsync(code: string): Promise<Record<string, unkno
       const [k, v] = p.split('~');
       if (!k || v === undefined) continue;
       let val: any = v;
-      if (v.includes('-')) {
+      if (/^-?\d+(?:\.\d+)?$/.test(v) && !/^\d{6}$/.test(v)) {
+        val = Number(v);
+      } else if (v.includes('-')) {
         val = v.split('-').map(x => /^[0-9A-Fa-f]{6}$/.test(x) ? '#' + x : x);
       } else if (/^[0-9A-Fa-f]{6}$/.test(v)) {
         val = '#' + v;
-      } else if (!isNaN(Number(v)) && v !== "") {
-        val = Number(v);
       }
       flat[k] = val;
     }
@@ -937,6 +1003,45 @@ async function copyTextToClipboard(text: string) {
   } finally {
     textarea.remove();
   }
+}
+
+function getDesignCodeFromSearchParams(params: URLSearchParams) {
+  for (const param of DESIGN_SHARE_QUERY_ALIASES) {
+    const value = params.get(param);
+    if (value?.trim()) return value.trim();
+  }
+  return "";
+}
+
+function buildShareUrl(param: "p" | "pin" | typeof DESIGN_SHARE_QUERY_PARAM, value: string) {
+  const url = new URL(window.location.href);
+  url.search = "";
+  url.hash = "";
+  url.searchParams.set(param, value);
+  return url.toString();
+}
+
+function parseDesignShareInput(input: string) {
+  const value = input.trim();
+  if (!value) return { code: "", pin: "" };
+
+  if (/^(https?:\/\/|\/|\?)/i.test(value)) {
+    try {
+      const url = new URL(value, window.location.origin);
+      const code = getDesignCodeFromSearchParams(url.searchParams);
+      const pin = (url.searchParams.get("p") || url.searchParams.get("pin") || "").trim();
+      return {
+        code,
+        pin: /^\d{4,8}$/.test(pin) ? pin : ""
+      };
+    } catch {
+      return { code: value, pin: "" };
+    }
+  }
+
+  return /^\d{4,8}$/.test(value)
+    ? { code: "", pin: value }
+    : { code: value, pin: "" };
 }
 
 function colorEntriesByCourse(parsed: ScheduleEntry[], colors: string[]): ScheduleEntry[] {
@@ -1058,6 +1163,8 @@ function MainApp() {
     appTheme, setAppTheme,
     calendarThemeMode, setCalendarThemeMode,
     gridPosition, setGridPosition,
+    gridOffsetX, setGridOffsetX,
+    gridOffsetY, setGridOffsetY,
     backgroundKind, setBackgroundKind,
     background, setBackground,
     backgroundImage, setBackgroundImage,
@@ -1085,6 +1192,7 @@ function MainApp() {
   // Local-only state (not needed by child components)
   const [designCode, setDesignCode] = useState("");
   const [livePinCode, setLivePinCode] = useState("");
+  const [liveShareUrl, setLiveShareUrl] = useState("");
   const [isGeneratingPin, setIsGeneratingPin] = useState(false);
   const [designShareNotice, setDesignShareNotice] = useState("");
   const [editingSavedId, setEditingSavedId] = useState("");
@@ -1159,20 +1267,47 @@ function MainApp() {
   useEffect(() => {
     if (!hasLoadedLocalSchedule) return;
     const params = new URLSearchParams(window.location.search);
-    const pin = params.get("pin");
+    const sharedCode = getDesignCodeFromSearchParams(params);
+    const pin = params.get("p") || params.get("pin");
+
+    if (sharedCode) {
+      window.history.replaceState({}, "", window.location.pathname);
+      decodeDesignCodeAsync(sharedCode)
+        .then((decoded) => {
+          applySharedDesignState(decoded);
+          window.setTimeout(() => {
+            setLivePinCode("");
+            setLiveShareUrl("");
+          }, 0);
+          setDesktopPanel("export");
+          setMobileTab("export");
+          setDesignShareNotice("Shared design loaded.");
+        })
+        .catch(() => setDesignShareNotice("Shared design link is invalid."));
+      return;
+    }
+
     if (!pin || !/^\d{4,8}$/.test(pin)) return;
     window.history.replaceState({}, "", window.location.pathname);
     fetch(`/api/design/get?id=${pin}`)
-      .then((r) => r.json())
+      .then(async (r) => {
+        const data = await r.json();
+        if (!r.ok) throw new Error(data.error || "PIN not found");
+        return data;
+      })
       .then(async (data) => {
         if (!data.code) return;
         const decoded = await decodeDesignCodeAsync(data.code);
         applySharedDesignState(decoded);
-        setLivePinCode(pin);
+        window.setTimeout(() => {
+          setLivePinCode(pin);
+          setLiveShareUrl(buildShareUrl("p", pin));
+        }, 0);
         setDesktopPanel("export");
         setMobileTab("export");
+        setDesignShareNotice("Shared design loaded.");
       })
-      .catch(() => {});
+      .catch(() => setDesignShareNotice("Shared design link is invalid or expired."));
   }, [hasLoadedLocalSchedule]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
@@ -1228,6 +1363,8 @@ function MainApp() {
     appTheme,
     calendarThemeMode,
     gridPosition,
+    gridOffsetX,
+    gridOffsetY,
     backgroundKind,
     background,
     backgroundImage,
@@ -1308,10 +1445,11 @@ function MainApp() {
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setLivePinCode("");
+    setLiveShareUrl("");
   }, [
     backgroundKind, overlayKind, background, backgroundImage, backgroundTone,
     gradient, pattern, geometric, wallpaperStyle, appTheme,
-    calendarThemeMode, gridPosition, calendarFont, calendarSize,
+    calendarThemeMode, gridPosition, gridOffsetX, gridOffsetY, calendarFont, calendarSize,
     device, exportVariant
   ]);
 
@@ -1410,12 +1548,12 @@ function MainApp() {
     : device === "ipad_portrait"
     ? { pad: 72,  subtitle: 13, title: 36, dayHeader: 12,   courseCode: 12,   courseTitle: 10,   meta: 10,   cellPad: 4, blockPad: 6, titleMb: 16, gap: 4, mt: 2, timePx: 8, timePy: 6, dayPy: 8 }
     : /* iphone */
-      { pad: 20,  subtitle: 8, title: 18, dayHeader: 8, courseCode: 8,  courseTitle: 8,    meta: 7,    cellPad: 2, blockPad: 2, titleMb: 5, gap: 2, mt: 0, timePx: 5, timePy: 2, dayPy: 3 };
+      { pad: 20,  subtitle: 7, title: 17, dayHeader: 7, courseCode: 6.25, courseTitle: 6, meta: 5.5, cellPad: 2, blockPad: 2, titleMb: 5, gap: 2, mt: 0, timePx: 5, timePy: 2, dayPy: 3 };
 
   // calendarSize 1=largest(less pad/bigger text) … 5=smallest(more pad/smaller text); share always 0 pad
   const PAD_SCALE:  Record<number, number> = { 1: 0.4, 2: 0.7, 3: 1.0, 4: 1.4, 5: 1.8 };
   const FONT_SCALE: Record<number, number> = { 1: 1.3, 2: 1.12, 3: 1.0, 4: 0.9, 5: 0.82 };
-  const MIN_FONT_PX = device === "iphone" ? 7 : 0;
+  const MIN_FONT_PX = device === "iphone" ? 5 : 0;
   const fs = device === "share" ? 1 : FONT_SCALE[calendarSize];
   // Round to whole pixels — fractional values cause spacing glitches in html2canvas exports
   const scalePx  = (val: number) => `${Math.round(Math.max(MIN_FONT_PX, val * fs))}px`;
@@ -1472,6 +1610,8 @@ function MainApp() {
       appTheme,
       calendarThemeMode,
       gridPosition,
+      gridOffsetX,
+      gridOffsetY,
       backgroundKind,
       background,
       backgroundImage,
@@ -1501,6 +1641,8 @@ function MainApp() {
       appTheme,
       calendarThemeMode,
       gridPosition,
+      gridOffsetX,
+      gridOffsetY,
       calendarFont,
       calendarSize,
       device,
@@ -1531,6 +1673,8 @@ function MainApp() {
     if ("appTheme" in state) setAppTheme(normalizeAppTheme(state.appTheme));
     if ("calendarThemeMode" in state) setCalendarThemeMode(normalizeCalendarThemeMode(state.calendarThemeMode));
     if ("gridPosition" in state) setGridPosition(normalizeGridPosition(state.gridPosition));
+    if ("gridOffsetX" in state) setGridOffsetX(normalizeGridOffset(state.gridOffsetX));
+    if ("gridOffsetY" in state) setGridOffsetY(normalizeGridOffset(state.gridOffsetY));
     if ("calendarFont" in state) setCalendarFont(normalizeCalendarFont(state.calendarFont));
     if ("calendarSize" in state) setCalendarSize(normalizeCalendarSize(state.calendarSize));
     if ("device" in state) setDevice(normalizeDevice(state.device));
@@ -1581,6 +1725,8 @@ function MainApp() {
     setAppTheme(normalizeAppTheme(state.appTheme));
     setCalendarThemeMode(state.calendarThemeMode ?? "normal");
     setGridPosition(state.gridPosition ?? "center");
+    setGridOffsetX(normalizeGridOffset(state.gridOffsetX));
+    setGridOffsetY(normalizeGridOffset(state.gridOffsetY));
     setBackgroundKind(nextBackgroundKind);
     setOverlayKind(nextOverlayKind);
     setBackground(nextBackground);
@@ -1931,17 +2077,6 @@ function MainApp() {
     }, 50);
   }
 
-  function startManually() {
-    setShowBetaPopup(false);
-    if (entries.length) {
-      setMobileTab("start");
-      setDesktopPanel("start");
-      return;
-    }
-
-    addEntry();
-  }
-
   function toggleDay(day: DayKey) {
     setVisibleDays((current) => ({ ...current, [day]: !current[day] }));
   }
@@ -1980,6 +2115,15 @@ function MainApp() {
     await new Promise((resolve) => setTimeout(resolve, 120));
   }
 
+  async function waitForCanvasSize(size: { width: number; height: number }) {
+    for (let attempt = 0; attempt < 20; attempt++) {
+      await waitForExportFrame();
+      const current = canvasRef.current;
+      if (current?.offsetWidth === size.width && current?.offsetHeight === size.height) return;
+      await new Promise((resolve) => setTimeout(resolve, 40));
+    }
+  }
+
   async function captureExportCanvas(target: HTMLElement, size: { width: number; height: number }, scale: number = 4) {
     const wrapper = document.createElement("div");
     const clone = target.cloneNode(true) as HTMLElement;
@@ -2007,14 +2151,43 @@ function MainApp() {
     wrapper.appendChild(clone);
     document.body.appendChild(wrapper);
 
-    // Resolve all class-based styles into inline styles for layout-critical properties
-    const textEls = clone.querySelectorAll("p, h2, span, div");
+    // Resolve class-based typography into inline pixel values. html2canvas can render
+    // unitless line-height differently from the browser, which shifts text out of cells.
+    const textEls = clone.querySelectorAll("p, h1, h2, h3, h4, h5, h6, span, div");
     textEls.forEach((el) => {
       const computed = window.getComputedStyle(el);
       const htmlEl = el as HTMLElement;
-      if (!htmlEl.style.lineHeight) htmlEl.style.lineHeight = computed.lineHeight;
-      if (!htmlEl.style.letterSpacing) htmlEl.style.letterSpacing = computed.letterSpacing;
-      if (!htmlEl.style.wordSpacing) htmlEl.style.wordSpacing = computed.wordSpacing;
+      const fontSize = Number.parseFloat(computed.fontSize);
+
+      htmlEl.style.fontFamily = computed.fontFamily;
+      htmlEl.style.fontSize = computed.fontSize;
+      htmlEl.style.fontStyle = computed.fontStyle;
+      htmlEl.style.fontWeight = computed.fontWeight;
+      htmlEl.style.lineHeight = computed.lineHeight === "normal" && Number.isFinite(fontSize)
+        ? `${Math.round(fontSize * 1.2)}px`
+        : computed.lineHeight;
+      htmlEl.style.letterSpacing = computed.letterSpacing === "normal" ? "0px" : computed.letterSpacing;
+      htmlEl.style.wordSpacing = computed.wordSpacing === "normal" ? "0px" : computed.wordSpacing;
+      htmlEl.style.textAlign = computed.textAlign;
+      htmlEl.style.textTransform = computed.textTransform;
+      htmlEl.style.whiteSpace = computed.whiteSpace;
+    });
+
+    clone.querySelectorAll<HTMLElement>("[data-course-block='true']").forEach((block) => {
+      const cs = window.getComputedStyle(block);
+      block.style.overflow = "hidden";
+      block.style.padding = cs.padding;
+      block.style.lineHeight = cs.lineHeight;
+    });
+
+    const courseTextLift = size.width <= CANVAS_SIZES.iphone.width ? -1 : -0.5;
+    clone.querySelectorAll<HTMLElement>("[data-course-text='true']").forEach((text) => {
+      const cs = window.getComputedStyle(text);
+      text.style.position = "relative";
+      text.style.transform = `translateY(${courseTextLift}px)`;
+      text.style.transformOrigin = "left top";
+      text.style.marginTop = cs.marginTop;
+      text.style.marginBottom = cs.marginBottom;
     });
 
     try {
@@ -2108,8 +2281,7 @@ function MainApp() {
       if (deviceIds.length === 1) {
         const deviceId = deviceIds[0];
         setDevice(deviceId);
-        await new Promise(r => setTimeout(r, 100));
-        await waitForExportFrame();
+        await waitForCanvasSize(CANVAS_SIZES[deviceId]);
         if (canvasRef.current) {
           const isMobile = window.innerWidth <= 768;
           const dynamicScale = isMobile ? 2 : 4;
@@ -2122,8 +2294,7 @@ function MainApp() {
         
         for (const deviceId of deviceIds) {
           setDevice(deviceId);
-          await new Promise(r => setTimeout(r, 100));
-          await waitForExportFrame();
+          await waitForCanvasSize(CANVAS_SIZES[deviceId]);
           if (!canvasRef.current) continue;
           
           const exported = await captureExportCanvas(canvasRef.current, CANVAS_SIZES[deviceId]);
@@ -2153,17 +2324,6 @@ function MainApp() {
     await exportDevices(COMMON_EXPORT_DEVICES);
   }
 
-  async function handleCopyDesignCode() {
-    try {
-      const code = await encodeDesignCodeAsync(buildSharedDesignState());
-      const copied = await copyTextToClipboard(code);
-      setDesignShareNotice(copied ? "Long design code copied!" : "Could not copy.");
-      setTimeout(() => setDesignShareNotice(""), 3000);
-    } catch {
-      setDesignShareNotice("Failed to copy design code");
-    }
-  }
-
   const handleGeneratePinCode = async () => {
     setIsGeneratingPin(true);
     setDesignShareNotice("");
@@ -2174,17 +2334,25 @@ function MainApp() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ code })
       });
+      const data = await res.json().catch(() => ({}));
+
       if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Failed to generate PIN");
+        throw new Error(data.error || "Could not generate short link.");
       }
-      const data = await res.json();
-      setLivePinCode(data.id);
-      await copyTextToClipboard(data.id);
-      setDesignShareNotice(`PIN ${data.id} copied! Share it!`);
+
+      const pin = String(data.id ?? "");
+      if (!/^\d{4,8}$/.test(pin)) {
+        throw new Error(data.error || "Short links are unavailable right now.");
+      }
+
+      const shareUrl = buildShareUrl("p", pin);
+      setLivePinCode(pin);
+      setLiveShareUrl(shareUrl);
+      await copyTextToClipboard(shareUrl);
+      setDesignShareNotice("Share link copied.");
       setTimeout(() => setDesignShareNotice(""), 5000);
     } catch (err: any) {
-      setDesignShareNotice(err.message || "Failed to generate PIN");
+      setDesignShareNotice(err.message || "Failed to generate share link");
     } finally {
       setIsGeneratingPin(false);
     }
@@ -2192,36 +2360,51 @@ function MainApp() {
 
   async function handleApplyDesignCode() {
     if (!designCode.trim()) {
-      setDesignShareNotice("Paste a design code or PIN first.");
+      setDesignShareNotice("Paste a PIN or share link first.");
       return;
     }
 
-    const rawCode = designCode.trim();
-    let codeToDecode = rawCode;
+    const parsedInput = parseDesignShareInput(designCode);
+    let codeToDecode = parsedInput.code;
 
-    // Fetch actual code if it's a numeric PIN
-    if (/^\d{4,8}$/.test(rawCode)) {
+    // Fetch actual code if it's a numeric PIN or a URL containing one.
+    if (parsedInput.pin) {
       setDesignShareNotice("Fetching design from PIN...");
       try {
-        const res = await fetch(`/api/design/get?id=${rawCode}`);
+        const res = await fetch(`/api/design/get?id=${parsedInput.pin}`);
         if (!res.ok) {
           const data = await res.json();
           throw new Error(data.error || "PIN not found");
         }
         const data = await res.json();
         codeToDecode = data.code;
+        window.setTimeout(() => {
+          setLivePinCode(parsedInput.pin);
+          setLiveShareUrl(buildShareUrl("p", parsedInput.pin));
+        }, 0);
       } catch (err: any) {
         setDesignShareNotice(err.message || "Invalid or expired PIN");
         return;
       }
     }
 
+    if (!codeToDecode) {
+      setDesignShareNotice("Paste a PIN or share link first.");
+      return;
+    }
+
     try {
       const decoded = await decodeDesignCodeAsync(codeToDecode);
       applySharedDesignState(decoded);
-      setDesignShareNotice("Design code applied.");
+      if (!parsedInput.pin) {
+        window.setTimeout(() => {
+          setLivePinCode("");
+          setLiveShareUrl("");
+        }, 0);
+      }
+      setDesignShareNotice("Shared design applied.");
     } catch {
-      setDesignShareNotice("Invalid design code.");
+      setDesignShareNotice("Invalid PIN or share link.");
     }
   }
 
@@ -2496,7 +2679,7 @@ function MainApp() {
           </button>
         }
       >
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-3 gap-1.5">
           {COURSE_THEMES.map((theme) => {
             const isActive = JSON.stringify(theme.colors) === JSON.stringify(activeCoursePalette);
             return (
@@ -2504,30 +2687,28 @@ function MainApp() {
                 key={theme.name}
                 type="button"
                 className={classNames(
-                  "group relative overflow-hidden rounded-lg border p-2.5 text-left transition-all active:scale-[0.97]",
+                  "group overflow-hidden rounded-lg border transition-all active:scale-[0.97]",
                   isActive
-                    ? "border-dlsu-vivid/60 bg-dlsu-vivid/10 shadow-sm"
-                    : "border-white/[0.06] bg-white/[0.02] hover:border-white/20 hover:bg-white/[0.04]"
+                    ? "border-dlsu-vivid/60 shadow-sm shadow-dlsu-vivid/20"
+                    : "border-white/[0.06] hover:border-white/20"
                 )}
                 onClick={() => applyColorTheme(theme.colors)}
               >
-                <div className="mb-2.5 flex h-4 overflow-hidden rounded-[4px] bg-white/5">
+                <div className="flex h-3 overflow-hidden">
                   {theme.colors.map((color, index) => (
                     <span key={index} className="h-full flex-1" style={{ backgroundColor: color }} />
                   ))}
                 </div>
-                <div className="flex items-center justify-between">
+                <div className={classNames(
+                  "px-1.5 py-1.5",
+                  isActive ? "bg-dlsu-vivid/10" : "bg-white/[0.02] group-hover:bg-white/[0.04]"
+                )}>
                   <p className={classNames(
-                    "text-[11px] font-black uppercase transition-colors",
+                    "truncate text-[10px] font-black uppercase transition-colors",
                     isActive ? "text-white" : "text-white/40 group-hover:text-white/60"
                   )}>
                     {theme.name}
                   </p>
-                  {isActive && (
-                    <div className="flex h-3 w-3 items-center justify-center rounded-full bg-dlsu-vivid">
-                      <Check size={8} strokeWidth={4} className="text-white" />
-                    </div>
-                  )}
                 </div>
               </button>
             );
@@ -2873,19 +3054,21 @@ function MainApp() {
       >
 
         <div className="order-1">
-          <ControlGroup title="Design Code">
-            {/* Load */}
-            <div className="flex gap-2">
-              <input
-                className="min-h-10 min-w-0 flex-1 rounded-lg border border-white/[0.08] bg-black/[0.16] px-3 font-mono text-xs text-white/80 outline-none transition placeholder:text-white/25 focus:border-dlsu-vivid"
-                value={designCode}
-                onChange={(event) => setDesignCode(event.target.value)}
-                placeholder="Paste design code or PIN..."
-                spellCheck={false}
-              />
+          <ControlGroup title="Share Design">
+            <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2">
+              <div className="relative min-w-0">
+                <Link2 size={13} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-white/25" />
+                <input
+                  className="min-h-10 w-full rounded-lg border border-white/[0.08] bg-black/[0.16] pl-8 pr-3 font-mono text-xs text-white/80 outline-none transition placeholder:text-white/25 focus:border-dlsu-vivid"
+                  value={designCode}
+                  onChange={(event) => setDesignCode(event.target.value)}
+                  placeholder="Paste PIN or link"
+                  spellCheck={false}
+                />
+              </div>
               <button
                 type="button"
-                className="flex min-h-10 items-center justify-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.035] px-4 text-xs font-bold text-white/72 transition hover:border-white/25 hover:bg-white/[0.06] hover:text-white disabled:opacity-40"
+                className="flex min-h-10 items-center justify-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.035] px-3 text-xs font-bold text-white/72 transition hover:border-white/25 hover:bg-white/[0.06] hover:text-white disabled:opacity-40"
                 onClick={() => setShowDesignApplyConfirm(true)}
                 disabled={!designCode.trim()}
               >
@@ -2894,81 +3077,73 @@ function MainApp() {
               </button>
             </div>
 
-            {/* Divider */}
-            <div className="flex items-center gap-2.5">
-              <div className="h-px flex-1 bg-white/[0.06]" />
-              <span className="text-[10px] font-bold text-white/25">share yours</span>
-              <div className="h-px flex-1 bg-white/[0.06]" />
-            </div>
-
-            {/* Generate link / PIN display */}
-            {!livePinCode ? (
+            {!liveShareUrl ? (
               <button
                 type="button"
-                className="flex min-h-10 w-full items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/[0.03] text-xs font-bold text-white/60 transition hover:border-white/25 hover:bg-white/[0.06] hover:text-white disabled:opacity-50"
+                className="flex min-h-11 w-full items-center justify-center gap-2 rounded-lg border border-dlsu-vivid/30 bg-dlsu-vivid/10 text-xs font-bold text-white/80 shadow-sm shadow-dlsu-vivid/10 transition hover:border-dlsu-vivid/50 hover:bg-dlsu-vivid/15 hover:text-white disabled:opacity-50"
                 onClick={handleGeneratePinCode}
                 disabled={isGeneratingPin}
               >
-                {isGeneratingPin && <Loader2 size={14} className="animate-spin" />}
+                {isGeneratingPin ? <Loader2 size={14} className="animate-spin" /> : <Link2 size={14} />}
                 {isGeneratingPin ? "Generating…" : "Generate Share Link"}
               </button>
             ) : (
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 rounded-lg border border-white/[0.08] bg-black/[0.16] px-3 py-2">
-                  <span className="flex-1 font-mono text-xl font-black tracking-[0.2em] text-white/90">{livePinCode}</span>
-                  <div className="flex gap-1">
+              <div className="overflow-hidden rounded-lg border border-white/[0.08] bg-black/[0.16]">
+                <div className="flex items-center gap-3 px-3 py-3">
+                  <div className="grid h-8 w-8 shrink-0 place-items-center rounded-md bg-dlsu-vivid/15 text-dlsu-vivid">
+                    <Hash size={15} />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-[9px] font-black uppercase tracking-[0.16em] text-white/28">PIN</div>
+                    <div className="truncate font-mono text-2xl font-black tracking-[0.14em] text-white">
+                      {livePinCode}
+                    </div>
+                  </div>
+                  <div className="flex shrink-0 gap-1">
                     <button
                       type="button"
-                      className="flex items-center gap-1 rounded-full bg-white/[0.08] px-2.5 py-1 text-[10px] font-bold text-white transition hover:bg-white/[0.15]"
-                      onClick={() => { copyTextToClipboard(livePinCode); setDesignShareNotice("PIN copied!"); setTimeout(() => setDesignShareNotice(""), 3000); }}
+                      className="grid h-8 w-8 place-items-center rounded-md bg-white/[0.08] text-white/70 transition hover:bg-white/[0.14] hover:text-white"
+                      onClick={() => { void copyTextToClipboard(livePinCode); setDesignShareNotice("PIN copied."); }}
+                      aria-label="Copy PIN"
+                      title="Copy PIN"
                     >
-                      <Copy size={10} /> PIN
+                      <Copy size={13} />
                     </button>
                     <button
                       type="button"
-                      className="flex items-center gap-1 rounded-full bg-dlsu-vivid/80 px-2.5 py-1 text-[10px] font-bold text-white transition hover:bg-dlsu-vivid"
-                      onClick={() => { const url = `${window.location.origin}/?pin=${livePinCode}`; copyTextToClipboard(url); setDesignShareNotice("Link copied!"); setTimeout(() => setDesignShareNotice(""), 3000); }}
-                    >
-                      <Link2 size={10} /> Link
-                    </button>
-                    <button
-                      type="button"
-                      className="flex items-center gap-1 rounded-full bg-white/[0.06] px-2 py-1 text-[10px] font-bold text-white/50 transition hover:bg-white/[0.12] hover:text-white disabled:opacity-40"
+                      className="grid h-8 w-8 place-items-center rounded-md bg-white/[0.06] text-white/45 transition hover:bg-white/[0.12] hover:text-white disabled:opacity-40"
                       onClick={handleGeneratePinCode}
                       disabled={isGeneratingPin}
-                      title="Regenerate"
+                      aria-label="Regenerate PIN"
+                      title="Regenerate PIN"
                     >
-                      {isGeneratingPin ? <Loader2 size={10} className="animate-spin" /> : <RotateCcw size={10} />}
+                      {isGeneratingPin ? <Loader2 size={13} className="animate-spin" /> : <RotateCcw size={13} />}
                     </button>
                   </div>
                 </div>
-                <p className="text-center text-[9px] font-bold text-white/25">Valid 30 days · /?pin={livePinCode}</p>
+                <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 border-t border-white/[0.06] px-3 py-2">
+                  <div className="min-w-0 font-mono text-[10px] font-bold text-white/35">
+                    <span className="text-white/20">/?p=</span>{livePinCode}
+                  </div>
+                  <button
+                    type="button"
+                    className="flex h-7 items-center gap-1.5 rounded-md bg-dlsu-vivid/85 px-2.5 text-[10px] font-bold text-white transition hover:bg-dlsu-vivid"
+                    onClick={() => { void copyTextToClipboard(liveShareUrl); setDesignShareNotice("Link copied."); }}
+                  >
+                    <Link2 size={11} />
+                    Copy Link
+                  </button>
+                </div>
+                <div className="border-t border-white/[0.04] px-3 py-1.5 text-center text-[9px] font-bold uppercase tracking-[0.14em] text-white/24">
+                  Valid for 30 days
+                </div>
               </div>
             )}
 
-            {/* Manual code */}
-            <details className="group">
-              <summary className="flex cursor-pointer items-center gap-1.5 text-[9px] font-bold uppercase tracking-wider text-white/25 transition hover:text-white/40">
-                <ChevronDown size={10} className="transition-transform group-open:rotate-180" />
-                Manual Design Code (offline)
-              </summary>
-              <div className="mt-2 space-y-2">
-                <div className="rounded-md border border-white/5 bg-black/40 p-2 text-[9px] font-mono leading-relaxed text-white/30 break-all">
-                  Longer but works without internet.
-                </div>
-                <button
-                  type="button"
-                  className="flex w-full items-center justify-center gap-1.5 rounded-md border border-white/10 py-1.5 text-[9px] font-bold text-white/50 transition hover:bg-white/5 hover:text-white"
-                  onClick={handleCopyDesignCode}
-                >
-                  <Copy size={10} />
-                  Copy Manual Code
-                </button>
-              </div>
-            </details>
-
             {designShareNotice && (
-              <p className="text-center text-[10px] font-bold text-dlsu-vivid">{designShareNotice}</p>
+              <p className="rounded-md border border-dlsu-vivid/20 bg-dlsu-vivid/10 px-3 py-2 text-center text-[10px] font-bold text-white/70">
+                {designShareNotice}
+              </p>
             )}
           </ControlGroup>
         </div>
@@ -3027,11 +3202,49 @@ function MainApp() {
                       : "text-white/35 hover:text-white/65"
                   )}
                   type="button"
-                  onClick={() => setGridPosition(pos)}
+                  onClick={() => {
+                    setGridPosition(pos);
+                    setGridOffsetX(0);
+                    setGridOffsetY(0);
+                  }}
                 >
                   {pos}
                 </button>
               ))}
+            </div>
+            <div className="grid grid-cols-2 gap-4 pt-1">
+              <label className="block">
+                <span className="mb-1.5 flex justify-between text-[10px] font-bold text-white/40">
+                  <span>X</span>
+                  <span>{gridOffsetX === 0 ? "0" : gridOffsetX > 0 ? `+${gridOffsetX}` : gridOffsetX}</span>
+                </span>
+                <input
+                  type="range"
+                  min="-30"
+                  max="30"
+                  step="1"
+                  value={gridOffsetX}
+                  onChange={(e) => setGridOffsetX(normalizeGridOffset(Number(e.target.value)))}
+                  className="archers-range w-full"
+                  style={{ "--range-progress": rangeProgress(gridOffsetX, -30, 30) } as CSSProperties}
+                />
+              </label>
+              <label className="block">
+                <span className="mb-1.5 flex justify-between text-[10px] font-bold text-white/40">
+                  <span>Y</span>
+                  <span>{gridOffsetY === 0 ? "0" : gridOffsetY > 0 ? `+${gridOffsetY}` : gridOffsetY}</span>
+                </span>
+                <input
+                  type="range"
+                  min="-30"
+                  max="30"
+                  step="1"
+                  value={gridOffsetY}
+                  onChange={(e) => setGridOffsetY(normalizeGridOffset(Number(e.target.value)))}
+                  className="archers-range w-full"
+                  style={{ "--range-progress": rangeProgress(gridOffsetY, -30, 30) } as CSSProperties}
+                />
+              </label>
             </div>
           </ControlGroup>
         </div>
@@ -3076,22 +3289,30 @@ function MainApp() {
                   <span className="text-[10px] font-bold text-white/35">tap to change</span>
                   <input className="absolute inset-0 cursor-pointer opacity-0" type="color" value={background.startsWith("#") ? background : DEFAULT_BACKGROUND} onChange={(e) => handleSolidBackgroundChange(e.target.value)} />
                 </label>
-                <div className="grid grid-cols-4 gap-1.5">
-                  {BACKGROUND_CATEGORIES.flatMap((cat) => cat.colors.slice(0, 4)).slice(0, 16).map((preset) => (
-                    <button
-                      key={`${preset.name}-${preset.value}`}
-                      type="button"
-                      className={classNames(
-                        "min-h-9 rounded-lg border text-[10px] font-bold transition-all hover:scale-105 active:scale-95",
-                        backgroundKind === "solid" && background === preset.value
-                          ? "ring-2 ring-white ring-offset-1 ring-offset-[#090D0B] border-transparent"
-                          : "border-white/5"
-                      )}
-                      style={{ backgroundColor: preset.value, color: getTextColor(preset.value) }}
-                      onClick={() => handleSolidBackgroundChange(preset.value)}
-                    >
-                      {preset.name}
-                    </button>
+                <div className="space-y-2.5">
+                  {BACKGROUND_CATEGORIES.map((cat) => (
+                    <div key={cat.label}>
+                      <p className="mb-1 text-[9px] font-black uppercase tracking-wider text-white/25">{cat.label}</p>
+                      <div className="grid grid-cols-4 gap-1">
+                        {cat.colors.map((preset) => (
+                          <button
+                            key={`${preset.name}-${preset.value}`}
+                            type="button"
+                            title={preset.name}
+                            className={classNames(
+                              "h-8 rounded-md border text-[9px] font-bold transition-all hover:scale-105 active:scale-95",
+                              backgroundKind === "solid" && background === preset.value
+                                ? "ring-2 ring-white ring-offset-1 ring-offset-[#090D0B] border-transparent"
+                                : "border-white/5"
+                            )}
+                            style={{ backgroundColor: preset.value, color: getTextColor(preset.value) }}
+                            onClick={() => handleSolidBackgroundChange(preset.value)}
+                          >
+                            {preset.name}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
                   ))}
                 </div>
               </div>
@@ -3439,7 +3660,10 @@ function MainApp() {
 
       {/* Export device picker popup */}
       {showExportPopup && (
-        <div className="fixed inset-0 z-[200] flex items-end justify-center bg-black/70 backdrop-blur-sm sm:items-center px-4 pb-safe">
+        <div
+          className="fixed inset-0 z-[200] flex items-end justify-center bg-black/70 backdrop-blur-sm sm:items-center px-4 pb-safe"
+          onClick={(e) => { if (e.target === e.currentTarget) setShowExportPopup(false); }}
+        >
           <div className="w-full max-w-sm rounded-2xl border border-white/10 bg-[#0E1410] p-5 shadow-2xl">
             <h3 className="mb-4 text-base font-black text-white">Download Wallpaper</h3>
 
@@ -3538,7 +3762,10 @@ function MainApp() {
 
       {/* Design apply confirmation modal */}
       {showDesignApplyConfirm && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/70 backdrop-blur-sm px-4">
+        <div
+          className="fixed inset-0 z-[200] flex items-center justify-center bg-black/70 backdrop-blur-sm px-4"
+          onClick={(e) => { if (e.target === e.currentTarget) setShowDesignApplyConfirm(false); }}
+        >
           <div className="w-full max-w-sm rounded-2xl border border-white/10 bg-[#0E1410] p-6 shadow-2xl">
             <div className="mb-1 text-base font-black text-white">Apply this design?</div>
             <p className="mb-5 text-sm leading-relaxed text-white/50">
@@ -3687,37 +3914,72 @@ function MainApp() {
 
       </div>
 
-      {/* Beta Popup Modal */}
+      {/* Welcome Popup Modal */}
       {showBetaPopup && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-[#080B09]/80 p-4 backdrop-blur-xl transition-all">
-          <div className="relative flex w-full max-w-[420px] flex-col items-center rounded-2xl border border-white/10 bg-[#0D110F] px-7 py-8 text-center shadow-[0_32px_80px_rgba(0,0,0,0.7)]">
-            <div className="mb-6">
-              <img src="/logos/logo-mini-green.png" alt="Archers Calendar" className="h-12 w-auto object-contain" />
+        <div
+          className="fixed inset-0 z-[200] flex items-center justify-center bg-[#080B09]/80 p-4 backdrop-blur-xl"
+          onClick={(e) => { if (e.target === e.currentTarget) setShowBetaPopup(false); }}
+        >
+          <div className="relative flex w-full max-w-[390px] flex-col overflow-hidden rounded-2xl border border-white/10 bg-[#0D110F] shadow-[0_32px_80px_rgba(0,0,0,0.7)]">
+            <button
+              type="button"
+              onClick={() => setShowBetaPopup(false)}
+              className="absolute right-3 top-3 z-10 grid h-8 w-8 place-items-center rounded-full text-white/30 transition-all hover:bg-white/10 hover:text-white"
+              aria-label="Close"
+            >
+              <X size={16} />
+            </button>
+
+            {/* Header */}
+            <div className="flex flex-col items-center px-7 pb-5 pt-8 text-center">
+              <div className="mb-4">
+                <img src="/logos/logo-mini-green.png" alt="Archers Calendar" className="h-10 w-auto object-contain" />
+              </div>
+              <h2 className="mb-2 text-[22px] font-black leading-tight tracking-tight text-white">
+                Your schedule,<br />as a wallpaper.
+              </h2>
+              <p className="text-[13px] leading-relaxed text-white/45">
+                Turn your ArchersHub or EAF table into a beautiful phone or desktop wallpaper in seconds.
+              </p>
             </div>
-            
-            <h2 className="mb-3 text-2xl font-black tracking-tight text-white">Create your schedule wallpaper</h2>
-            <p className="mb-7 text-[15px] leading-relaxed text-white/50">
-              Copy your ArchersHub schedule table, paste it into the import box, then generate your wallpaper.
-            </p>
 
-            <button
-              type="button"
-              onClick={focusImportBox}
-              className="flex w-full items-center justify-center rounded-lg bg-white py-4 text-[15px] font-black text-black shadow-xl shadow-white/5 transition-all hover:bg-white/90 active:scale-95"
-            >
-              Paste ArchersHub Table
-            </button>
-            <button
-              type="button"
-              onClick={startManually}
-              className="mt-3 flex w-full items-center justify-center rounded-lg border border-white/10 bg-white/[0.03] py-3.5 text-[14px] font-black text-white/75 transition-all hover:border-white/25 hover:bg-white/[0.07] hover:text-white active:scale-95"
-            >
-              Start Manually
-            </button>
+            {/* Steps */}
+            <div className="mx-5 mb-5 overflow-hidden rounded-xl border border-white/[0.07] bg-white/[0.025]">
+              {[
+                { n: "1", text: "Copy your schedule table from ArchersHub or EAF" },
+                { n: "2", text: "Paste it in the import box and tap Generate" },
+                { n: "3", text: "Pick colors and style, then download" },
+              ].map(({ n, text }, i, arr) => (
+                <div key={n} className={classNames(
+                  "flex items-center gap-3 px-4 py-3",
+                  i < arr.length - 1 ? "border-b border-white/[0.06]" : ""
+                )}>
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-dlsu-vivid/20 text-[11px] font-black text-dlsu-vivid">{n}</span>
+                  <span className="text-[13px] font-medium leading-snug text-white/60">{text}</span>
+                </div>
+              ))}
+            </div>
 
-            <p className="mt-6 text-[11px] font-medium text-white/20 uppercase tracking-[0.15em]">
-              1008 Studios
-            </p>
+            {/* CTA */}
+            <div className="px-5 pb-5">
+              <button
+                type="button"
+                onClick={focusImportBox}
+                className="flex w-full items-center justify-center rounded-xl bg-white py-3.5 text-[14px] font-black text-black shadow-lg shadow-white/5 transition-all hover:bg-white/90 active:scale-95"
+              >
+                Get Started
+              </button>
+            </div>
+
+            {/* Footer */}
+            <div className="border-t border-white/[0.06] px-5 py-3 text-center">
+              <p className="text-[11px] font-medium text-white/25">
+                Found a bug?{" "}
+                <a className="text-white/40 transition-colors hover:text-white hover:underline underline-offset-4" href="https://instagram.com/richarduaje" target="_blank" rel="noreferrer">
+                  Report it on Instagram @richarduaje
+                </a>
+              </p>
+            </div>
           </div>
         </div>
       )}
@@ -3799,13 +4061,12 @@ function format24hToAmPm(t: string): string {
 
 function TimeField({ value, onBlur }: { value: string; onBlur: (v: string) => void }) {
   const parsed = useMemo(() => parseTimeSlotTo24h(value), [value]);
+  return <TimeFieldInputs key={`${parsed.start}-${parsed.end}`} parsed={parsed} onBlur={onBlur} />;
+}
+
+function TimeFieldInputs({ parsed, onBlur }: { parsed: { start: string; end: string }; onBlur: (v: string) => void }) {
   const [start, setStart] = useState(parsed.start);
   const [end, setEnd] = useState(parsed.end);
-
-  useEffect(() => {
-    setStart(parsed.start);
-    setEnd(parsed.end);
-  }, [parsed.start, parsed.end]);
 
   const emit = (s: string, e: string) => {
     if (s && e) onBlur(`${format24hToAmPm(s)} - ${format24hToAmPm(e)}`);

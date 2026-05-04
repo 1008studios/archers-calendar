@@ -83,6 +83,10 @@ interface ScheduleContextType {
   setCalendarThemeMode: (val: CalendarThemeMode) => void;
   gridPosition: GridPosition;
   setGridPosition: (val: GridPosition) => void;
+  gridOffsetX: number;
+  setGridOffsetX: (val: number) => void;
+  gridOffsetY: number;
+  setGridOffsetY: (val: number) => void;
   backgroundKind: BackgroundKind;
   setBackgroundKind: (val: BackgroundKind) => void;
   background: string;
@@ -147,6 +151,8 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
   const [appTheme, setAppTheme] = useState<AppTheme>("dark");
   const [calendarThemeMode, setCalendarThemeMode] = useState<CalendarThemeMode>("normal");
   const [gridPosition, setGridPosition] = useState<GridPosition>("center");
+  const [gridOffsetX, setGridOffsetX] = useState(0);
+  const [gridOffsetY, setGridOffsetY] = useState(0);
   const [backgroundKind, setBackgroundKind] = useState<BackgroundKind>("solid");
   const [background, setBackground] = useState(DEFAULT_BACKGROUND);
   const [backgroundImage, setBackgroundImage] = useState<string>("");
@@ -185,6 +191,8 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
     appTheme, setAppTheme,
     calendarThemeMode, setCalendarThemeMode,
     gridPosition, setGridPosition,
+    gridOffsetX, setGridOffsetX,
+    gridOffsetY, setGridOffsetY,
     backgroundKind, setBackgroundKind,
     background, setBackground,
     backgroundImage, setBackgroundImage,
@@ -208,7 +216,7 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
     expandedCourses, setExpandedCourses,
     selectedExportDevices, setSelectedExportDevices
   }), [
-    activeCoursePalette, rawText, entries, visibleDays, showRoom, showProfessor, showSection, showCourseTitle, autoHideEmptyDays, device, wallpaperStyle, appTheme, calendarThemeMode, gridPosition, backgroundKind, background, backgroundImage, backgroundTone, gradient, pattern, geometric, overlayKind, mobileTab, desktopPanel, calendarTitle, calendarSubtitle, isExporting, isParsing, importError, importSource, saveNotice, exportVariant, calendarFont, calendarSize, expandedCourses, selectedExportDevices
+    activeCoursePalette, rawText, entries, visibleDays, showRoom, showProfessor, showSection, showCourseTitle, autoHideEmptyDays, device, wallpaperStyle, appTheme, calendarThemeMode, gridPosition, gridOffsetX, gridOffsetY, backgroundKind, background, backgroundImage, backgroundTone, gradient, pattern, geometric, overlayKind, mobileTab, desktopPanel, calendarTitle, calendarSubtitle, isExporting, isParsing, importError, importSource, saveNotice, exportVariant, calendarFont, calendarSize, expandedCourses, selectedExportDevices
   ]);
 
   return <ScheduleContext.Provider value={value}>{children}</ScheduleContext.Provider>;

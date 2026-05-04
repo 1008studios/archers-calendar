@@ -127,7 +127,7 @@ export default function PreviewCanvas({ canvasRef, previewScale }: { canvasRef: 
     device, wallpaperStyle, calendarThemeMode, backgroundTone,
     calendarFont, backgroundKind, backgroundImage, gradient,
     pattern, geometric, background, exportVariant, overlayKind,
-    gridPosition, calendarTitle, calendarSubtitle,
+    gridPosition, gridOffsetX, gridOffsetY, calendarTitle, calendarSubtitle,
     showRoom, showSection, showProfessor, showCourseTitle, calendarSize
   } = useSchedule();
 
@@ -232,6 +232,9 @@ export default function PreviewCanvas({ canvasRef, previewScale }: { canvasRef: 
     top:    "justify-center items-start",
     bottom: "justify-center items-end"
   }[gridPosition] || "justify-center items-center";
+  const gridOffsetStyle: React.CSSProperties = {
+    transform: `translate(${Math.round((canvasSize.width * gridOffsetX) / 100)}px, ${Math.round((canvasSize.height * gridOffsetY) / 100)}px)`
+  };
 
   const szBase = device === "laptop"
     ? { pad: 96,  subtitle: 15, title: 44, dayHeader: 13,   courseCode: 13.5, courseTitle: 11,   meta: 10.5, cellPad: 6, blockPad: 6, titleMb: 20, gap: 4, mt: 2, timePx: 12, timePy: 8, dayPy: 12 }
@@ -243,11 +246,11 @@ export default function PreviewCanvas({ canvasRef, previewScale }: { canvasRef: 
     ? { pad: 80,  subtitle: 14, title: 40, dayHeader: 13,   courseCode: 13,   courseTitle: 11,   meta: 10.5, cellPad: 4, blockPad: 6, titleMb: 16, gap: 4, mt: 2, timePx: 8, timePy: 6, dayPy: 8 }
     : device === "ipad_portrait"
     ? { pad: 72,  subtitle: 13, title: 36, dayHeader: 12,   courseCode: 12,   courseTitle: 10,   meta: 10,   cellPad: 4, blockPad: 6, titleMb: 16, gap: 4, mt: 2, timePx: 8, timePy: 6, dayPy: 8 }
-    : { pad: 20,  subtitle: 8, title: 18, dayHeader: 8, courseCode: 8,  courseTitle: 8,    meta: 7,    cellPad: 2, blockPad: 2, titleMb: 5, gap: 2, mt: 0, timePx: 5, timePy: 2, dayPy: 3 };
+    : { pad: 20,  subtitle: 7, title: 17, dayHeader: 7, courseCode: 6.25, courseTitle: 6, meta: 5.5, cellPad: 2, blockPad: 2, titleMb: 5, gap: 2, mt: 0, timePx: 5, timePy: 2, dayPy: 3 };
 
   const PAD_SCALE = { 1: 0.4, 2: 0.7, 3: 1.0, 4: 1.4, 5: 1.8 };
   const FONT_SCALE = { 1: 1.3, 2: 1.12, 3: 1.0, 4: 0.9, 5: 0.82 };
-  const MIN_FONT_PX = device === "iphone" ? 7 : 0;
+  const MIN_FONT_PX = device === "iphone" ? 5 : 0;
   const fsScale = device === "share" ? 1 : (FONT_SCALE[calendarSize as keyof typeof FONT_SCALE] || 1.0);
   const scalePx  = (val: number) => `${Math.round(Math.max(MIN_FONT_PX, val * fsScale))}px`;
   const scalePad = (val: number) => `${Math.round(val * fsScale)}px`; // no font minimum — for spacing/padding only
@@ -331,7 +334,7 @@ export default function PreviewCanvas({ canvasRef, previewScale }: { canvasRef: 
           "relative z-10 flex max-h-full max-w-full flex-col",
           device === "share" ? "h-full w-full" : ""
         )}
-        style={{ padding: sz.pad }}
+        style={{ padding: sz.pad, ...gridOffsetStyle }}
       >
         {/* iPhone only: push content to lower portion so clock area stays clear */}
         {device === "iphone" && (gridPosition === "center" || gridPosition === "bottom") && (
@@ -444,17 +447,17 @@ export default function PreviewCanvas({ canvasRef, previewScale }: { canvasRef: 
                         color: textColor
                       };
                       return (
-                        <div key={entry.id} className={classNames("flex flex-1 flex-col justify-center overflow-visible transition-all", activeStyle.cellStyle)} style={{ ...courseBlockStyle, padding: sz.blockPad, lineHeight: 1.05 }}>
-                          <p style={{ fontSize: sz.courseCode, lineHeight: 1.05 }} className="font-black leading-tight tracking-tight">{parts.code}</p>
+                        <div data-course-block="true" key={entry.id} className={classNames("flex flex-1 flex-col justify-center overflow-visible transition-all", activeStyle.cellStyle)} style={{ ...courseBlockStyle, padding: sz.blockPad, lineHeight: 1.05 }}>
+                          <p data-course-text="true" style={{ fontSize: sz.courseCode, lineHeight: 1.05 }} className="font-black leading-tight tracking-tight">{parts.code}</p>
                           {span > 1 && (
-                            <p style={{ fontSize: sz.meta, marginTop: sz.mt, lineHeight: 1.1 }} className="font-bold opacity-60">
+                            <p data-course-text="true" style={{ fontSize: sz.meta, marginTop: sz.mt, lineHeight: 1.1 }} className="font-bold opacity-60">
                               {days.join(" · ")}
                             </p>
                           )}
                           {showCourseTitle && parts.title ? (
-                            <p style={{ fontSize: sz.courseTitle, marginTop: sz.mt, lineHeight: 1.1 }} className="font-semibold opacity-80 leading-tight">{parts.title}</p>
+                            <p data-course-text="true" style={{ fontSize: sz.courseTitle, marginTop: sz.mt, lineHeight: 1.1 }} className="font-semibold opacity-80 leading-tight">{parts.title}</p>
                           ) : null}
-                          {meta ? <p style={{ fontSize: sz.meta, marginTop: sz.mt, lineHeight: 1.1 }} className="font-bold opacity-75">{meta}</p> : null}
+                          {meta ? <p data-course-text="true" style={{ fontSize: sz.meta, marginTop: sz.mt, lineHeight: 1.1 }} className="font-bold opacity-75">{meta}</p> : null}
                         </div>
                       );
                     })}

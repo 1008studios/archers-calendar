@@ -1,7 +1,7 @@
 "use client";
 
 import { useSchedule } from "@/lib/ScheduleContext";
-import { Palette, CalendarDays, Download, ChevronUp, ChevronDown } from "lucide-react";
+import { Palette, CalendarDays, Download } from "lucide-react";
 import { classNames } from "@/lib/utils";
 import React, { useState } from "react";
 

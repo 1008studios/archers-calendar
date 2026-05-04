@@ -1,22 +1,63 @@
 import { NextResponse } from "next/server";
 import { Redis } from "@upstash/redis";
 
-const REDIS_URL = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL || '';
-const REDIS_TOKEN = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN || '';
-
 export const runtime = "edge";
 
-export async function POST(req: Request) {
-  if (!REDIS_URL || !REDIS_TOKEN) {
-    return NextResponse.json({ error: "Share links are not configured on this server." }, { status: 503 });
+let redis: Redis | null = null;
+const DESIGN_TTL_DAYS = 30;
+const DESIGN_TTL_SECONDS = DESIGN_TTL_DAYS * 24 * 60 * 60;
+const DESIGN_PIN_WINDOWS = [
+  { digits: 4, attempts: 30 },
+  { digits: 5, attempts: 30 },
+  { digits: 6, attempts: 30 }
+] as const;
+
+function getRedis() {
+  const url = (process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL || "").trim();
+  const token = (process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN || "").trim();
+  if (!url || !token) return null;
+
+  if (!redis) {
+    redis = new Redis({ url, token, automaticDeserialization: false });
   }
 
-  const redis = new Redis({ url: REDIS_URL, token: REDIS_TOKEN });
+  return redis;
+}
 
+async function hashDesignCode(code: string) {
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(code));
+  return Array.from(new Uint8Array(digest))
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+function makeNumericPin(digits: number) {
+  const min = 10 ** (digits - 1);
+  const range = 9 * min;
+  return Math.floor(min + Math.random() * range).toString();
+}
+
+async function reserveDesignId(client: Redis, id: string, code: string) {
+  const result = await client.set(`design:${id}`, code, {
+    ex: DESIGN_TTL_SECONDS,
+    nx: true
+  });
+  return result === "OK";
+}
+
+export async function POST(req: Request) {
   try {
     const { code } = await req.json();
     if (!code || typeof code !== "string" || code.length > 500) {
       return NextResponse.json({ error: "Invalid code" }, { status: 400 });
+    }
+
+    const redis = getRedis();
+    if (!redis) {
+      return NextResponse.json(
+        { error: "Short share links are not configured on this server." },
+        { status: 503 }
+      );
     }
 
     // Rate Limiting by IP
@@ -34,41 +75,36 @@ export async function POST(req: Request) {
       }
     }
 
-    // Check if exactly this code already has a short ID
-    // We hash the code by taking a simple SHA-256 or just storing `hash:${code}` -> id
-    // Since ac3 codes are short (< 100 chars), we can literally use it as a key.
-    const hashKey = `design_hash:${code}`;
+    // Check if exactly this code already has a short ID without using the whole code as a Redis key.
+    const hashKey = `design_hash:${await hashDesignCode(code)}`;
     const existingId = await redis.get<string>(hashKey);
     
     if (existingId) {
-      return NextResponse.json({ id: existingId });
+      return NextResponse.json({ id: existingId, expiresInDays: DESIGN_TTL_DAYS });
     }
 
-    // Generate a new short numeric ID (5 to 6 digits)
+    // Generate a short numeric PIN and reserve it atomically so two designs cannot share an ID.
     let newId = "";
-    let attempts = 0;
-    while (attempts < 10) {
-      newId = Math.floor(10000 + Math.random() * 90000).toString(); // 10000 to 99999
-      const exists = await redis.exists(`design:${newId}`);
-      if (!exists) break;
-      attempts++;
+    for (const { digits, attempts } of DESIGN_PIN_WINDOWS) {
+      for (let attempt = 0; attempt < attempts; attempt++) {
+        const candidate = makeNumericPin(digits);
+        if (await reserveDesignId(redis, candidate, code)) {
+          newId = candidate;
+          break;
+        }
+      }
+      if (newId) break;
     }
 
-    if (attempts >= 10) {
-      // If we are insanely lucky/unlucky and collide 10 times, extend the length
-      newId = Math.floor(100000 + Math.random() * 900000).toString();
+    if (!newId) {
+      return NextResponse.json({ error: "Could not allocate a unique PIN. Try again." }, { status: 503 });
     }
 
-    // Store in Redis
-    // design:ID -> the full code string (e.g. ac3.bk~gradient...)
-    // design_hash:CODE -> the ID
-    const pipeline = redis.pipeline();
-    pipeline.set(`design:${newId}`, code, { ex: 30 * 24 * 60 * 60 }); // 30 days
-    pipeline.set(hashKey, newId, { ex: 30 * 24 * 60 * 60 }); // 30 days
-    
-    await pipeline.exec();
+    // The reserve call already stored design:ID -> code for 30 days.
+    // Store design_hash:CODE -> ID for the same TTL so repeated shares reuse the PIN.
+    await redis.set(hashKey, newId, { ex: DESIGN_TTL_SECONDS });
 
-    return NextResponse.json({ id: newId });
+    return NextResponse.json({ id: newId, expiresInDays: DESIGN_TTL_DAYS });
   } catch (error) {
     console.error("Save design error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
