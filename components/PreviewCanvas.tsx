@@ -34,6 +34,69 @@ const CALENDAR_FONT_OPTIONS = [
     headingClass: "font-poppins"
   },
   {
+    value: "manrope",
+    label: "Manrope",
+    description: "Crisp geometric sans",
+    bodyClass: "font-manrope",
+    headingClass: "font-manrope"
+  },
+  {
+    value: "montserrat",
+    label: "Montserrat",
+    description: "Bold poster style",
+    bodyClass: "font-montserrat",
+    headingClass: "font-montserrat"
+  },
+  {
+    value: "nunito",
+    label: "Nunito",
+    description: "Soft rounded sans",
+    bodyClass: "font-nunito",
+    headingClass: "font-nunito"
+  },
+  {
+    value: "rubik",
+    label: "Rubik",
+    description: "Rounded blocky UI",
+    bodyClass: "font-rubik",
+    headingClass: "font-rubik"
+  },
+  {
+    value: "outfit",
+    label: "Outfit",
+    description: "Clean display sans",
+    bodyClass: "font-outfit",
+    headingClass: "font-outfit"
+  },
+  {
+    value: "lexend",
+    label: "Lexend",
+    description: "Wide readable spacing",
+    bodyClass: "font-lexend",
+    headingClass: "font-lexend"
+  },
+  {
+    value: "spaceGrotesk",
+    label: "Space Grotesk",
+    description: "Techy modern feel",
+    bodyClass: "font-space-grotesk",
+    headingClass: "font-space-grotesk"
+  },
+  {
+    value: "robotoMono",
+    label: "Roboto Mono",
+    description: "Structured mono",
+    bodyClass: "font-roboto-mono",
+    headingClass: "font-roboto-mono"
+  },
+  {
+    value: "merriweather",
+    label: "Merriweather",
+    description: "Classic serif",
+    bodyClass: "font-merriweather",
+    headingClass: "font-merriweather"
+  },
+  {
     value: "system",
     label: "System",
     description: "Native UI font",

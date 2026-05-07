@@ -1,7 +1,7 @@
 "use client";
 
 import { classNames, getTextColor, computeRowCells, formatTimeSlot, courseParts, getStartMinutes, toneFromRgb, toneFromHex, toneFromColors, getPaletteTextColor, buildGradientBackground, buildEmojiPatternBackground, buildGeometricBackground, normalizeHexColor, hexToRgb, estimateImageTone, courseKeyFromCode, courseKeyFromCourse, getExpandedCourseSet, formatMeetingDays, getSlotDurationMinutes, groupEntriesByCourse, rangeProgress, formatPixels } from "@/lib/utils";
-import html2canvas from "html2canvas";
+import { toCanvas } from "html-to-image";
 import JSZip from "jszip";
 import dynamic from "next/dynamic";
 import {
@@ -74,7 +74,7 @@ type CalendarThemeMode = "normal" | "light" | "dark";
 type WallpaperStyle = "clean" | "compact" | "bold" | "glass";
 type GridPosition = "center" | "left" | "right" | "top" | "bottom";
 type ExportVariant = "full" | "transparent" | "background";
-type CalendarFont = "geist" | "inter" | "poppins" | "system";
+type CalendarFont = "geist" | "inter" | "poppins" | "manrope" | "montserrat" | "nunito" | "rubik" | "outfit" | "lexend" | "spaceGrotesk" | "robotoMono" | "merriweather" | "system";
 type AppTheme = "dark" | "light";
 type BackgroundKind = "solid" | "image" | "gradient";
 type OverlayKind = "none" | "pattern" | "geometric";
@@ -266,42 +266,88 @@ const CANVAS_SIZES: Record<DeviceId, { width: number; height: number }> = {
   macbook:        { width: 1440, height: 900  }, // 16:10
   share:          { width: 1080, height: 1080 }
 };
-const EXPORT_SCALE = 4; // High-res export (4× native) — balanced quality vs html2canvas fidelity.
+const EXPORT_SCALE = 4; // High-res export (4× native) — balanced quality vs browser memory use.
 
-const BLOCK_PALETTES = [
-  { name: "Blush",       hex: "#FFB3C1" },
-  { name: "Rose",        hex: "#FF85A1" },
-  { name: "Strawberry",  hex: "#FF6B8A" },
-  { name: "Hot Pink",    hex: "#FF4D9E" },
-  { name: "Fuchsia",     hex: "#E040FB" },
-  { name: "Coral",       hex: "#FF9080" },
-  { name: "Red",         hex: "#EF5350" },
-  { name: "Crimson",     hex: "#C62828" },
-  { name: "Peach",       hex: "#FFCBA4" },
-  { name: "Honey",       hex: "#FFDA8A" },
-  { name: "Amber",       hex: "#FFAB40" },
-  { name: "Butter",      hex: "#FFF3A3" },
-  { name: "Lime",        hex: "#B5F03B" },
-  { name: "Dew",         hex: "#C8F0D8" },
-  { name: "Matcha",      hex: "#B5D5A0" },
-  { name: "Sage",        hex: "#A8C8A0" },
-  { name: "Teal",        hex: "#4DB6AC" },
-  { name: "Mint",        hex: "#A8EED5" },
-  { name: "Sky",         hex: "#A8D8F0" },
-  { name: "Cobalt",      hex: "#5C82E8" },
-  { name: "Periwinkle",  hex: "#A0B8F0" },
-  { name: "Slate",       hex: "#90A4B8" },
-  { name: "Lavender",    hex: "#D4BFFF" },
-  { name: "Iris",        hex: "#B8A0F0" },
-  { name: "Lilac",       hex: "#E8C8F8" },
-  { name: "Taro",        hex: "#C4B0E8" },
-  { name: "Mochi",       hex: "#F0D8F8" },
-  { name: "Cream",       hex: "#F5ECD8" },
-  { name: "Latte",       hex: "#D8C0A8" },
-  { name: "Tan",         hex: "#C4A07A" },
-  { name: "Sienna",      hex: "#A0522D" },
-  { name: "Charcoal",    hex: "#455A64" },
+const BLOCK_PALETTE_GROUPS = [
+  {
+    label: "Pink",
+    colors: [
+      { name: "Blush",      hex: "#FFB3C1" },
+      { name: "Rose",       hex: "#FF85A1" },
+      { name: "Strawberry", hex: "#FF6B8A" },
+      { name: "Hot Pink",   hex: "#FF4D9E" },
+      { name: "Fuchsia",    hex: "#E040FB" },
+      { name: "Bubblegum",  hex: "#FF9FD7" }
+    ]
+  },
+  {
+    label: "Warm",
+    colors: [
+      { name: "Coral",      hex: "#FF9080" },
+      { name: "Red",        hex: "#EF5350" },
+      { name: "Crimson",    hex: "#C62828" },
+      { name: "Peach",      hex: "#FFCBA4" },
+      { name: "Apricot",    hex: "#FFB36B" },
+      { name: "Tangerine",  hex: "#FF8A3D" },
+      { name: "Honey",      hex: "#FFDA8A" },
+      { name: "Amber",      hex: "#FFAB40" },
+      { name: "Butter",     hex: "#FFF3A3" }
+    ]
+  },
+  {
+    label: "Green",
+    colors: [
+      { name: "Lime",       hex: "#B5F03B" },
+      { name: "Dew",        hex: "#C8F0D8" },
+      { name: "Matcha",     hex: "#B5D5A0" },
+      { name: "Sage",       hex: "#A8C8A0" },
+      { name: "Mint",       hex: "#A8EED5" },
+      { name: "Teal",       hex: "#4DB6AC" },
+      { name: "Jade",       hex: "#57C785" },
+      { name: "Emerald",    hex: "#2EAD6B" },
+      { name: "Pine",       hex: "#2F7D52" }
+    ]
+  },
+  {
+    label: "Blue",
+    colors: [
+      { name: "Aqua",       hex: "#7DE3F4" },
+      { name: "Sky",        hex: "#A8D8F0" },
+      { name: "Cobalt",     hex: "#5C82E8" },
+      { name: "Periwinkle", hex: "#A0B8F0" },
+      { name: "Slate",      hex: "#90A4B8" },
+      { name: "Denim",      hex: "#4A6FA5" },
+      { name: "Navy",       hex: "#385A8C" }
+    ]
+  },
+  {
+    label: "Purple",
+    colors: [
+      { name: "Lavender",   hex: "#D4BFFF" },
+      { name: "Iris",       hex: "#B8A0F0" },
+      { name: "Lilac",      hex: "#E8C8F8" },
+      { name: "Taro",       hex: "#C4B0E8" },
+      { name: "Mochi",      hex: "#F0D8F8" },
+      { name: "Violet",     hex: "#9B7AE5" },
+      { name: "Grape",      hex: "#7B4FCB" }
+    ]
+  },
+  {
+    label: "Neutral",
+    colors: [
+      { name: "Cream",      hex: "#F5ECD8" },
+      { name: "Cloud",      hex: "#EEF2F5" },
+      { name: "Latte",      hex: "#D8C0A8" },
+      { name: "Tan",        hex: "#C4A07A" },
+      { name: "Stone",      hex: "#A8A29E" },
+      { name: "Sienna",     hex: "#A0522D" },
+      { name: "Charcoal",   hex: "#455A64" },
+      { name: "Graphite",   hex: "#2F3437" }
+    ]
+  }
 ];
+
+const BLOCK_PALETTES = BLOCK_PALETTE_GROUPS.flatMap((group) => group.colors);
 
 const COURSE_THEMES: Array<{ name: string; colors: string[] }> = [
   { name: "Blossom",    colors: ["#FFB3C1","#FF85A1","#FFD6E7","#F5A0B8","#FFCCE0","#FFC4D6","#FF9BB5","#FFDDE8"] },
@@ -407,6 +453,40 @@ const BACKGROUND_CATEGORIES = [
       { name: "Terracotta", value: "#8C3A20" },
       { name: "Bronze",   value: "#6B4010" }
     ]
+  },
+  {
+    label: "Cool",
+    colors: [
+      { name: "Ice",       value: "#E6F7FF" },
+      { name: "Glacier",   value: "#D5ECF5" },
+      { name: "Mist",      value: "#DCE7EF" },
+      { name: "Aqua",      value: "#A7F3F0" },
+      { name: "Lagoon",    value: "#4ECDC4" },
+      { name: "Cyan",      value: "#22D3EE" },
+      { name: "Azure",     value: "#38BDF8" },
+      { name: "Royal",     value: "#2563EB" },
+      { name: "Indigo",    value: "#4338CA" },
+      { name: "Violet",    value: "#6D28D9" },
+      { name: "Amethyst",  value: "#7C3AED" },
+      { name: "Orchid",    value: "#C084FC" }
+    ]
+  },
+  {
+    label: "Bright",
+    colors: [
+      { name: "Signal",    value: "#00A86B" },
+      { name: "Electric",  value: "#CCFF00" },
+      { name: "Lemon",     value: "#FFF04D" },
+      { name: "Gold",      value: "#FFC300" },
+      { name: "Orange",    value: "#FF7A1A" },
+      { name: "Punch",     value: "#FF3D71" },
+      { name: "Magenta",   value: "#D946EF" },
+      { name: "Purple Pop", value: "#8B5CF6" },
+      { name: "Blue Pop",  value: "#3B82F6" },
+      { name: "Cyan Pop",  value: "#06B6D4" },
+      { name: "Mint Pop",  value: "#2DD4BF" },
+      { name: "Green Pop", value: "#22C55E" }
+    ]
   }
 ];
 
@@ -421,9 +501,9 @@ const DEFAULT_GRADIENT: GradientConfig = {
 const DEFAULT_PATTERN: PatternConfig = {
   emoji: "✨",
   preset: "diagonal",
-  size: 40,
-  spacing: 64,
-  opacity: 0.15
+  size: 56,
+  spacing: 88,
+  opacity: 0.16
 };
 
 const GRADIENT_PRESETS: Array<{ name: string; gradient: GradientConfig }> = [
@@ -493,9 +573,9 @@ const CALENDAR_THEME_OPTIONS: Array<{ value: CalendarThemeMode; label: string; i
 ];
 
 const EXPORT_VARIANT_OPTIONS: Array<{ value: ExportVariant; label: string; description: string; icon: LucideIcon }> = [
-  { value: "full", label: "Full", description: "Wallpaper + schedule", icon: ImageIcon },
-  { value: "transparent", label: "Transparent", description: "Schedule only PNG", icon: Layers },
-  { value: "background", label: "Background", description: "Wallpaper only", icon: ImagePlus }
+  { value: "full", label: "Wallpaper", description: "Background and schedule", icon: ImageIcon },
+  { value: "transparent", label: "Schedule", description: "Schedule only PNG", icon: Layers },
+  { value: "background", label: "Backdrop", description: "Background only", icon: ImagePlus }
 ];
 
 const CALENDAR_FONT_OPTIONS: Array<{
@@ -525,6 +605,69 @@ const CALENDAR_FONT_OPTIONS: Array<{
     description: "Rounded student feel",
     bodyClass: "font-poppins",
     headingClass: "font-poppins"
+  },
+  {
+    value: "manrope",
+    label: "Manrope",
+    description: "Crisp geometric sans",
+    bodyClass: "font-manrope",
+    headingClass: "font-manrope"
+  },
+  {
+    value: "montserrat",
+    label: "Montserrat",
+    description: "Bold poster style",
+    bodyClass: "font-montserrat",
+    headingClass: "font-montserrat"
+  },
+  {
+    value: "nunito",
+    label: "Nunito",
+    description: "Soft rounded sans",
+    bodyClass: "font-nunito",
+    headingClass: "font-nunito"
+  },
+  {
+    value: "rubik",
+    label: "Rubik",
+    description: "Rounded blocky UI",
+    bodyClass: "font-rubik",
+    headingClass: "font-rubik"
+  },
+  {
+    value: "outfit",
+    label: "Outfit",
+    description: "Clean display sans",
+    bodyClass: "font-outfit",
+    headingClass: "font-outfit"
+  },
+  {
+    value: "lexend",
+    label: "Lexend",
+    description: "Wide readable spacing",
+    bodyClass: "font-lexend",
+    headingClass: "font-lexend"
+  },
+  {
+    value: "spaceGrotesk",
+    label: "Space Grotesk",
+    description: "Techy modern feel",
+    bodyClass: "font-space-grotesk",
+    headingClass: "font-space-grotesk"
+  },
+  {
+    value: "robotoMono",
+    label: "Roboto Mono",
+    description: "Structured mono",
+    bodyClass: "font-roboto-mono",
+    headingClass: "font-roboto-mono"
+  },
+  {
+    value: "merriweather",
+    label: "Merriweather",
+    description: "Classic serif",
+    bodyClass: "font-merriweather",
+    headingClass: "font-merriweather"
   },
   {
     value: "system",
@@ -674,7 +817,7 @@ function normalizePatternConfig(value: unknown): PatternConfig {
   return {
     emoji: typeof record.emoji === "string" && record.emoji.trim() ? Array.from(record.emoji.trim())[0] ?? DEFAULT_PATTERN.emoji : DEFAULT_PATTERN.emoji,
     preset,
-    size: typeof record.size === "number" ? Math.max(12, Math.min(72, record.size)) : DEFAULT_PATTERN.size,
+    size: typeof record.size === "number" ? Math.max(12, Math.min(96, record.size)) : DEFAULT_PATTERN.size,
     spacing: typeof record.spacing === "number" ? Math.max(36, Math.min(180, record.spacing)) : DEFAULT_PATTERN.spacing,
     opacity: typeof record.opacity === "number" ? Math.max(0.04, Math.min(1.0, record.opacity)) : DEFAULT_PATTERN.opacity
   };
@@ -1281,9 +1424,9 @@ function MainApp() {
           }, 0);
           setDesktopPanel("export");
           setMobileTab("export");
-          setDesignShareNotice("Shared design loaded.");
+          setDesignShareNotice("Design loaded.");
         })
-        .catch(() => setDesignShareNotice("Shared design link is invalid."));
+        .catch(() => setDesignShareNotice("That link doesn't work."));
       return;
     }
 
@@ -1305,9 +1448,9 @@ function MainApp() {
         }, 0);
         setDesktopPanel("export");
         setMobileTab("export");
-        setDesignShareNotice("Shared design loaded.");
+        setDesignShareNotice("Design loaded.");
       })
-      .catch(() => setDesignShareNotice("Shared design link is invalid or expired."));
+      .catch(() => setDesignShareNotice("That PIN is invalid or expired."));
   }, [hasLoadedLocalSchedule]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
@@ -1555,7 +1698,7 @@ function MainApp() {
   const FONT_SCALE: Record<number, number> = { 1: 1.3, 2: 1.12, 3: 1.0, 4: 0.9, 5: 0.82 };
   const MIN_FONT_PX = device === "iphone" ? 5 : 0;
   const fs = device === "share" ? 1 : FONT_SCALE[calendarSize];
-  // Round to whole pixels — fractional values cause spacing glitches in html2canvas exports
+  // Round to whole pixels — fractional values cause spacing glitches in image exports
   const scalePx  = (val: number) => `${Math.round(Math.max(MIN_FONT_PX, val * fs))}px`;
   const scalePad = (val: number) => `${Math.round(val * fs)}px`; // no font minimum — for spacing/padding only
   const sz = {
@@ -2130,12 +2273,12 @@ function MainApp() {
     clone.querySelectorAll("[data-export-hidden='true']").forEach((node) => node.remove());
 
     Object.assign(wrapper.style, {
-      position: "absolute",
-      left: "-9999px",
-      top: "-9999px",
+      position: "fixed",
+      left: "0",
+      top: "0",
       width: `${size.width}px`,
       height: `${size.height}px`,
-      overflow: "visible",
+      overflow: "hidden",
       pointerEvents: "none",
       zIndex: "-1"
     });
@@ -2146,61 +2289,22 @@ function MainApp() {
       transform: "none"
     });
 
-    // Force inline computed styles on all text elements so html2canvas reads exact values
-    // instead of recomputing from Tailwind classes (which it often gets wrong for spacing).
     wrapper.appendChild(clone);
     document.body.appendChild(wrapper);
 
-    // Resolve class-based typography into inline pixel values. html2canvas can render
-    // unitless line-height differently from the browser, which shifts text out of cells.
-    const textEls = clone.querySelectorAll("p, h1, h2, h3, h4, h5, h6, span, div");
-    textEls.forEach((el) => {
-      const computed = window.getComputedStyle(el);
-      const htmlEl = el as HTMLElement;
-      const fontSize = Number.parseFloat(computed.fontSize);
-
-      htmlEl.style.fontFamily = computed.fontFamily;
-      htmlEl.style.fontSize = computed.fontSize;
-      htmlEl.style.fontStyle = computed.fontStyle;
-      htmlEl.style.fontWeight = computed.fontWeight;
-      htmlEl.style.lineHeight = computed.lineHeight === "normal" && Number.isFinite(fontSize)
-        ? `${Math.round(fontSize * 1.2)}px`
-        : computed.lineHeight;
-      htmlEl.style.letterSpacing = computed.letterSpacing === "normal" ? "0px" : computed.letterSpacing;
-      htmlEl.style.wordSpacing = computed.wordSpacing === "normal" ? "0px" : computed.wordSpacing;
-      htmlEl.style.textAlign = computed.textAlign;
-      htmlEl.style.textTransform = computed.textTransform;
-      htmlEl.style.whiteSpace = computed.whiteSpace;
-    });
-
-    clone.querySelectorAll<HTMLElement>("[data-course-block='true']").forEach((block) => {
-      const cs = window.getComputedStyle(block);
-      block.style.overflow = "hidden";
-      block.style.padding = cs.padding;
-      block.style.lineHeight = cs.lineHeight;
-    });
-
-    const courseTextLift = size.width <= CANVAS_SIZES.iphone.width ? -1 : -0.5;
-    clone.querySelectorAll<HTMLElement>("[data-course-text='true']").forEach((text) => {
-      const cs = window.getComputedStyle(text);
-      text.style.position = "relative";
-      text.style.transform = `translateY(${courseTextLift}px)`;
-      text.style.transformOrigin = "left top";
-      text.style.marginTop = cs.marginTop;
-      text.style.marginBottom = cs.marginBottom;
-    });
-
     try {
       await waitForExportFrame();
-      return await html2canvas(clone, {
-        backgroundColor: null,
-        scale: scale,
-        useCORS: true,
-        logging: false,
+      return await toCanvas(clone, {
+        cacheBust: true,
+        pixelRatio: scale,
+        skipAutoScale: true,
         width: size.width,
         height: size.height,
-        windowWidth: size.width,
-        windowHeight: size.height
+        style: {
+          width: `${size.width}px`,
+          height: `${size.height}px`,
+          transform: "none"
+        }
       });
     } finally {
       wrapper.remove();
@@ -2262,9 +2366,7 @@ function MainApp() {
     setIsExporting(true);
     try {
       await waitForExportFrame();
-      const isMobile = window.innerWidth <= 768;
-      const dynamicScale = isMobile ? 2 : 4;
-      const exportedCanvas = await captureExportCanvas(canvasRef.current, canvasSize, dynamicScale);
+      const exportedCanvas = await captureExportCanvas(canvasRef.current, canvasSize, EXPORT_SCALE);
       await downloadCanvas(exportedCanvas, makeExportFilename(device, getExportVariantSuffix()));
       setTimeout(triggerShare, 500);
     } finally {
@@ -2283,9 +2385,7 @@ function MainApp() {
         setDevice(deviceId);
         await waitForCanvasSize(CANVAS_SIZES[deviceId]);
         if (canvasRef.current) {
-          const isMobile = window.innerWidth <= 768;
-          const dynamicScale = isMobile ? 2 : 4;
-          const exported = await captureExportCanvas(canvasRef.current, CANVAS_SIZES[deviceId], dynamicScale);
+          const exported = await captureExportCanvas(canvasRef.current, CANVAS_SIZES[deviceId], EXPORT_SCALE);
           await downloadCanvas(exported, makeExportFilename(deviceId, getExportVariantSuffix()));
         }
       } else {
@@ -2349,10 +2449,10 @@ function MainApp() {
       setLivePinCode(pin);
       setLiveShareUrl(shareUrl);
       await copyTextToClipboard(shareUrl);
-      setDesignShareNotice("Share link copied.");
+      setDesignShareNotice("Link copied.");
       setTimeout(() => setDesignShareNotice(""), 5000);
     } catch (err: any) {
-      setDesignShareNotice(err.message || "Failed to generate share link");
+      setDesignShareNotice(err.message || "Couldn't create link.");
     } finally {
       setIsGeneratingPin(false);
     }
@@ -2360,7 +2460,7 @@ function MainApp() {
 
   async function handleApplyDesignCode() {
     if (!designCode.trim()) {
-      setDesignShareNotice("Paste a PIN or share link first.");
+      setDesignShareNotice("Enter a PIN or link first.");
       return;
     }
 
@@ -2369,7 +2469,7 @@ function MainApp() {
 
     // Fetch actual code if it's a numeric PIN or a URL containing one.
     if (parsedInput.pin) {
-      setDesignShareNotice("Fetching design from PIN...");
+      setDesignShareNotice("Loading design...");
       try {
         const res = await fetch(`/api/design/get?id=${parsedInput.pin}`);
         if (!res.ok) {
@@ -2389,7 +2489,7 @@ function MainApp() {
     }
 
     if (!codeToDecode) {
-      setDesignShareNotice("Paste a PIN or share link first.");
+      setDesignShareNotice("Enter a PIN or link first.");
       return;
     }
 
@@ -2402,9 +2502,9 @@ function MainApp() {
           setLiveShareUrl("");
         }, 0);
       }
-      setDesignShareNotice("Shared design applied.");
+      setDesignShareNotice("Design loaded.");
     } catch {
-      setDesignShareNotice("Invalid PIN or share link.");
+      setDesignShareNotice("That PIN or link doesn't work.");
     }
   }
 
@@ -2666,20 +2766,21 @@ function MainApp() {
   function renderCourseColorThemes() {
     return (
       <ControlGroup
-        title="Color Themes"
+        title="Course Colors"
         action={
           <button
-            className="grid h-9 w-9 place-items-center rounded-lg border border-white/10 bg-white/[0.04] text-white/70 transition-all hover:border-white/25 hover:bg-white/[0.08] hover:text-white"
+            className="flex h-9 items-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.04] px-2.5 text-[10px] font-black text-white/70 transition-all hover:border-white/25 hover:bg-white/[0.08] hover:text-white"
             type="button"
             title="Auto-color courses"
             aria-label="Auto-color courses"
             onClick={() => setEntries((current) => autoColorByCourse(current, activeCoursePalette))}
           >
             <Wand2 size={14} strokeWidth={2.5} />
+            Auto
           </button>
         }
       >
-        <div className="grid grid-cols-3 gap-1.5">
+        <div className="grid grid-cols-2 gap-2">
           {COURSE_THEMES.map((theme) => {
             const isActive = JSON.stringify(theme.colors) === JSON.stringify(activeCoursePalette);
             return (
@@ -2687,28 +2788,26 @@ function MainApp() {
                 key={theme.name}
                 type="button"
                 className={classNames(
-                  "group overflow-hidden rounded-lg border transition-all active:scale-[0.97]",
+                  "group overflow-hidden rounded-lg border bg-white/[0.025] text-left transition-all active:scale-[0.97]",
                   isActive
-                    ? "border-dlsu-vivid/60 shadow-sm shadow-dlsu-vivid/20"
-                    : "border-white/[0.06] hover:border-white/20"
+                    ? "border-dlsu-vivid/70 shadow-sm shadow-dlsu-vivid/20"
+                    : "border-white/[0.12] hover:border-white/25 hover:bg-white/[0.055]"
                 )}
                 onClick={() => applyColorTheme(theme.colors)}
               >
-                <div className="flex h-3 overflow-hidden">
+                <div className="flex h-2.5 overflow-hidden">
                   {theme.colors.map((color, index) => (
                     <span key={index} className="h-full flex-1" style={{ backgroundColor: color }} />
                   ))}
                 </div>
-                <div className={classNames(
-                  "px-1.5 py-1.5",
-                  isActive ? "bg-dlsu-vivid/10" : "bg-white/[0.02] group-hover:bg-white/[0.04]"
-                )}>
+                <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 px-2 py-2">
                   <p className={classNames(
                     "truncate text-[10px] font-black uppercase transition-colors",
-                    isActive ? "text-white" : "text-white/40 group-hover:text-white/60"
+                    isActive ? "text-white" : "text-white/60 group-hover:text-white/80"
                   )}>
                     {theme.name}
                   </p>
+                  {isActive && <Check size={12} className="text-dlsu-vivid" />}
                 </div>
               </button>
             );
@@ -2912,7 +3011,7 @@ function MainApp() {
                           return (
                             <div
                               key={slotId}
-                              className="grid grid-cols-2 gap-2 rounded-md border border-white/[0.06] bg-black/[0.16] p-2"
+                              className="grid grid-cols-1 gap-2 rounded-md border border-white/[0.06] bg-black/[0.16] p-2"
                             >
                               <div className="space-y-1">
                                 <span className="block text-[10px] font-bold text-white/40">Days</span>
@@ -2986,44 +3085,55 @@ function MainApp() {
                         />
                       </div>
 
-                      <div className="-mx-1 flex items-center gap-1.5 overflow-x-auto px-1 py-1.5 scrollbar-thin">
-                        <label
-                          className={classNames(
-                            "relative flex h-8 w-12 shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-md border-2 bg-white/[0.06] shadow-sm transition hover:border-white/75 hover:bg-white/[0.09]",
-                            !BLOCK_PALETTES.some(p => p.hex === course.color)
-                              ? "border-white ring-2 ring-white/80 ring-offset-2 ring-offset-[#111713]"
-                              : "border-white/45"
-                          )}
-                          title="Custom color"
-                          aria-label="Custom color"
-                        >
-                          <Palette size={13} className="pointer-events-none text-white/80" />
-                          <span
-                            className="pointer-events-none h-4 w-4 rounded-full border border-white/70 shadow-sm"
-                            style={{ backgroundColor: course.color }}
-                          />
-                          <input
-                            type="color"
-                            className="absolute inset-0 cursor-pointer opacity-0"
-                            value={course.color}
-                            onChange={(e) => updateCourseColor(course.code, e.target.value)}
-                          />
-                        </label>
-                        {BLOCK_PALETTES.map((palette) => (
-                          <button
-                            key={palette.name}
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="text-[9px] font-black uppercase tracking-wider text-white/28">Color</p>
+                          <label
                             className={classNames(
-                              "grid h-8 w-8 shrink-0 place-items-center rounded-md transition-transform hover:scale-105",
-                              course.color === palette.hex ? "ring-2 ring-white ring-offset-2 ring-offset-[#111713]" : ""
+                              "relative flex h-8 shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-md border bg-white/[0.06] px-2 text-[10px] font-bold text-white/70 shadow-sm transition hover:border-white/55 hover:bg-white/[0.09] hover:text-white",
+                              !BLOCK_PALETTES.some(p => p.hex === course.color)
+                                ? "border-white ring-2 ring-white/70 ring-offset-2 ring-offset-[#111713]"
+                                : "border-white/25"
                             )}
-                            type="button"
-                            aria-label={palette.name}
-                            title={palette.name}
-                            style={{ backgroundColor: palette.hex, color: getTextColor(palette.hex) }}
-                            onClick={() => updateCourseColor(course.code, palette.hex)}
+                            title="Custom color"
+                            aria-label="Custom color"
                           >
-                            {course.color === palette.hex ? <Check size={12} strokeWidth={3} /> : null}
-                          </button>
+                            <Palette size={12} className="pointer-events-none" />
+                            Custom
+                            <span
+                              className="pointer-events-none h-4 w-4 rounded-full border border-white/70 shadow-sm"
+                              style={{ backgroundColor: course.color }}
+                            />
+                            <input
+                              type="color"
+                              className="absolute inset-0 cursor-pointer opacity-0"
+                              value={course.color}
+                              onChange={(e) => updateCourseColor(course.code, e.target.value)}
+                            />
+                          </label>
+                        </div>
+                        {BLOCK_PALETTE_GROUPS.map((group) => (
+                          <div key={group.label}>
+                            <p className="mb-1 text-[9px] font-black uppercase tracking-wider text-white/24">{group.label}</p>
+                            <div className="grid grid-cols-8 gap-1.5">
+                              {group.colors.map((palette) => (
+                                <button
+                                  key={`${group.label}-${palette.name}`}
+                                  className={classNames(
+                                    "grid h-7 place-items-center rounded-md border border-white/10 transition-transform hover:scale-105 hover:border-white/40 active:scale-95",
+                                    course.color === palette.hex ? "ring-2 ring-white ring-offset-2 ring-offset-[#111713]" : ""
+                                  )}
+                                  type="button"
+                                  aria-label={palette.name}
+                                  title={palette.name}
+                                  style={{ backgroundColor: palette.hex, color: getTextColor(palette.hex) }}
+                                  onClick={() => updateCourseColor(course.code, palette.hex)}
+                                >
+                                  {course.color === palette.hex ? <Check size={11} strokeWidth={3} /> : null}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
                         ))}
                       </div>
                     </div>
@@ -3054,38 +3164,38 @@ function MainApp() {
       >
 
         <div className="order-1">
-          <ControlGroup title="Share Design">
+          <ControlGroup title="Share">
             <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2">
               <div className="relative min-w-0">
                 <Link2 size={13} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-white/25" />
                 <input
-                  className="min-h-10 w-full rounded-lg border border-white/[0.08] bg-black/[0.16] pl-8 pr-3 font-mono text-xs text-white/80 outline-none transition placeholder:text-white/25 focus:border-dlsu-vivid"
+                  className="min-h-10 w-full rounded-lg border border-white/[0.14] bg-white/[0.055] pl-8 pr-3 font-mono text-xs text-white/85 outline-none transition placeholder:text-white/35 hover:border-white/25 hover:bg-white/[0.075] focus:border-dlsu-vivid"
                   value={designCode}
                   onChange={(event) => setDesignCode(event.target.value)}
-                  placeholder="Paste PIN or link"
+                  placeholder="PIN or link"
                   spellCheck={false}
                 />
               </div>
               <button
                 type="button"
-                className="flex min-h-10 items-center justify-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.035] px-3 text-xs font-bold text-white/72 transition hover:border-white/25 hover:bg-white/[0.06] hover:text-white disabled:opacity-40"
+                className="flex min-h-10 items-center justify-center gap-1.5 rounded-lg border border-white/15 bg-white/[0.07] px-3 text-xs font-bold text-white/80 transition hover:border-white/30 hover:bg-white/[0.10] hover:text-white disabled:opacity-40"
                 onClick={() => setShowDesignApplyConfirm(true)}
                 disabled={!designCode.trim()}
               >
-                <Wand2 size={14} />
-                Apply
+                <FileInput size={14} />
+                Load
               </button>
             </div>
 
             {!liveShareUrl ? (
               <button
                 type="button"
-                className="flex min-h-11 w-full items-center justify-center gap-2 rounded-lg border border-dlsu-vivid/30 bg-dlsu-vivid/10 text-xs font-bold text-white/80 shadow-sm shadow-dlsu-vivid/10 transition hover:border-dlsu-vivid/50 hover:bg-dlsu-vivid/15 hover:text-white disabled:opacity-50"
+                className="flex min-h-11 w-full items-center justify-center gap-2 rounded-lg border border-dlsu-vivid/40 bg-dlsu-vivid/15 text-xs font-bold text-white/90 shadow-sm shadow-dlsu-vivid/10 transition hover:border-dlsu-vivid/70 hover:bg-dlsu-vivid/25 hover:text-white disabled:opacity-50"
                 onClick={handleGeneratePinCode}
                 disabled={isGeneratingPin}
               >
                 {isGeneratingPin ? <Loader2 size={14} className="animate-spin" /> : <Link2 size={14} />}
-                {isGeneratingPin ? "Generating…" : "Generate Share Link"}
+                {isGeneratingPin ? "Creating..." : "Create link"}
               </button>
             ) : (
               <div className="overflow-hidden rounded-lg border border-white/[0.08] bg-black/[0.16]">
@@ -3148,23 +3258,101 @@ function MainApp() {
           </ControlGroup>
         </div>
 
+        {/* Style */}
         <div className="order-2">
-          {renderCourseColorThemes()}
+          <ControlGroup title="Style">
+            {(() => {
+              const hints: Record<WallpaperStyle, string> = {
+                clean:   "Subtle borders",
+                compact: "Flat & minimal",
+                bold:    "Soft shadows",
+                glass:   "Frosted look",
+              };
+              return (
+                <div className="grid grid-cols-2 gap-1.5">
+                  {(Object.keys(STYLE_PRESETS) as WallpaperStyle[]).map((style) => {
+                    const active = wallpaperStyle === style;
+                    const label = STYLE_PRESETS[style].name;
+                    return (
+                      <button
+                        key={style}
+                        type="button"
+                        aria-pressed={active}
+                        title={`${label}: ${hints[style]}`}
+                        className={classNames(
+                          "group grid min-h-11 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 rounded-lg border px-2 py-1.5 text-left transition-all duration-150 active:scale-[0.98]",
+                          active
+                            ? "border-dlsu-vivid/80 bg-[#102017] text-white shadow-sm shadow-dlsu-vivid/20"
+                            : "border-white/15 bg-white/[0.035] text-white/72 hover:border-white/30 hover:bg-white/[0.07] hover:text-white"
+                        )}
+                        onClick={() => setWallpaperStyle(style)}
+                      >
+                        <div className={classNames(
+                          "grid h-7 w-7 shrink-0 grid-cols-2 gap-0.5 rounded-md border p-1",
+                          active ? "border-dlsu-vivid/35 bg-dlsu-vivid/15" : "border-white/[0.08] bg-white/[0.04]"
+                        )}>
+                          <span className={classNames("rounded-[2px]", style === "clean" ? "border border-white/30 bg-white/10" : "bg-white/15")} />
+                          <span className={classNames("rounded-[2px]", style === "bold" ? "shadow-[0_3px_8px_rgba(0,0,0,0.48)]" : "", style === "glass" ? "border border-white/35 bg-white/20" : "bg-white/10")} />
+                          <span className={classNames("rounded-[2px]", style === "compact" ? "bg-white/25" : "bg-white/10")} />
+                          <span className={classNames("rounded-[2px]", style === "glass" ? "border border-white/30 bg-white/20" : "bg-white/10")} />
+                        </div>
+                        <span className="min-w-0">
+                          <span className="block truncate text-[11px] font-black">{label}</span>
+                          <span className={classNames("block truncate text-[9px] font-semibold leading-tight", active ? "text-white/48" : "text-white/34 group-hover:text-white/45")}>
+                            {hints[style]}
+                          </span>
+                        </span>
+                        {active && <Check size={12} className="shrink-0 text-dlsu-vivid" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              );
+            })()}
+            <SectionLabel className="pt-1">Font</SectionLabel>
+            <div className="grid grid-cols-2 gap-1.5">
+              {CALENDAR_FONT_OPTIONS.map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  aria-pressed={calendarFont === option.value}
+                  aria-label={`${option.label}, ${option.description}`}
+                  title={`${option.label}: ${option.description}`}
+                  className={classNames(
+                    "grid h-10 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-1.5 rounded-lg border px-2 text-left transition-all duration-150 active:scale-[0.98]",
+                    option.bodyClass,
+                    calendarFont === option.value
+                      ? "border-dlsu-vivid/80 bg-[#102017] text-white shadow-sm shadow-dlsu-vivid/20"
+                      : "border-white/15 bg-white/[0.04] text-white/72 hover:border-white/30 hover:bg-white/[0.07] hover:text-white"
+                  )}
+                  onClick={() => setCalendarFont(option.value)}
+                >
+                  <span className="grid h-6 w-6 shrink-0 place-items-center rounded-md border border-white/15 bg-white/[0.07] text-[10px] font-black">Aa</span>
+                  <span className="min-w-0 truncate text-[11px] font-black leading-none">{option.label}</span>
+                  {calendarFont === option.value && <Check size={12} className="shrink-0 text-dlsu-vivid" />}
+                </button>
+              ))}
+            </div>
+          </ControlGroup>
         </div>
 
         <div className="order-3">
+          {renderCourseColorThemes()}
+        </div>
+
+        <div className="order-4">
           <ControlGroup title="Layout">
             <SectionLabel>Size</SectionLabel>
-            <div className="flex rounded-lg border border-white/[0.06] bg-white/[0.02] p-0.5">
+            <div className="grid grid-cols-5 gap-1 rounded-lg border border-white/[0.10] bg-white/[0.045] p-1">
               {CALENDAR_SIZE_OPTIONS.map(({ value, label }) => (
                 <button
                   key={value}
                   type="button"
                   className={classNames(
-                    "flex-1 rounded-md py-2 text-[11px] font-bold transition-all",
+                    "rounded-md py-2 text-[11px] font-bold transition-all",
                     calendarSize === value
-                      ? "bg-white/[0.08] text-white shadow-sm"
-                      : "text-white/35 hover:text-white/65"
+                      ? "bg-dlsu-vivid text-white shadow-sm shadow-dlsu-vivid/20"
+                      : "bg-white/[0.04] text-white/65 hover:bg-white/[0.08] hover:text-white"
                   )}
                   onClick={() => setCalendarSize(value)}
                 >
@@ -3173,15 +3361,15 @@ function MainApp() {
               ))}
             </div>
             <SectionLabel className="pt-1">Mode</SectionLabel>
-            <div className="flex rounded-lg border border-white/[0.06] bg-white/[0.02] p-0.5">
+            <div className="grid grid-cols-3 gap-1 rounded-lg border border-white/[0.10] bg-white/[0.045] p-1">
               {CALENDAR_THEME_OPTIONS.map(({ value, label }) => (
                 <button
                   key={value}
                   className={classNames(
-                    "flex-1 rounded-md py-2 text-[11px] font-bold transition-all",
+                    "rounded-md py-2 text-[11px] font-bold transition-all",
                     calendarThemeMode === value
-                      ? "bg-white/[0.08] text-white shadow-sm"
-                      : "text-white/35 hover:text-white/65"
+                      ? "bg-dlsu-vivid text-white shadow-sm shadow-dlsu-vivid/20"
+                      : "bg-white/[0.04] text-white/65 hover:bg-white/[0.08] hover:text-white"
                   )}
                   type="button"
                   onClick={() => setCalendarThemeMode(value)}
@@ -3191,15 +3379,15 @@ function MainApp() {
               ))}
             </div>
             <SectionLabel className="pt-1">Position</SectionLabel>
-            <div className="flex rounded-lg border border-white/[0.06] bg-white/[0.02] p-0.5">
+            <div className="grid grid-cols-5 gap-1 rounded-lg border border-white/[0.10] bg-white/[0.045] p-1">
               {(["left", "center", "right", "top", "bottom"] as GridPosition[]).map((pos) => (
                 <button
                   key={pos}
                   className={classNames(
-                    "flex-1 rounded-md py-2 text-[10px] font-bold capitalize transition-all",
+                    "rounded-md py-2 text-[10px] font-bold capitalize transition-all",
                     gridPosition === pos
-                      ? "bg-white/[0.08] text-white shadow-sm"
-                      : "text-white/35 hover:text-white/65"
+                      ? "bg-dlsu-vivid text-white shadow-sm shadow-dlsu-vivid/20"
+                      : "bg-white/[0.04] text-white/65 hover:bg-white/[0.08] hover:text-white"
                   )}
                   type="button"
                   onClick={() => {
@@ -3250,24 +3438,24 @@ function MainApp() {
         </div>
 
         {/* Background */}
-        <div className="order-4">
+        <div className="order-5">
           <ControlGroup title="Background">
 
             {/* ── Base background tabs: Color / Gradient / Photo ── */}
-            <div className="flex rounded-lg border border-white/[0.06] bg-white/[0.02] p-0.5">
+            <div className="grid grid-cols-3 gap-1 rounded-lg border border-white/[0.10] bg-white/[0.045] p-1">
               {([
-                { kind: "solid",    label: "Color"    },
-                { kind: "gradient", label: "Gradient" },
-                { kind: "image",    label: "Photo"    },
-              ] as { kind: BackgroundKind; label: string }[]).map(({ kind, label }) => (
+                { kind: "solid",    label: "Color",    icon: Palette  },
+                { kind: "gradient", label: "Gradient", icon: Sparkles },
+                { kind: "image",    label: "Photo",    icon: ImageIcon },
+              ] as { kind: BackgroundKind; label: string; icon: LucideIcon }[]).map(({ kind, label, icon: KindIcon }) => (
                 <button
                   key={kind}
                   type="button"
                   className={classNames(
-                    "flex-1 rounded-md py-2 text-[10px] font-bold transition-all",
+                    "flex min-h-9 items-center justify-center gap-1.5 rounded-md px-2 text-[10px] font-bold transition-all",
                     backgroundKind === kind
-                      ? "bg-white/[0.09] text-white shadow-sm"
-                      : "text-white/35 hover:text-white/65"
+                      ? "bg-dlsu-vivid text-white shadow-sm shadow-dlsu-vivid/20"
+                      : "bg-white/[0.04] text-white/65 hover:bg-white/[0.08] hover:text-white"
                   )}
                   onClick={() => {
                     if (kind === "solid") handleSolidBackgroundChange(background);
@@ -3275,6 +3463,7 @@ function MainApp() {
                     else setBackgroundKind("image");
                   }}
                 >
+                  <KindIcon size={13} />
                   {label}
                 </button>
               ))}
@@ -3283,32 +3472,33 @@ function MainApp() {
             {/* ── Solid ── */}
             {backgroundKind === "solid" && (
               <div className="space-y-3">
-                <label className="relative flex min-h-11 cursor-pointer items-center gap-3 overflow-hidden rounded-lg border border-white/10 bg-white/[0.03] px-3 transition hover:border-white/25">
+                <label className="relative flex min-h-11 cursor-pointer items-center gap-3 overflow-hidden rounded-lg border border-white/15 bg-white/[0.055] px-3 transition hover:border-white/30 hover:bg-white/[0.08]">
                   <div className="h-6 w-6 shrink-0 rounded-full border border-white/20 shadow-sm" style={{ backgroundColor: background.startsWith("#") ? background : DEFAULT_BACKGROUND }} />
                   <span className="flex-1 font-mono text-xs text-white/60">{background.startsWith("#") ? background.toUpperCase() : DEFAULT_BACKGROUND}</span>
-                  <span className="text-[10px] font-bold text-white/35">tap to change</span>
+                  <span className="text-[10px] font-bold text-white/55">Change</span>
                   <input className="absolute inset-0 cursor-pointer opacity-0" type="color" value={background.startsWith("#") ? background : DEFAULT_BACKGROUND} onChange={(e) => handleSolidBackgroundChange(e.target.value)} />
                 </label>
                 <div className="space-y-2.5">
                   {BACKGROUND_CATEGORIES.map((cat) => (
                     <div key={cat.label}>
                       <p className="mb-1 text-[9px] font-black uppercase tracking-wider text-white/25">{cat.label}</p>
-                      <div className="grid grid-cols-4 gap-1">
+                      <div className="grid grid-cols-6 gap-1.5">
                         {cat.colors.map((preset) => (
                           <button
                             key={`${preset.name}-${preset.value}`}
                             type="button"
                             title={preset.name}
+                            aria-label={preset.name}
                             className={classNames(
-                              "h-8 rounded-md border text-[9px] font-bold transition-all hover:scale-105 active:scale-95",
+                              "grid h-8 place-items-center rounded-md border border-white/15 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.10),0_1px_6px_rgba(0,0,0,0.22)] transition-all hover:scale-105 hover:border-white/35 active:scale-95",
                               backgroundKind === "solid" && background === preset.value
                                 ? "ring-2 ring-white ring-offset-1 ring-offset-[#090D0B] border-transparent"
-                                : "border-white/5"
+                                : ""
                             )}
                             style={{ backgroundColor: preset.value, color: getTextColor(preset.value) }}
                             onClick={() => handleSolidBackgroundChange(preset.value)}
                           >
-                            {preset.name}
+                            {backgroundKind === "solid" && background === preset.value ? <Check size={12} /> : null}
                           </button>
                         ))}
                       </div>
@@ -3321,11 +3511,11 @@ function MainApp() {
             {/* ── Gradient ── */}
             {backgroundKind === "gradient" && (
               <div className="space-y-3">
-                <div className="flex rounded-lg border border-white/[0.06] bg-white/[0.02] p-0.5">
+                <div className="grid grid-cols-2 gap-1 rounded-lg border border-white/[0.10] bg-white/[0.045] p-1">
                   {(["linear", "radial"] as GradientType[]).map((type) => (
                     <button key={type} type="button"
-                      className={classNames("flex-1 rounded-md py-2 text-[10px] font-bold capitalize transition-all",
-                        gradient.type === type ? "bg-white/[0.09] text-white shadow-sm" : "text-white/35 hover:text-white/65"
+                      className={classNames("rounded-md py-2 text-[10px] font-bold capitalize transition-all",
+                        gradient.type === type ? "bg-dlsu-vivid text-white shadow-sm shadow-dlsu-vivid/20" : "bg-white/[0.04] text-white/65 hover:bg-white/[0.08] hover:text-white"
                       )}
                       onClick={() => updateGradient({ type })}
                     >{type}</button>
@@ -3333,7 +3523,7 @@ function MainApp() {
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   {gradient.colors.slice(0, 2).map((color, index) => (
-                    <label key={index} className="relative flex min-h-10 cursor-pointer items-center gap-2 overflow-hidden rounded-lg border border-white/10 bg-white/[0.02] px-3 transition hover:border-white/25">
+                    <label key={index} className="relative flex min-h-10 cursor-pointer items-center gap-2 overflow-hidden rounded-lg border border-white/15 bg-white/[0.055] px-3 transition hover:border-white/30 hover:bg-white/[0.08]">
                       <div className="h-5 w-5 rounded-full border border-white/20 shadow-sm" style={{ backgroundColor: color }} />
                       <span className="flex-1 font-mono text-[10px] uppercase text-white/60">{color}</span>
                       <input className="absolute inset-0 cursor-pointer opacity-0" type="color" value={color} onChange={(e) => updateGradientColor(index, e.target.value)} />
@@ -3351,7 +3541,7 @@ function MainApp() {
                 <div className="grid grid-cols-2 gap-1.5">
                   {GRADIENT_PRESETS.map((preset) => (
                     <button key={preset.name} type="button"
-                      className="min-h-9 rounded-lg border border-white/10 px-2 text-[10px] font-bold text-white transition hover:border-white/30 active:scale-95"
+                      className="min-h-9 rounded-lg border border-white/15 px-2 text-[10px] font-black text-white shadow-[inset_0_0_0_999px_rgba(0,0,0,0.16)] transition hover:border-white/35 active:scale-95"
                       style={{ backgroundImage: buildGradientBackground(preset.gradient) }}
                       onClick={() => applyGradientPreset(preset.gradient)}
                     >{preset.name}</button>
@@ -3362,7 +3552,7 @@ function MainApp() {
 
             {/* ── Image ── */}
             {backgroundKind === "image" && (
-              <label className="flex min-h-20 cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-white/20 bg-white/[0.02] text-white/50 transition hover:border-white/40 hover:text-white/80">
+              <label className="flex min-h-20 cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-white/25 bg-white/[0.055] text-white/65 transition hover:border-white/45 hover:bg-white/[0.08] hover:text-white">
                 <ImagePlus size={20} />
                 <span className="text-[11px] font-bold">{backgroundImage ? "Replace photo" : "Upload a photo"}</span>
                 <input className="sr-only" type="file" accept="image/*" onChange={handleBackgroundUpload} />
@@ -3374,23 +3564,24 @@ function MainApp() {
             {/* ── Overlay section: None / Emoji / Lines ── */}
             <div className="border-t border-white/[0.06] pt-3">
               <SectionLabel className="mb-2">Overlay</SectionLabel>
-              <div className="flex rounded-lg border border-white/[0.06] bg-white/[0.02] p-0.5">
+              <div className="grid grid-cols-3 gap-1 rounded-lg border border-white/[0.10] bg-white/[0.045] p-1">
                 {([
-                  { kind: "none",      label: "None"  },
-                  { kind: "pattern",   label: "Emoji" },
-                  { kind: "geometric", label: "Lines" },
-                ] as { kind: OverlayKind; label: string }[]).map(({ kind, label }) => (
+                  { kind: "none",      label: "Off",   icon: X       },
+                  { kind: "pattern",   label: "Emoji", icon: Sparkles },
+                  { kind: "geometric", label: "Lines", icon: Layers   },
+                ] as { kind: OverlayKind; label: string; icon: LucideIcon }[]).map(({ kind, label, icon: OverlayIcon }) => (
                   <button
                     key={kind}
                     type="button"
                     className={classNames(
-                      "flex-1 rounded-md py-2 text-[10px] font-bold transition-all",
+                      "flex min-h-9 items-center justify-center gap-1.5 rounded-md px-2 text-[10px] font-bold transition-all",
                       overlayKind === kind
-                        ? "bg-white/[0.09] text-white shadow-sm"
-                        : "text-white/35 hover:text-white/65"
+                        ? "bg-dlsu-vivid text-white shadow-sm shadow-dlsu-vivid/20"
+                        : "bg-white/[0.04] text-white/65 hover:bg-white/[0.08] hover:text-white"
                     )}
                     onClick={() => setOverlayKind(kind)}
                   >
+                    <OverlayIcon size={13} />
                     {label}
                   </button>
                 ))}
@@ -3398,113 +3589,136 @@ function MainApp() {
             </div>
 
             {/* ── Overlay: Emoji Pattern ── */}
-            {overlayKind === "pattern" && (
-            <div className="space-y-3 rounded-lg border border-white/[0.08] bg-white/[0.025] p-3">
-              <div className="flex items-start gap-3">
-                <div className="flex shrink-0 flex-col items-center gap-1.5">
-                  <div className="grid h-14 w-14 place-items-center rounded-xl border border-white/10 bg-black/25 text-3xl shadow-inner">
-                    {pattern.emoji}
+            {overlayKind !== "geometric" && (
+              <div className="space-y-3 rounded-lg border border-white/[0.10] bg-white/[0.04] p-3">
+                <div className="flex items-start gap-3">
+                  <div className="flex shrink-0 flex-col items-center gap-1.5">
+                    <button
+                      type="button"
+                      className={classNames(
+                        "grid h-14 w-14 place-items-center rounded-xl border text-3xl shadow-inner transition hover:border-white/30",
+                        overlayKind === "pattern"
+                          ? "border-dlsu-vivid/60 bg-dlsu-vivid/15"
+                          : "border-white/15 bg-black/25"
+                      )}
+                      onClick={() => setOverlayKind(overlayKind === "pattern" ? "none" : "pattern")}
+                      aria-label={overlayKind === "pattern" ? "Turn emoji overlay off" : "Turn emoji overlay on"}
+                    >
+                      {pattern.emoji}
+                    </button>
+                    <button
+                      type="button"
+                      className={classNames(
+                        "rounded-full border px-2 py-0.5 text-[9px] font-black uppercase tracking-wide transition",
+                        overlayKind === "pattern"
+                          ? "border-dlsu-vivid/50 bg-dlsu-vivid/15 text-dlsu-vivid"
+                          : "border-white/15 bg-white/[0.04] text-white/55 hover:border-white/30 hover:text-white"
+                      )}
+                      onClick={() => setOverlayKind(overlayKind === "pattern" ? "none" : "pattern")}
+                    >
+                      {overlayKind === "pattern" ? "On" : "Off"}
+                    </button>
                   </div>
-                  <span className="text-[9px] font-bold uppercase tracking-wide text-white/30">Current</span>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="mb-2 text-[10px] font-black uppercase tracking-wide text-white/45">Layout</p>
-                  <div className="grid grid-cols-2 gap-1.5">
-                    {PATTERN_PRESETS.map((preset) => (
-                      <button
-                        key={preset.value}
-                        type="button"
-                        className={classNames(
-                          "min-h-8 rounded-lg border px-2 text-[10px] font-bold transition active:scale-95",
-                          pattern.preset === preset.value
-                            ? "border-dlsu-vivid bg-dlsu-vivid text-white"
-                            : "border-white/10 bg-white/[0.03] text-white/50 hover:border-white/20 hover:text-white/80"
-                        )}
-                        onClick={() => applyPatternPreset(preset.value)}
-                      >
-                        {preset.label}
-                      </button>
-                    ))}
+                  <div className="min-w-0 flex-1">
+                    <p className="mb-2 text-[10px] font-black uppercase tracking-wide text-white/45">Layout</p>
+                    <div className="grid grid-cols-2 gap-1.5">
+                      {PATTERN_PRESETS.map((preset) => (
+                        <button
+                          key={preset.value}
+                          type="button"
+                          className={classNames(
+                            "min-h-8 rounded-lg border px-2 text-[10px] font-bold transition active:scale-95",
+                            pattern.preset === preset.value
+                              ? "border-dlsu-vivid bg-dlsu-vivid text-white"
+                              : "border-white/15 bg-white/[0.055] text-white/65 hover:border-white/30 hover:bg-white/[0.08] hover:text-white"
+                          )}
+                          onClick={() => applyPatternPreset(preset.value)}
+                        >
+                          {preset.label}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <div className="flex flex-wrap gap-1.5">
-                {QUICK_EMOJI_PICKS.map((emoji) => (
-                  <button
-                    key={emoji}
-                    type="button"
-                    className={classNames(
-                      "grid h-10 w-10 place-items-center rounded-xl border text-xl transition hover:border-white/25 hover:bg-white/[0.07] active:scale-95",
-                      pattern.emoji === emoji
-                        ? "border-dlsu-vivid bg-dlsu-vivid/20 shadow-sm shadow-dlsu-vivid/20"
-                        : "border-white/[0.06] bg-white/[0.03]"
-                    )}
-                    onClick={() => updatePattern({ emoji })}
-                    aria-label={`Use ${emoji}`}
-                  >
-                    {emoji}
-                  </button>
-                ))}
-              </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {QUICK_EMOJI_PICKS.map((emoji) => (
+                    <button
+                      key={emoji}
+                      type="button"
+                      className={classNames(
+                        "grid h-11 w-11 place-items-center rounded-xl border text-2xl transition hover:border-white/25 hover:bg-white/[0.07] active:scale-95",
+                        pattern.emoji === emoji
+                          ? "border-dlsu-vivid bg-dlsu-vivid/20 shadow-sm shadow-dlsu-vivid/20"
+                          : "border-white/15 bg-white/[0.055] hover:border-white/30 hover:bg-white/[0.08]"
+                      )}
+                      onClick={() => updatePattern({ emoji })}
+                      aria-label={`Use ${emoji}`}
+                    >
+                      {emoji}
+                    </button>
+                  ))}
+                </div>
 
-              <div className="overflow-hidden rounded-lg border border-white/[0.08] bg-[#0B100D]">
-                <EmojiPicker
-                  width="100%"
-                  height={280}
-                  theme={(appTheme === "light" ? "light" : "dark") as PickerProps["theme"]}
-                  emojiStyle={"native" as PickerProps["emojiStyle"]}
-                  lazyLoadEmojis
-                  skinTonesDisabled
-                  autoFocusSearch={false}
-                  searchPlaceholder="Search emoji"
-                  previewConfig={{ showPreview: false }}
-                  className="archers-emoji-picker"
-                  style={appTheme === "light" ? EMOJI_PICKER_LIGHT_STYLE : EMOJI_PICKER_DARK_STYLE}
-                  onEmojiClick={(emojiData: EmojiClickData) => updatePattern({ emoji: emojiData.emoji })}
-                />
-              </div>
+                {overlayKind === "pattern" && (
+                  <div className="overflow-hidden rounded-lg border border-white/[0.08] bg-[#0B100D]">
+                    <EmojiPicker
+                      width="100%"
+                      height={280}
+                      theme={(appTheme === "light" ? "light" : "dark") as PickerProps["theme"]}
+                      emojiStyle={"native" as PickerProps["emojiStyle"]}
+                      lazyLoadEmojis
+                      skinTonesDisabled
+                      autoFocusSearch={false}
+                      searchPlaceholder="Search emoji"
+                      previewConfig={{ showPreview: false }}
+                      className="archers-emoji-picker"
+                      style={appTheme === "light" ? EMOJI_PICKER_LIGHT_STYLE : EMOJI_PICKER_DARK_STYLE}
+                      onEmojiClick={(emojiData: EmojiClickData) => updatePattern({ emoji: emojiData.emoji })}
+                    />
+                  </div>
+                )}
 
-              <div className="space-y-3">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-3">
+                  <div className="grid grid-cols-2 gap-4">
+                    <label className="block">
+                      <span className="mb-1.5 flex justify-between text-[10px] font-bold text-white/40">
+                        <span>Size</span><span>{pattern.size}px</span>
+                      </span>
+                      <input type="range" min="12" max="96" value={pattern.size} onChange={(e) => updatePattern({ size: Number(e.target.value) })} className="archers-range w-full" style={{ "--range-progress": rangeProgress(pattern.size, 12, 96) } as CSSProperties} />
+                    </label>
+                    <label className="block">
+                      <span className="mb-1.5 flex justify-between text-[10px] font-bold text-white/40">
+                        <span>Spacing</span><span>{pattern.spacing}px</span>
+                      </span>
+                      <input type="range" min="36" max="180" value={pattern.spacing} onChange={(e) => updatePattern({ spacing: Number(e.target.value) })} className="archers-range w-full" style={{ "--range-progress": rangeProgress(pattern.spacing, 36, 180) } as CSSProperties} />
+                    </label>
+                  </div>
                   <label className="block">
                     <span className="mb-1.5 flex justify-between text-[10px] font-bold text-white/40">
-                      <span>Size</span><span>{pattern.size}px</span>
+                      <span>Opacity</span><span>{Math.round(pattern.opacity * 100)}%</span>
                     </span>
-                    <input type="range" min="12" max="72" value={pattern.size} onChange={(e) => updatePattern({ size: Number(e.target.value) })} className="archers-range w-full" style={{ "--range-progress": rangeProgress(pattern.size, 12, 72) } as CSSProperties} />
-                  </label>
-                  <label className="block">
-                    <span className="mb-1.5 flex justify-between text-[10px] font-bold text-white/40">
-                      <span>Spacing</span><span>{pattern.spacing}px</span>
-                    </span>
-                    <input type="range" min="36" max="180" value={pattern.spacing} onChange={(e) => updatePattern({ spacing: Number(e.target.value) })} className="archers-range w-full" style={{ "--range-progress": rangeProgress(pattern.spacing, 36, 180) } as CSSProperties} />
+                    <input type="range" min="0.04" max="1" step="0.01" value={pattern.opacity} onChange={(e) => updatePattern({ opacity: Number(e.target.value) })} className="archers-range w-full" style={{ "--range-progress": rangeProgress(pattern.opacity, 0.04, 1) } as CSSProperties} />
                   </label>
                 </div>
-                <label className="block">
-                  <span className="mb-1.5 flex justify-between text-[10px] font-bold text-white/40">
-                    <span>Opacity</span><span>{Math.round(pattern.opacity * 100)}%</span>
-                  </span>
-                  <input type="range" min="0.04" max="1" step="0.01" value={pattern.opacity} onChange={(e) => updatePattern({ opacity: Number(e.target.value) })} className="archers-range w-full" style={{ "--range-progress": rangeProgress(pattern.opacity, 0.04, 1) } as CSSProperties} />
-                </label>
               </div>
-            </div>
             )}
 
             {/* ── Overlay: Geometric Lines ── */}
             {overlayKind === "geometric" && (
               <div className="space-y-3">
                 <div className="flex items-center gap-3">
-                  <div className="flex flex-1 rounded-lg border border-white/[0.06] bg-white/[0.02] p-0.5">
+                  <div className="grid flex-1 grid-cols-5 gap-1 rounded-lg border border-white/[0.10] bg-white/[0.045] p-1">
                     {GEOMETRIC_KIND_OPTIONS.map((opt) => (
                       <button key={opt.value} type="button"
-                        className={classNames("flex-1 rounded-md py-1.5 text-[10px] font-bold transition-all",
-                          geometric.kind === opt.value ? "bg-white/[0.09] text-white shadow-sm" : "text-white/35 hover:text-white/65"
+                        className={classNames("rounded-md py-1.5 text-[10px] font-bold transition-all",
+                          geometric.kind === opt.value ? "bg-dlsu-vivid text-white shadow-sm shadow-dlsu-vivid/20" : "bg-white/[0.04] text-white/65 hover:bg-white/[0.08] hover:text-white"
                         )}
                         onClick={() => setGeometric(prev => ({ ...prev, kind: opt.value }))}
                       >{opt.label}</button>
                     ))}
                   </div>
-                  <label className="relative flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-full border border-white/15 bg-white/[0.05] transition hover:border-white/30">
+                  <label className="relative flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-full border border-white/20 bg-white/[0.07] transition hover:border-white/35">
                     <input type="color" value={geometric.color} onChange={(e) => setGeometric(prev => ({ ...prev, color: e.target.value }))} className="absolute inset-0 cursor-pointer opacity-0" />
                     <div className="h-5 w-5 rounded-full border border-white/20" style={{ backgroundColor: geometric.color }} />
                   </label>
@@ -3542,66 +3756,6 @@ function MainApp() {
 
           </ControlGroup>
         </div>
-
-        {/* Layout */}
-        <div className="order-1">
-          <ControlGroup title="Style">
-          {(() => {
-            const hints: Record<WallpaperStyle, string> = {
-              clean:   "Subtle borders",
-              compact: "Flat & minimal",
-              bold:    "Soft shadows",
-              glass:   "Frosted look",
-            };
-            return (
-              <div className="grid grid-cols-2 gap-1.5">
-                {(Object.keys(STYLE_PRESETS) as WallpaperStyle[]).map((style) => {
-                  const active = wallpaperStyle === style;
-                  return (
-                    <button
-                      key={style}
-                      type="button"
-                      className={classNames(
-                        "flex flex-col items-start gap-0.5 rounded-lg border px-3 py-2.5 text-left transition-all duration-150 active:scale-[0.98]",
-                        active
-                          ? "border-dlsu-vivid bg-[#102017] text-white shadow-md shadow-dlsu-vivid/20"
-                          : "border-white/10 bg-white/[0.03] text-white/65 hover:border-white/25 hover:bg-white/[0.07] hover:text-white"
-                      )}
-                      onClick={() => setWallpaperStyle(style)}
-                    >
-                      <span className="text-xs font-black">{STYLE_PRESETS[style].name}</span>
-                      <span className={classNames("text-[10px] font-medium leading-tight", active ? "text-white/45" : "text-white/30")}>
-                        {hints[style]}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            );
-          })()}
-          <SectionLabel className="pt-1">Font</SectionLabel>
-          <div className="grid grid-cols-2 gap-2">
-            {CALENDAR_FONT_OPTIONS.map((option) => (
-              <button
-                key={option.value}
-                type="button"
-                className={classNames(
-                  "min-h-14 rounded-lg border p-2 text-left transition-all duration-150 active:scale-[0.98]",
-                  option.bodyClass,
-                  calendarFont === option.value
-                    ? "border-dlsu-vivid bg-[#102017] text-white shadow-md shadow-dlsu-vivid/20"
-                    : "border-white/10 bg-white/[0.03] text-white/60 hover:border-white/25 hover:bg-white/[0.07] hover:text-white/90"
-                )}
-                onClick={() => setCalendarFont(option.value)}
-              >
-                <p className="text-sm font-black">{option.label}</p>
-                <p className="mt-0.5 text-[10px] font-medium leading-snug text-white/40">{option.description}</p>
-              </button>
-            ))}
-          </div>
-          </ControlGroup>
-        </div>
-
       </section>
 
       {/* ── Export ─────────────────────────────── */}
@@ -3612,7 +3766,7 @@ function MainApp() {
           desktopPanel === "export" ? "md:block" : "md:hidden"
         )}
       >
-        <ControlGroup title="Output">
+        <ControlGroup title="Save As">
           <div className="grid grid-cols-3 gap-1.5">
             {EXPORT_VARIANT_OPTIONS.map(({ value, label, description, icon: VariantIcon }) => (
               <button
@@ -3634,7 +3788,7 @@ function MainApp() {
           </div>
         </ControlGroup>
 
-        <ControlGroup title="Download">
+        <ControlGroup title="Save">
           <button
             type="button"
             className="group flex min-h-12 w-full items-center justify-center gap-2.5 rounded-xl bg-dlsu-vivid px-4 text-white shadow-lg shadow-dlsu-vivid/25 transition-all duration-200 hover:bg-dlsu active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-60"
@@ -3644,7 +3798,7 @@ function MainApp() {
             {isExporting
               ? <Loader2 size={18} className="animate-spin" />
               : <Download size={18} className="transition-transform group-hover:-translate-y-0.5" />}
-            <span className="text-sm font-black">{isExporting ? "Exporting…" : "Download"}</span>
+            <span className="text-sm font-black">{isExporting ? "Saving..." : "Save"}</span>
           </button>
         </ControlGroup>
       </section>
@@ -3665,10 +3819,10 @@ function MainApp() {
           onClick={(e) => { if (e.target === e.currentTarget) setShowExportPopup(false); }}
         >
           <div className="w-full max-w-sm rounded-2xl border border-white/10 bg-[#0E1410] p-5 shadow-2xl">
-            <h3 className="mb-4 text-base font-black text-white">Download Wallpaper</h3>
+            <h3 className="mb-4 text-base font-black text-white">Save</h3>
 
             {/* Output variant */}
-            <p className="mb-2 text-[10px] font-black uppercase tracking-wide text-white/40">Output</p>
+            <p className="mb-2 text-[10px] font-black uppercase tracking-wide text-white/40">Type</p>
             <div className="mb-4 grid grid-cols-3 gap-1.5">
               {EXPORT_VARIANT_OPTIONS.map(({ value, label, icon: VariantIcon }) => (
                 <button
@@ -3690,7 +3844,7 @@ function MainApp() {
 
             {/* Device selection */}
             <div className="mb-1 flex items-center justify-between">
-              <p className="text-[10px] font-black uppercase tracking-wide text-white/40">Formats</p>
+              <p className="text-[10px] font-black uppercase tracking-wide text-white/40">Sizes</p>
               <button
                 type="button"
                 className="text-[10px] font-bold text-white/40 transition hover:text-white"
@@ -3752,24 +3906,24 @@ function MainApp() {
               >
                 {isExporting ? <Loader2 size={15} className="animate-spin" /> : <Download size={15} />}
                 {selectedExportDevices.size > 0
-                  ? `Download ${selectedExportDevices.size} file${selectedExportDevices.size > 1 ? "s" : ""}`
-                  : "Download"}
+                  ? `Save ${selectedExportDevices.size}`
+                  : "Save"}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Design apply confirmation modal */}
+      {/* Design load confirmation modal */}
       {showDesignApplyConfirm && (
         <div
           className="fixed inset-0 z-[200] flex items-center justify-center bg-black/70 backdrop-blur-sm px-4"
           onClick={(e) => { if (e.target === e.currentTarget) setShowDesignApplyConfirm(false); }}
         >
           <div className="w-full max-w-sm rounded-2xl border border-white/10 bg-[#0E1410] p-6 shadow-2xl">
-            <div className="mb-1 text-base font-black text-white">Apply this design?</div>
+            <div className="mb-1 text-base font-black text-white">Load this design?</div>
             <p className="mb-5 text-sm leading-relaxed text-white/50">
-              Only your visual design will change — background, colors, fonts, and layout. Your schedule and courses stay exactly the same.
+              This changes the background, colors, font, and layout. Your courses stay as-is.
             </p>
             <div className="flex gap-2">
               <button
@@ -3784,8 +3938,8 @@ function MainApp() {
                 className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-dlsu-vivid py-2.5 text-sm font-bold text-white transition hover:bg-dlsu active:scale-95"
                 onClick={() => { setShowDesignApplyConfirm(false); void handleApplyDesignCode(); }}
               >
-                <Wand2 size={14} />
-                Apply Design
+                <FileInput size={14} />
+                Load
               </button>
             </div>
           </div>
@@ -3834,7 +3988,7 @@ function MainApp() {
                 disabled={isExporting}
               >
                 <Download size={15} />
-                {isExporting ? "…" : "Export"}
+                {isExporting ? "..." : "Save"}
               </button>
             </div>
           </header>
@@ -3881,7 +4035,7 @@ function MainApp() {
                   {isExporting
                     ? <Loader2 size={18} className="animate-spin" />
                     : <Download size={18} className="transition-transform group-hover:-translate-y-0.5" />}
-                  {isExporting ? "Exporting…" : "Download"}
+                  {isExporting ? "Saving..." : "Save"}
                 </button>
               </div>
             </div>
@@ -3936,19 +4090,19 @@ function MainApp() {
                 <img src="/logos/logo-mini-green.png" alt="Archers Calendar" className="h-10 w-auto object-contain" />
               </div>
               <h2 className="mb-2 text-[22px] font-black leading-tight tracking-tight text-white">
-                Your schedule,<br />as a wallpaper.
+                Your schedule,<br />wallpaper-ready.
               </h2>
               <p className="text-[13px] leading-relaxed text-white/45">
-                Turn your ArchersHub or EAF table into a beautiful phone or desktop wallpaper in seconds.
+                Paste your ArchersHub or EAF table, customize, then download.
               </p>
             </div>
 
             {/* Steps */}
             <div className="mx-5 mb-5 overflow-hidden rounded-xl border border-white/[0.07] bg-white/[0.025]">
               {[
-                { n: "1", text: "Copy your schedule table from ArchersHub or EAF" },
-                { n: "2", text: "Paste it in the import box and tap Generate" },
-                { n: "3", text: "Pick colors and style, then download" },
+                { n: "1", text: "Paste your schedule" },
+                { n: "2", text: "Customize the design" },
+                { n: "3", text: "Download your wallpaper" },
               ].map(({ n, text }, i, arr) => (
                 <div key={n} className={classNames(
                   "flex items-center gap-3 px-4 py-3",
@@ -3967,16 +4121,16 @@ function MainApp() {
                 onClick={focusImportBox}
                 className="flex w-full items-center justify-center rounded-xl bg-white py-3.5 text-[14px] font-black text-black shadow-lg shadow-white/5 transition-all hover:bg-white/90 active:scale-95"
               >
-                Get Started
+                Start
               </button>
             </div>
 
             {/* Footer */}
             <div className="border-t border-white/[0.06] px-5 py-3 text-center">
               <p className="text-[11px] font-medium text-white/25">
-                Found a bug?{" "}
+                Bugs?{" "}
                 <a className="text-white/40 transition-colors hover:text-white hover:underline underline-offset-4" href="https://instagram.com/richarduaje" target="_blank" rel="noreferrer">
-                  Report it on Instagram @richarduaje
+                  DM @richarduaje
                 </a>
               </p>
             </div>
@@ -4072,12 +4226,12 @@ function TimeFieldInputs({ parsed, onBlur }: { parsed: { start: string; end: str
     if (s && e) onBlur(`${format24hToAmPm(s)} - ${format24hToAmPm(e)}`);
   };
 
-  const inputCls = "min-h-9 w-full rounded-md border border-white/10 bg-white/[0.03] px-1.5 text-center text-xs text-white outline-none transition hover:border-white/20 focus:border-dlsu-vivid";
+  const inputCls = "min-h-9 min-w-0 w-full rounded-md border border-white/10 bg-white/[0.03] px-2 text-center text-xs text-white outline-none transition [color-scheme:dark] hover:border-white/20 focus:border-dlsu-vivid";
 
   return (
-    <div>
+    <div className="min-w-0">
       <span className="mb-1 block text-[10px] font-bold text-white/40">Time</span>
-      <div className="flex items-center gap-1.5">
+      <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-1.5">
         <input
           type="time"
           value={start}

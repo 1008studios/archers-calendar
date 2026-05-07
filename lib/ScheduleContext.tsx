@@ -12,7 +12,7 @@ export type CalendarThemeMode = "normal" | "light" | "dark";
 export type WallpaperStyle = "clean" | "compact" | "bold" | "glass";
 export type GridPosition = "center" | "left" | "right" | "top" | "bottom";
 export type ExportVariant = "full" | "transparent" | "background";
-export type CalendarFont = "geist" | "inter" | "poppins" | "system";
+export type CalendarFont = "geist" | "inter" | "poppins" | "manrope" | "montserrat" | "nunito" | "rubik" | "outfit" | "lexend" | "spaceGrotesk" | "robotoMono" | "merriweather" | "system";
 export type AppTheme = "dark" | "light";
 export type BackgroundKind = "solid" | "image" | "gradient";
 export type OverlayKind = "none" | "pattern" | "geometric";
@@ -50,7 +50,7 @@ export type GeometricConfig = {
 export const DEFAULT_GEOMETRIC: GeometricConfig = { kind: "dots", color: "#008c4d", size: 2.5, spacing: 32, opacity: 0.25, dash: 0 };
 export const DEFAULT_BACKGROUND = "#185A37";
 export const DEFAULT_GRADIENT: GradientConfig = { type: "linear", colors: ["#185A37", "#07120C"], angle: 135, position: "center" };
-export const DEFAULT_PATTERN: PatternConfig = { emoji: "✨", preset: "diagonal", size: 40, spacing: 64, opacity: 0.15 };
+export const DEFAULT_PATTERN: PatternConfig = { emoji: "✨", preset: "diagonal", size: 56, spacing: 88, opacity: 0.16 };
 export const DEFAULT_VISIBLE_DAYS: Record<string, boolean> = { Mon: true, Tue: true, Wed: true, Thu: true, Fri: true, Sat: true, Sun: false };
 
 // --- Context Interface ---
