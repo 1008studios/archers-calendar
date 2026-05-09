@@ -61,11 +61,11 @@ const TIME_RANGE_PATTERN =
 const LOOSE_TIME_RANGE_PATTERN =
   /((?:[01]?\d|2[0-3])(?::[0-5]\d)?\s*(?:AM|PM|am|pm)?\s*(?:-|to|\u2013|\u2014)\s*(?:[01]?\d|2[0-3])(?::[0-5]\d)?\s*(?:AM|PM|am|pm)?)/;
 
-const COURSE_START_PATTERN = /^([A-Z0-9-]{4,})\s+-\s+(.+)/;
+const COURSE_START_PATTERN = /^[-•*]?\s*([A-Z0-9-]{2,})\s+-\s+(.+)/;
 const COURSE_ROW_PATTERN =
-  /^#?\s*([A-Z0-9-]{4,})\s+(.+?)\s+(Lecture and Laboratory|Practicum \/ Internship|Research \/ Capstone|Examination \/ Defense|Administrative \/ Residency|Seminar \/ Workshop|Lecture|Laboratory)\s+(?:[-A-Za-z &.]+?\s+)?(\d+)$/i;
-const CELL_LABELS = "Room|Teacher|Co-Teacher|Section|Batch";
-const LOOSE_CELL_LABELS = "Room|Teacher|Professor|Prof|Co-Teacher|Section|Batch";
+  /^#?\s*([A-Z0-9-]{2,})\s+(.+?)\s+(Lecture and Laboratory|Practicum \/ Internship|Research \/ Capstone|Examination \/ Defense|Administrative \/ Residency|Seminar \/ Workshop|Lecture|Laboratory)\s+(?:[-A-Za-z &.]+?\s+)?(\d+)$/i;
+const CELL_LABELS = "Offline Venue|Online Venue|Room No|Room|Teacher|Professor|Prof|Co-Teacher|Section|Batch|Venue";
+const LOOSE_CELL_LABELS = "Offline Venue|Online Venue|Room No|Room|Teacher|Professor|Prof|Co-Teacher|Section|Batch|Venue";
 const DAY_WORD_PATTERN = /\b(MON(?:DAY)?|TUE(?:S|SDAY)?|WED(?:NESDAY)?|THU(?:R|RS|RSDAY)?|FRI(?:DAY)?|SAT(?:URDAY)?|SUN(?:DAY)?)\b/gi;
 const COMPACT_DAY_PATTERN = /\b(?:MTH|TTH|MWF|MTWTHF|MTWTF|MW|MF|TF|WF|TH|M\/W|M\/TH|T\/TH|T\/F|W\/F|M-TH|T-TH)\b/i;
 
@@ -79,6 +79,17 @@ function makeId() {
 
 function normalizeSpaces(value: string) {
   return value.replace(/\u00a0/g, " ").replace(/[ \f\v]+/g, " ").trim();
+}
+
+function normalizeScheduleCellText(value: string) {
+  return value
+    .replace(/\u00a0/g, " ")
+    .replace(/\r\n?/g, "\n")
+    .replace(/([^\n])\s+([-•*]\s*(?=[A-Z0-9-]{2,}\s+-\s+))/g, "$1\n$2")
+    .split("\n")
+    .map(normalizeSpaces)
+    .filter(Boolean)
+    .join("\n");
 }
 
 function normalizeTimeSlot(value: string) {
@@ -168,16 +179,45 @@ function getLabelValue(text: string, label: string) {
 
 function getLooseLabelValue(text: string, label: string) {
   const escaped = label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const labelPattern = label.toLowerCase() === "room" ? `${escaped}(?!\\s+No\\b)` : escaped;
   const regex = new RegExp(
-    `\\b${escaped}\\b[ \\t]*:?[ \\t]*([\\s\\S]*?)(?=(?:\\r?\\n|[ \\t]+\\b(?:${LOOSE_CELL_LABELS})\\b[ \\t]*:?|\\b(?:${LOOSE_CELL_LABELS})\\b[ \\t]*:?|\\||$))`,
+    `\\b${labelPattern}\\b[ \\t]*:?[ \\t]*([\\s\\S]*?)(?=(?:\\r?\\n|[ \\t]+\\b(?:${LOOSE_CELL_LABELS})\\b[ \\t]*:?|\\b(?:${LOOSE_CELL_LABELS})\\b[ \\t]*:?|\\||$))`,
     "i"
   );
   return normalizeSpaces(text.match(regex)?.[1] ?? "").replace(/^-\s*$/, "");
 }
 
 function cleanCourse(value: string) {
-  const labelIndex = value.search(new RegExp(`\\b(?:${CELL_LABELS})\\s*:`, "i"));
-  return normalizeSpaces(labelIndex >= 0 ? value.slice(0, labelIndex) : value).replace(/(?:\s*[\/,+&]\s*)+$/, "").trim();
+  let withoutBullet = normalizeSpaces(value).replace(/^[-•*]\s*/, "");
+  const labelIndex = withoutBullet.search(new RegExp(`\\b(?:${CELL_LABELS})\\s*:`, "i"));
+  if (labelIndex >= 0) {
+    withoutBullet = withoutBullet.slice(0, labelIndex);
+  }
+  
+  withoutBullet = withoutBullet.replace(/(?:\s*[\/,+&]\s*)+$/, "").trim();
+  
+  // Try to strictly match the Title part, discarding extra appended noise if it looks like a standard code-title format
+  const match = withoutBullet.match(/^([A-Z0-9-]{2,}\s+-\s+[A-Za-z0-9 &.,:()/-]+?)(?=\s+(?:Teacher|Room|Section|Prof|Venue|Bldg|Bldg\.|Rm|Rm\.)|\s{2,}|\t|$)/i);
+  if (match) {
+    return normalizeSpaces(match[1]).trim();
+  }
+
+  return normalizeSpaces(withoutBullet).trim();
+}
+
+function getRoomValue(text: string) {
+  return (
+    getLabelValue(text, "Offline Venue") ||
+    getLabelValue(text, "Online Venue") ||
+    getLabelValue(text, "Venue") ||
+    getLabelValue(text, "Room No") ||
+    getLabelValue(text, "Room") ||
+    getLooseLabelValue(text, "Offline Venue") ||
+    getLooseLabelValue(text, "Online Venue") ||
+    getLooseLabelValue(text, "Venue") ||
+    getLooseLabelValue(text, "Room No") ||
+    getLooseLabelValue(text, "Room")
+  );
 }
 
 function buildEntry(entry: Omit<ScheduleEntry, "id" | "color">, colorIndex: number): ScheduleEntry {
@@ -189,7 +229,7 @@ function buildEntry(entry: Omit<ScheduleEntry, "id" | "color">, colorIndex: numb
 }
 
 function splitCellIntoClassBlocks(cellText: string) {
-  const lines = cellText
+  const lines = normalizeScheduleCellText(cellText)
     .split(/\r?\n/)
     .map(normalizeSpaces)
     .filter(Boolean)
@@ -233,7 +273,7 @@ function parseScheduleCell(cellText: string, day: DayKey, timeSlot: string, colo
           timeSlot,
           day,
           course,
-          room: getLabelValue(block, "Room"),
+          room: getRoomValue(block),
           teacher: getLabelValue(block, "Teacher"),
           section: getLabelValue(block, "Section")
         },
@@ -467,7 +507,25 @@ function parseScheduleTableRow(rowLines: string[], days: DayKey[], colorSeed: nu
   const dayCells = Array.from({ length: days.length }, () => [] as string[]);
 
   if (rowLines.some((line) => line.includes("\t"))) {
+    let looseDayIndex = -1;
+
     rowLines.forEach((line, lineIndex) => {
+      if (!line.includes("\t")) {
+        const clean = normalizeSpaces(line);
+        if (!clean) {
+          return;
+        }
+
+        if (COURSE_START_PATTERN.test(clean)) {
+          looseDayIndex = Math.min(days.length - 1, looseDayIndex + 1);
+        } else if (looseDayIndex < 0) {
+          looseDayIndex = 0;
+        }
+
+        appendCell(dayCells[looseDayIndex], clean);
+        return;
+      }
+
       const parts = line.split("\t");
 
       if (lineIndex === 0) {
@@ -477,7 +535,12 @@ function parseScheduleTableRow(rowLines: string[], days: DayKey[], colorSeed: nu
       const alignedParts =
         parts.length === days.length + 1 || (parts.length > 1 && !parts[0].trim()) ? parts.slice(1) : parts;
 
-      alignedParts.slice(0, days.length).forEach((part, dayIndex) => appendCell(dayCells[dayIndex], part));
+      alignedParts.slice(0, days.length).forEach((part, dayIndex) => {
+        appendCell(dayCells[dayIndex], part);
+        if (normalizeSpaces(part)) {
+          looseDayIndex = dayIndex;
+        }
+      });
     });
   } else {
     const rowText = rowLines.join("\n");
@@ -583,8 +646,7 @@ function parseLooseLine(line: string, index: number): ScheduleEntry[] {
     getLooseLabelValue(working, "Professor") ||
     getLooseLabelValue(working, "Prof");
   const room =
-    getLabelValue(working, "Room") ||
-    getLooseLabelValue(working, "Room") ||
+    getRoomValue(working) ||
     normalizeSpaces(working.match(/\b(ONLINE|ZOOM|TBA|TBD|[A-Z]{1,4}\d{2,5}[A-Z]?)\b/i)?.[1] ?? "");
   const section =
     getLabelValue(working, "Section") ||
@@ -642,6 +704,19 @@ function dedupeEntries(entries: ScheduleEntry[]) {
   });
 }
 
+function getTableCellText(cell: Element) {
+  const clone = cell.cloneNode(true) as Element;
+
+  clone.querySelectorAll("br").forEach((breakNode) => {
+    breakNode.replaceWith("\n");
+  });
+  clone.querySelectorAll("div,p,li").forEach((blockNode) => {
+    blockNode.append(clone.ownerDocument.createTextNode("\n"));
+  });
+
+  return normalizeScheduleCellText(clone.textContent ?? "");
+}
+
 export function parseScheduleHtml(input: string): ScheduleEntry[] {
   if (typeof DOMParser === "undefined" || !input.trim()) {
     return [];
@@ -653,7 +728,7 @@ export function parseScheduleHtml(input: string): ScheduleEntry[] {
 
   for (const table of tables) {
     const rows = Array.from(table.querySelectorAll("tr")).map((row) =>
-      Array.from(row.querySelectorAll("th,td")).map((cell) => normalizeSpaces(cell.textContent ?? ""))
+      Array.from(row.querySelectorAll("th,td")).map(getTableCellText)
     );
     const headerIndex = rows.findIndex((row) => row.some((cell) => /\bTime Slot\b/i.test(cell)));
 
@@ -700,7 +775,7 @@ export function scheduleTableHtmlToText(input: string): string {
       return rows
         .map((row) =>
           Array.from(row.querySelectorAll("th,td"))
-            .map((cell) => normalizeSpaces(cell.textContent ?? ""))
+            .map(getTableCellText)
             .join("\t")
         )
         .filter(Boolean)
