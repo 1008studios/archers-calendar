@@ -20,18 +20,25 @@ const CALENDAR_FONT_OPTIONS = [
     headingClass: "font-sans"
   },
   {
-    value: "inter",
-    label: "Inter",
-    description: "Readable UI style",
-    bodyClass: "font-inter",
-    headingClass: "font-inter"
-  },
-  {
     value: "poppins",
     label: "Poppins",
     description: "Rounded student feel",
     bodyClass: "font-poppins",
     headingClass: "font-poppins"
+  },
+  {
+    value: "comicSans",
+    label: "Comic Sans",
+    description: "Playful doodle style",
+    bodyClass: "font-comic-sans",
+    headingClass: "font-comic-sans"
+  },
+  {
+    value: "bangers",
+    label: "Bangers",
+    description: "Comic poster punch",
+    bodyClass: "font-bangers",
+    headingClass: "font-bangers"
   },
   {
     value: "manrope",
@@ -338,6 +345,10 @@ export default function PreviewCanvas({ canvasRef, previewScale }: { canvasRef: 
     device === "share"    ? "0px" :
     device === "iphone"   ? "1rem" :
     device.startsWith("ipad") ? "0.75rem" : "0.5rem";
+  const iphoneSafeAreaBasis = `${Math.max(8, Math.min(55, 58 - timeSlots.length * 12))}%`;
+  const iphoneGridHeight = device === "iphone" && timeSlots.length
+    ? Math.round(canvasSize.height * Math.min(0.5, 0.22 + timeSlots.length * 0.045))
+    : undefined;
 
   return (
     <div
@@ -399,9 +410,9 @@ export default function PreviewCanvas({ canvasRef, previewScale }: { canvasRef: 
         )}
         style={{ padding: sz.pad, ...gridOffsetStyle }}
       >
-        {/* iPhone only: push content to lower portion so clock area stays clear */}
+        {/* iPhone only: keep room for lock-screen chrome while avoiding clipped exports. */}
         {device === "iphone" && (gridPosition === "center" || gridPosition === "bottom") && (
-          <div style={{ flexShrink: 0, flexBasis: "55%" }} aria-hidden="true" />
+          <div style={{ flexShrink: 0, flexBasis: iphoneSafeAreaBasis }} aria-hidden="true" />
         )}
 
         {/* Title block — hidden for share (rendered as overlay below) */}
@@ -435,7 +446,8 @@ export default function PreviewCanvas({ canvasRef, previewScale }: { canvasRef: 
           )}
           style={{
             gridTemplateColumns: `repeat(${Math.max(visibleDayList.length, 1)}, minmax(0, 1fr))`,
-            gridTemplateRows: `${device === "share" ? "auto " : ""}auto ${slotRowTemplate}`
+            gridTemplateRows: `${device === "share" ? "auto " : ""}auto ${slotRowTemplate}`,
+            ...(iphoneGridHeight ? { height: `${iphoneGridHeight}px` } : {})
           }}
         >
           {device === "share" && (calendarTitle || calendarSubtitle) && (

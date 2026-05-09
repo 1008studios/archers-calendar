@@ -69,15 +69,18 @@ export function buildEmojiPatternBackground(pattern: PatternConfig, tone: Calend
   const emoji = pattern.emoji.replace(/[<>&"]/g, "");
   const cells: Array<{ x: number; y: number; rotate?: number; opacity?: number }> =
     pattern.preset === "diagonal"
-      ? [{ x: 24, y: 28, rotate: -12 }, { x: 74, y: 78, rotate: -12, opacity: 0.8 }]
-      : [{ x: 50, y: 54 }];
+      ? [
+          { x: size * 0.24, y: size * 0.28, rotate: -12 },
+          { x: size * 0.74, y: size * 0.78, rotate: -12, opacity: 0.8 }
+        ]
+      : [{ x: size * 0.5, y: size * 0.54 }];
 
   const text = cells.map((cell) => {
     const transform = cell.rotate ? ` transform="rotate(${cell.rotate} ${cell.x} ${cell.y})"` : "";
     const cellOpacity = typeof cell.opacity === "number" ? (pattern.opacity * cell.opacity).toFixed(2) : opacity;
     return `<text x="${cell.x}" y="${cell.y}" text-anchor="middle" dominant-baseline="middle" font-size="${pattern.size}" opacity="${cellOpacity}" fill="rgb(${textColor})"${transform}>${emoji}</text>`;
   }).join("");
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 100 100">${text}</svg>`;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">${text}</svg>`;
   return `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
 }
 

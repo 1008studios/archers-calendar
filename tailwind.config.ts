@@ -11,7 +11,8 @@ const config: Config = {
       fontFamily: {
         sans: ["var(--font-sans)", "sans-serif"],
         mono: ["var(--font-mono)", "monospace"],
-        inter: ["var(--font-inter)", "sans-serif"],
+        bangers: ["var(--font-bangers)", "Impact", "cursive"],
+        "comic-sans": ['"Comic Sans MS"', '"Comic Sans"', "cursive"],
         lexend: ["var(--font-lexend)", "sans-serif"],
         manrope: ["var(--font-manrope)", "sans-serif"],
         merriweather: ["var(--font-merriweather)", "serif"],

@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import {
+  Bangers,
   Geist,
   Geist_Mono,
-  Inter,
   Lexend,
   Manrope,
   Merriweather,
@@ -18,9 +18,9 @@ import {
 } from "next/font/google";
 import "./globals.css";
 
+const bangers = Bangers({ subsets: ["latin"], weight: "400", variable: "--font-bangers" });
 const geist = Geist({ subsets: ["latin"], variable: "--font-sans" });
 const geistMono = Geist_Mono({ subsets: ["latin"], variable: "--font-mono" });
-const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const lexend = Lexend({ subsets: ["latin"], variable: "--font-lexend" });
 const manrope = Manrope({ subsets: ["latin"], variable: "--font-manrope" });
 const merriweather = Merriweather({ subsets: ["latin"], variable: "--font-merriweather" });
@@ -73,9 +73,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   const fontVariables = [
+    bangers.variable,
     geist.variable,
     geistMono.variable,
-    inter.variable,
     lexend.variable,
     manrope.variable,
     merriweather.variable,

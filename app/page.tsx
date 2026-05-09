@@ -74,7 +74,7 @@ type CalendarThemeMode = "normal" | "light" | "dark";
 type WallpaperStyle = "clean" | "compact" | "bold" | "glass";
 type GridPosition = "center" | "left" | "right" | "top" | "bottom";
 type ExportVariant = "full" | "transparent" | "background";
-type CalendarFont = "geist" | "inter" | "poppins" | "manrope" | "montserrat" | "nunito" | "rubik" | "outfit" | "lexend" | "spaceGrotesk" | "robotoMono" | "merriweather" | "system";
+type CalendarFont = "geist" | "poppins" | "comicSans" | "bangers" | "manrope" | "montserrat" | "nunito" | "rubik" | "outfit" | "lexend" | "spaceGrotesk" | "robotoMono" | "merriweather" | "system";
 type AppTheme = "dark" | "light";
 type BackgroundKind = "solid" | "image" | "gradient";
 type OverlayKind = "none" | "pattern" | "geometric";
@@ -277,6 +277,7 @@ const BLOCK_PALETTE_GROUPS = [
       { name: "Strawberry", hex: "#FF6B8A" },
       { name: "Hot Pink",   hex: "#FF4D9E" },
       { name: "Fuchsia",    hex: "#E040FB" },
+      { name: "Magenta",    hex: "#F472B6" },
       { name: "Bubblegum",  hex: "#FF9FD7" }
     ]
   },
@@ -289,9 +290,7 @@ const BLOCK_PALETTE_GROUPS = [
       { name: "Peach",      hex: "#FFCBA4" },
       { name: "Apricot",    hex: "#FFB36B" },
       { name: "Tangerine",  hex: "#FF8A3D" },
-      { name: "Honey",      hex: "#FFDA8A" },
-      { name: "Amber",      hex: "#FFAB40" },
-      { name: "Butter",     hex: "#FFF3A3" }
+      { name: "Honey",      hex: "#FFDA8A" }
     ]
   },
   {
@@ -303,9 +302,7 @@ const BLOCK_PALETTE_GROUPS = [
       { name: "Sage",       hex: "#A8C8A0" },
       { name: "Mint",       hex: "#A8EED5" },
       { name: "Teal",       hex: "#4DB6AC" },
-      { name: "Jade",       hex: "#57C785" },
-      { name: "Emerald",    hex: "#2EAD6B" },
-      { name: "Pine",       hex: "#2F7D52" }
+      { name: "Jade",       hex: "#57C785" }
     ]
   },
   {
@@ -341,8 +338,7 @@ const BLOCK_PALETTE_GROUPS = [
       { name: "Tan",        hex: "#C4A07A" },
       { name: "Stone",      hex: "#A8A29E" },
       { name: "Sienna",     hex: "#A0522D" },
-      { name: "Charcoal",   hex: "#455A64" },
-      { name: "Graphite",   hex: "#2F3437" }
+      { name: "Charcoal",   hex: "#455A64" }
     ]
   }
 ];
@@ -350,22 +346,32 @@ const BLOCK_PALETTE_GROUPS = [
 const BLOCK_PALETTES = BLOCK_PALETTE_GROUPS.flatMap((group) => group.colors);
 
 const COURSE_THEMES: Array<{ name: string; colors: string[] }> = [
-  { name: "Blossom",    colors: ["#FFB3C1","#FF85A1","#FFD6E7","#F5A0B8","#FFCCE0","#FFC4D6","#FF9BB5","#FFDDE8"] },
-  { name: "Candy",      colors: ["#FF6B9D","#FF8ED3","#C084FC","#F472B6","#E879F9","#FF70A0","#A78BFA","#FB7185"] },
-  { name: "Berry",      colors: ["#C62828","#AD1457","#7B1FA2","#880E4F","#B71C1C","#8E24AA","#6A1B9A","#C2185B"] },
-  { name: "Pastel",     colors: ["#FFB3C1","#FFCBA4","#FFF3A3","#A8EED5","#A8D8F0","#D4BFFF","#B5D5A0","#E8C8F8"] },
-  { name: "Lavender",   colors: ["#D4BFFF","#E8C8F8","#C4B0E8","#B8A8FF","#EAD5FF","#CDB8F8","#F0E0FF","#DDD0FF"] },
-  { name: "Peach",      colors: ["#FFCBA4","#FFB899","#FFD4B0","#F5A888","#FFBFA8","#F0C0A0","#FFD8C0","#F5B898"] },
-  { name: "Citrus",     colors: ["#FACC15","#FB923C","#A3E635","#FCD34D","#86EFAC","#FDE68A","#4ADE80","#FCA5A5"] },
-  { name: "Ocean",      colors: ["#A8D8F0","#85C1E9","#B3E5FC","#5DADE2","#81D4FA","#29B6F6","#B2EBF2","#4FC3F7"] },
-  { name: "Dusk",       colors: ["#94A3B8","#7B8FAD","#A8B4C0","#8EA3B4","#B8C5D0","#7B9BAE","#A0AEBC","#5A7A9A"] },
-  { name: "Sunset",     colors: ["#FFDAB9","#FFCC80","#FFB74D","#FFA726","#FF9800","#FB8C00","#F57C00","#EF6C00"] },
-  { name: "Forest",     colors: ["#C8E6C9","#B2DFDB","#80CBC4","#4DB6AC","#26A69A","#009688","#00897B","#00796B"] },
-  { name: "Earth",      colors: ["#D4A96A","#A07840","#C49A70","#8B6240","#B8825A","#D4B08A","#986040","#C4A07A"] },
-  { name: "Neon",       colors: ["#00FF88","#00D4FF","#FF6B6B","#FFD700","#FF00CC","#7C3AFF","#00E5FF","#FF8C00"] },
-  { name: "Monochrome", colors: ["#F5F5F5","#E0E0E0","#EEEEEE","#BDBDBD","#E0E0E0","#9E9E9E","#757575","#616161"] },
-  { name: "Black",      colors: ["#000000","#111111","#1A1A1A","#222222","#0A0A0A","#141414","#1C1C1C","#262626"] },
-  { name: "Animo",      colors: ["#90C878","#B5D5A0","#68B058","#D4EDC5","#5AB050","#A8D890","#3A9040","#C8E8B0"] },
+  { name: "Blossom",    colors: ["#FFB3C1","#FF85A1","#FFD6E7","#F5A0B8","#FFCCE0","#FFC4D6","#FF9BB5","#FFDDE8","#F7A7C0","#FFCAD4","#EFA7B8","#FFE6EE"] },
+  { name: "Candy",      colors: ["#FF6B9D","#FF8ED3","#C084FC","#F472B6","#E879F9","#FF70A0","#A78BFA","#FB7185","#FF5EC4","#D946EF","#EC4899","#F9A8D4"] },
+  { name: "Berry",      colors: ["#C62828","#AD1457","#7B1FA2","#880E4F","#B71C1C","#8E24AA","#6A1B9A","#C2185B","#9F1239","#BE185D","#86198F","#581C87"] },
+  { name: "Pastel",     colors: ["#FFB3C1","#FFCBA4","#FFF3A3","#A8EED5","#A8D8F0","#D4BFFF","#B5D5A0","#E8C8F8","#C8F0E0","#F8D6B3","#C8D0F0","#FFE0B0"] },
+  { name: "Lavender",   colors: ["#D4BFFF","#E8C8F8","#C4B0E8","#B8A8FF","#EAD5FF","#CDB8F8","#F0E0FF","#DDD0FF","#BFA6FF","#E6D6FF","#A98BFF","#F4E8FF"] },
+  { name: "Peach",      colors: ["#FFCBA4","#FFB899","#FFD4B0","#F5A888","#FFBFA8","#F0C0A0","#FFD8C0","#F5B898","#FF9F80","#FFE0CC","#EFA07A","#FFC09A"] },
+  { name: "Citrus",     colors: ["#FACC15","#FB923C","#A3E635","#FCD34D","#86EFAC","#FDE68A","#4ADE80","#FCA5A5","#FDBA74","#BEF264","#FFE066","#FFB703"] },
+  { name: "Ocean",      colors: ["#A8D8F0","#85C1E9","#B3E5FC","#5DADE2","#81D4FA","#29B6F6","#B2EBF2","#4FC3F7","#38BDF8","#67E8F9","#7DD3FC","#2DD4BF"] },
+  { name: "Dusk",       colors: ["#94A3B8","#7B8FAD","#A8B4C0","#8EA3B4","#B8C5D0","#7B9BAE","#A0AEBC","#5A7A9A","#64748B","#8193A8","#A5B4C3","#475569"] },
+  { name: "Sunset",     colors: ["#FFDAB9","#FFCC80","#FFB74D","#FFA726","#FF9800","#FB8C00","#F57C00","#EF6C00","#F97316","#FDBA74","#FF7A59","#E85D04"] },
+  { name: "Forest",     colors: ["#C8E6C9","#B2DFDB","#80CBC4","#4DB6AC","#26A69A","#009688","#00897B","#00796B","#2EAD6B","#57C785","#3D8B5F","#A7D7A8"] },
+  { name: "Earth",      colors: ["#D4A96A","#A07840","#C49A70","#8B6240","#B8825A","#D4B08A","#986040","#C4A07A","#A16207","#C08457","#8A5A44","#E0C097"] },
+  { name: "Neon",       colors: ["#00FF88","#00D4FF","#FF6B6B","#FFD700","#FF00CC","#7C3AFF","#00E5FF","#FF8C00","#39FF14","#FF2079","#F5FF00","#00FFC6"] },
+  { name: "Monochrome", colors: ["#F5F5F5","#E0E0E0","#EEEEEE","#BDBDBD","#E0E0E0","#9E9E9E","#757575","#616161","#FAFAFA","#CCCCCC","#8A8A8A","#454545"] },
+  { name: "Black",      colors: ["#000000","#111111","#1A1A1A","#222222","#0A0A0A","#141414","#1C1C1C","#262626","#050505","#181818","#2B2B2B","#333333"] },
+  { name: "Animo",      colors: ["#90C878","#B5D5A0","#68B058","#D4EDC5","#5AB050","#A8D890","#3A9040","#C8E8B0","#00703C","#185A37","#8DD67A","#DFF5D4"] },
+  { name: "Mint",       colors: ["#D9F99D","#BBF7D0","#A7F3D0","#99F6E4","#5EEAD4","#34D399","#86EFAC","#4ADE80","#22C55E","#10B981","#2DD4BF","#CCFBF1"] },
+  { name: "Sky",        colors: ["#E0F2FE","#BAE6FD","#7DD3FC","#38BDF8","#0EA5E9","#60A5FA","#93C5FD","#BFDBFE","#A5B4FC","#818CF8","#67E8F9","#CFFAFE"] },
+  { name: "Lagoon",     colors: ["#D1FAE5","#A7F3D0","#6EE7B7","#5EEAD4","#2DD4BF","#14B8A6","#0F766E","#06B6D4","#22D3EE","#0891B2","#155E75","#E0F7FA"] },
+  { name: "Aurora",     colors: ["#C084FC","#60A5FA","#34D399","#F472B6","#A78BFA","#22D3EE","#86EFAC","#F0ABFC","#818CF8","#2DD4BF","#E879F9","#7DD3FC"] },
+  { name: "Sorbet",     colors: ["#FECACA","#FED7AA","#FEF3C7","#D9F99D","#BBF7D0","#BAE6FD","#DDD6FE","#FBCFE8","#FDBA74","#F9A8D4","#C4B5FD","#A7F3D0"] },
+  { name: "Retro",      colors: ["#F4A261","#E76F51","#2A9D8F","#E9C46A","#264653","#DDA15E","#BC6C25","#606C38","#283618","#A3B18A","#588157","#E5989B"] },
+  { name: "Cafe",       colors: ["#F5E0C3","#E6CCB2","#DDB892","#B08968","#7F5539","#9C6644","#C2A383","#A98467","#6F4E37","#D6AD8B","#8B5E34","#FFF1D6"] },
+  { name: "Jewel",      colors: ["#0F766E","#047857","#1D4ED8","#4338CA","#7E22CE","#BE185D","#B91C1C","#B45309","#065F46","#1E40AF","#6D28D9","#9D174D"] },
+  { name: "Prism",      colors: ["#EF4444","#F97316","#FACC15","#84CC16","#22C55E","#14B8A6","#06B6D4","#3B82F6","#6366F1","#8B5CF6","#D946EF","#EC4899"] },
+  { name: "Campus",     colors: ["#185A37","#00703C","#90C878","#F5F2E8","#C4A07A","#385A8C","#A8D8F0","#FFB36B","#C8E8B0","#2F7D52","#D4B08A","#455A64"] },
 ];
 
 const BACKGROUND_CATEGORIES = [
@@ -383,7 +389,13 @@ const BACKGROUND_CATEGORIES = [
       { name: "Obsidian",   value: "#0D0D0F" },
       { name: "Onyx",       value: "#1C1A20" },
       { name: "Graphite",   value: "#1E2024" },
-      { name: "Abyss",      value: "#050A14" }
+      { name: "Abyss",      value: "#050A14" },
+      { name: "Pitch",      value: "#020204" },
+      { name: "Carbon",     value: "#16181C" },
+      { name: "Raven",      value: "#08070C" },
+      { name: "Eclipse",    value: "#111018" },
+      { name: "Deep Pine",  value: "#06150E" },
+      { name: "Night Plum", value: "#14051F" }
     ]
   },
   {
@@ -400,24 +412,13 @@ const BACKGROUND_CATEGORIES = [
       { name: "Denim",    value: "#1A2D5A" },
       { name: "Plum",     value: "#2D1040" },
       { name: "Walnut",   value: "#3A2010" },
-      { name: "Pine",     value: "#0F3020" }
-    ]
-  },
-  {
-    label: "Light",
-    colors: [
-      { name: "Milk",    value: "#F8F9FA" },
-      { name: "Ivory",   value: "#F5F2EB" },
-      { name: "Cream",   value: "#FDF8E8" },
-      { name: "Cloud",   value: "#EDF2F7" },
-      { name: "Linen",   value: "#EDE0D0" },
-      { name: "Sand",    value: "#D6BC9E" },
-      { name: "Sage",    value: "#C4D5BA" },
-      { name: "Clay",    value: "#C4877E" },
-      { name: "Pearl",   value: "#F2EEF5" },
-      { name: "Cotton",  value: "#F5F0FF" },
-      { name: "Haze",    value: "#E8F0EC" },
-      { name: "Blush",   value: "#FCE8EC" }
+      { name: "Pine",     value: "#0F3020" },
+      { name: "Moss",     value: "#244226" },
+      { name: "Jade",     value: "#07543A" },
+      { name: "Sapphire", value: "#0B2E59" },
+      { name: "Aubergine", value: "#32113E" },
+      { name: "Cabernet", value: "#4B1024" },
+      { name: "Olive",    value: "#3B3F1D" }
     ]
   },
   {
@@ -434,41 +435,13 @@ const BACKGROUND_CATEGORIES = [
       { name: "Mauve",    value: "#E8C8D8" },
       { name: "Dew",      value: "#C8F0E0" },
       { name: "Periwinkle", value: "#C8D0F0" },
-      { name: "Mango",    value: "#FFE0B0" }
-    ]
-  },
-  {
-    label: "Warm",
-    colors: [
-      { name: "Copper",   value: "#8B4513" },
-      { name: "Rust",     value: "#7C2D12" },
-      { name: "Mahogany", value: "#4A1C10" },
-      { name: "Sienna",   value: "#5A2A14" },
-      { name: "Burgundy", value: "#4A0E1A" },
-      { name: "Maroon",   value: "#3C0A10" },
-      { name: "Amber",    value: "#7A4A08" },
-      { name: "Caramel",  value: "#6B3A18" },
-      { name: "Dusty Rose", value: "#7A3040" },
-      { name: "Brick",    value: "#6E2218" },
-      { name: "Terracotta", value: "#8C3A20" },
-      { name: "Bronze",   value: "#6B4010" }
-    ]
-  },
-  {
-    label: "Cool",
-    colors: [
-      { name: "Ice",       value: "#E6F7FF" },
-      { name: "Glacier",   value: "#D5ECF5" },
-      { name: "Mist",      value: "#DCE7EF" },
-      { name: "Aqua",      value: "#A7F3F0" },
-      { name: "Lagoon",    value: "#4ECDC4" },
-      { name: "Cyan",      value: "#22D3EE" },
-      { name: "Azure",     value: "#38BDF8" },
-      { name: "Royal",     value: "#2563EB" },
-      { name: "Indigo",    value: "#4338CA" },
-      { name: "Violet",    value: "#6D28D9" },
-      { name: "Amethyst",  value: "#7C3AED" },
-      { name: "Orchid",    value: "#C084FC" }
+      { name: "Mango",    value: "#FFE0B0" },
+      { name: "Sorbet",   value: "#FFD1DC" },
+      { name: "Pistachio", value: "#D9F5C9" },
+      { name: "Powder",   value: "#D6E8FF" },
+      { name: "Taro",     value: "#DCC8F8" },
+      { name: "Papaya",   value: "#FFD8BA" },
+      { name: "Sea Salt", value: "#D8F3EA" }
     ]
   },
   {
@@ -485,7 +458,13 @@ const BACKGROUND_CATEGORIES = [
       { name: "Blue Pop",  value: "#3B82F6" },
       { name: "Cyan Pop",  value: "#06B6D4" },
       { name: "Mint Pop",  value: "#2DD4BF" },
-      { name: "Green Pop", value: "#22C55E" }
+      { name: "Green Pop", value: "#22C55E" },
+      { name: "Hot Coral", value: "#FF4E50" },
+      { name: "Taffy",     value: "#FF5DA2" },
+      { name: "Laser",     value: "#A3FF12" },
+      { name: "Aqua Pop",  value: "#00F5D4" },
+      { name: "Vivid Sky", value: "#00BBF9" },
+      { name: "Violet Pop", value: "#9B5DE5" }
     ]
   }
 ];
@@ -501,8 +480,8 @@ const DEFAULT_GRADIENT: GradientConfig = {
 const DEFAULT_PATTERN: PatternConfig = {
   emoji: "✨",
   preset: "diagonal",
-  size: 56,
-  spacing: 88,
+  size: 180,
+  spacing: 180,
   opacity: 0.16
 };
 
@@ -514,7 +493,26 @@ const GRADIENT_PRESETS: Array<{ name: string; gradient: GradientConfig }> = [
   { name: "Ocean", gradient: { type: "radial", colors: ["#005AA7", "#FFFDE4"], angle: 0, position: "center", preset: "Ocean" } },
   { name: "Sunset", gradient: { type: "radial", colors: ["#FF512F", "#DD2476"], angle: 0, position: "top", preset: "Sunset" } },
   { name: "Cyber", gradient: { type: "radial", colors: ["#21D4FD", "#B721FF"], angle: 0, position: "center", preset: "Cyber" } },
-  { name: "Forest", gradient: { type: "radial", colors: ["#134E5E", "#71B280"], angle: 0, position: "bottom", preset: "Forest" } }
+  { name: "Forest", gradient: { type: "radial", colors: ["#134E5E", "#71B280"], angle: 0, position: "bottom", preset: "Forest" } },
+  { name: "Mint", gradient: { type: "linear", colors: ["#D9F99D", "#14B8A6"], angle: 135, position: "center", preset: "Mint" } },
+  { name: "Lagoon", gradient: { type: "radial", colors: ["#CCFBF1", "#0F766E"], angle: 0, position: "center", preset: "Lagoon" } },
+  { name: "Sky", gradient: { type: "linear", colors: ["#E0F2FE", "#2563EB"], angle: 145, position: "center", preset: "Sky" } },
+  { name: "Lavender", gradient: { type: "linear", colors: ["#F5D0FE", "#8B5CF6"], angle: 135, position: "center", preset: "Lavender" } },
+  { name: "Peach", gradient: { type: "linear", colors: ["#FFE0B0", "#FF7A59"], angle: 130, position: "center", preset: "Peach" } },
+  { name: "Citrus", gradient: { type: "linear", colors: ["#FFF04D", "#22C55E"], angle: 120, position: "center", preset: "Citrus" } },
+  { name: "Blossom", gradient: { type: "radial", colors: ["#FFD6DE", "#F472B6"], angle: 0, position: "top", preset: "Blossom" } },
+  { name: "Berry", gradient: { type: "linear", colors: ["#C2185B", "#581C87"], angle: 145, position: "center", preset: "Berry" } },
+  { name: "Aurora", gradient: { type: "radial", colors: ["#34D399", "#7C3AED"], angle: 0, position: "center", preset: "Aurora" } },
+  { name: "Prism", gradient: { type: "linear", colors: ["#EF4444", "#3B82F6"], angle: 115, position: "center", preset: "Prism" } },
+  { name: "Dusk", gradient: { type: "linear", colors: ["#475569", "#C084FC"], angle: 135, position: "center", preset: "Dusk" } },
+  { name: "Midnight", gradient: { type: "radial", colors: ["#1D4ED8", "#020204"], angle: 0, position: "bottom", preset: "Midnight" } },
+  { name: "Ember", gradient: { type: "radial", colors: ["#FF512F", "#3C0A10"], angle: 0, position: "top", preset: "Ember" } },
+  { name: "Cafe", gradient: { type: "linear", colors: ["#F5E0C3", "#7F5539"], angle: 140, position: "center", preset: "Cafe" } },
+  { name: "Animo Light", gradient: { type: "linear", colors: ["#D4EDC5", "#00703C"], angle: 135, position: "center", preset: "Animo Light" } },
+  { name: "Animo Dark", gradient: { type: "radial", colors: ["#008C4D", "#06150E"], angle: 0, position: "center", preset: "Animo Dark" } },
+  { name: "Neon", gradient: { type: "linear", colors: ["#00FF88", "#FF00CC"], angle: 125, position: "center", preset: "Neon" } },
+  { name: "Monochrome", gradient: { type: "linear", colors: ["#F5F5F5", "#454545"], angle: 135, position: "center", preset: "Monochrome" } },
+  { name: "Black", gradient: { type: "radial", colors: ["#333333", "#000000"], angle: 0, position: "center", preset: "Black" } }
 ];
 
 const PATTERN_PRESETS: Array<{ value: PatternPreset; label: string }> = [
@@ -593,18 +591,25 @@ const CALENDAR_FONT_OPTIONS: Array<{
     headingClass: "font-sans"
   },
   {
-    value: "inter",
-    label: "Inter",
-    description: "Readable UI style",
-    bodyClass: "font-inter",
-    headingClass: "font-inter"
-  },
-  {
     value: "poppins",
     label: "Poppins",
     description: "Rounded student feel",
     bodyClass: "font-poppins",
     headingClass: "font-poppins"
+  },
+  {
+    value: "comicSans",
+    label: "Comic Sans",
+    description: "Playful doodle style",
+    bodyClass: "font-comic-sans",
+    headingClass: "font-comic-sans"
+  },
+  {
+    value: "bangers",
+    label: "Bangers",
+    description: "Comic poster punch",
+    bodyClass: "font-bangers",
+    headingClass: "font-bangers"
   },
   {
     value: "manrope",
@@ -817,8 +822,8 @@ function normalizePatternConfig(value: unknown): PatternConfig {
   return {
     emoji: typeof record.emoji === "string" && record.emoji.trim() ? Array.from(record.emoji.trim())[0] ?? DEFAULT_PATTERN.emoji : DEFAULT_PATTERN.emoji,
     preset,
-    size: typeof record.size === "number" ? Math.max(12, Math.min(96, record.size)) : DEFAULT_PATTERN.size,
-    spacing: typeof record.spacing === "number" ? Math.max(36, Math.min(180, record.spacing)) : DEFAULT_PATTERN.spacing,
+    size: typeof record.size === "number" ? Math.max(12, Math.min(240, record.size)) : DEFAULT_PATTERN.size,
+    spacing: typeof record.spacing === "number" ? Math.max(36, Math.min(360, record.spacing)) : DEFAULT_PATTERN.spacing,
     opacity: typeof record.opacity === "number" ? Math.max(0.04, Math.min(1.0, record.opacity)) : DEFAULT_PATTERN.opacity
   };
 }
@@ -2168,14 +2173,17 @@ function MainApp() {
     const html = event.clipboardData.getData("text/html");
     const text = event.clipboardData.getData("text/plain");
     const tableText = html ? scheduleTableHtmlToText(html) : "";
+    const fallbackText = tableText || text;
     const parsedFromTable = html ? parseScheduleHtml(html) : [];
-    if (!parsedFromTable.length && !tableText) return;
+    const parsedFromText = !parsedFromTable.length && fallbackText ? parseScheduleText(fallbackText) : [];
+    if (!parsedFromTable.length && !parsedFromText.length && !tableText) return;
 
     event.preventDefault();
-    handleRawTextChange(tableText || text);
+    handleRawTextChange(fallbackText);
 
-    if (parsedFromTable.length) {
-      applyParsedEntries(parsedFromTable);
+    const parsed = parsedFromTable.length ? parsedFromTable : parsedFromText;
+    if (parsed.length) {
+      applyParsedEntries(parsed);
       setImportSource("local");
     }
   }
@@ -2286,7 +2294,10 @@ function MainApp() {
     Object.assign(clone.style, {
       width: `${size.width}px`,
       height: `${size.height}px`,
-      transform: "none"
+      transform: "none",
+      border: "0",
+      borderRadius: "0",
+      boxShadow: "none"
     });
 
     wrapper.appendChild(clone);
@@ -2397,7 +2408,7 @@ function MainApp() {
           await waitForCanvasSize(CANVAS_SIZES[deviceId]);
           if (!canvasRef.current) continue;
           
-          const exported = await captureExportCanvas(canvasRef.current, CANVAS_SIZES[deviceId]);
+          const exported = await captureExportCanvas(canvasRef.current, CANVAS_SIZES[deviceId], EXPORT_SCALE);
           const pngBlob = await canvasToPngBlob(exported);
           folder?.file(makeExportFilename(deviceId, getExportVariantSuffix()), pngBlob);
         }
@@ -3085,23 +3096,23 @@ function MainApp() {
                         />
                       </div>
 
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between gap-2">
-                          <p className="text-[9px] font-black uppercase tracking-wider text-white/28">Color</p>
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between gap-3">
+                          <p className="text-[10px] font-black uppercase tracking-[0.14em] text-white/38">Color</p>
                           <label
                             className={classNames(
-                              "relative flex h-8 shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-md border bg-white/[0.06] px-2 text-[10px] font-bold text-white/70 shadow-sm transition hover:border-white/55 hover:bg-white/[0.09] hover:text-white",
+                              "relative flex h-8 shrink-0 cursor-pointer items-center gap-2 rounded-md border px-2.5 text-[11px] font-bold shadow-sm transition active:scale-[0.98]",
                               !BLOCK_PALETTES.some(p => p.hex === course.color)
-                                ? "border-white ring-2 ring-white/70 ring-offset-2 ring-offset-[#111713]"
-                                : "border-white/25"
+                                ? "border-white/45 bg-white/[0.10] text-white"
+                                : "border-white/12 bg-white/[0.045] text-white/62 hover:border-white/25 hover:bg-white/[0.075] hover:text-white/82"
                             )}
                             title="Custom color"
                             aria-label="Custom color"
                           >
-                            <Palette size={12} className="pointer-events-none" />
-                            Custom
+                            <Palette size={12} className="pointer-events-none opacity-70" />
+                            <span>Custom</span>
                             <span
-                              className="pointer-events-none h-4 w-4 rounded-full border border-white/70 shadow-sm"
+                              className="pointer-events-none h-5 w-5 rounded-full border border-white/60 shadow-sm"
                               style={{ backgroundColor: course.color }}
                             />
                             <input
@@ -3114,14 +3125,17 @@ function MainApp() {
                         </div>
                         {BLOCK_PALETTE_GROUPS.map((group) => (
                           <div key={group.label}>
-                            <p className="mb-1 text-[9px] font-black uppercase tracking-wider text-white/24">{group.label}</p>
-                            <div className="grid grid-cols-8 gap-1.5">
+                            <p className="mb-1.5 text-[10px] font-black uppercase tracking-[0.1em] text-white/34">{group.label}</p>
+                            <div
+                              className="grid gap-2"
+                              style={{ gridTemplateColumns: "repeat(7, 32px)" }}
+                            >
                               {group.colors.map((palette) => (
                                 <button
                                   key={`${group.label}-${palette.name}`}
                                   className={classNames(
-                                    "grid h-7 place-items-center rounded-md border border-white/10 transition-transform hover:scale-105 hover:border-white/40 active:scale-95",
-                                    course.color === palette.hex ? "ring-2 ring-white ring-offset-2 ring-offset-[#111713]" : ""
+                                    "grid h-8 w-8 place-items-center rounded-md border border-white/10 transition hover:-translate-y-px hover:border-white/40 hover:brightness-110 active:translate-y-0 active:scale-95",
+                                    course.color === palette.hex ? "ring-2 ring-white/85 ring-offset-1 ring-offset-[#111713]" : ""
                                   )}
                                   type="button"
                                   aria-label={palette.name}
@@ -3685,13 +3699,13 @@ function MainApp() {
                       <span className="mb-1.5 flex justify-between text-[10px] font-bold text-white/40">
                         <span>Size</span><span>{pattern.size}px</span>
                       </span>
-                      <input type="range" min="12" max="96" value={pattern.size} onChange={(e) => updatePattern({ size: Number(e.target.value) })} className="archers-range w-full" style={{ "--range-progress": rangeProgress(pattern.size, 12, 96) } as CSSProperties} />
+                      <input type="range" min="12" max="240" value={pattern.size} onChange={(e) => updatePattern({ size: Number(e.target.value) })} className="archers-range w-full" style={{ "--range-progress": rangeProgress(pattern.size, 12, 240) } as CSSProperties} />
                     </label>
                     <label className="block">
                       <span className="mb-1.5 flex justify-between text-[10px] font-bold text-white/40">
                         <span>Spacing</span><span>{pattern.spacing}px</span>
                       </span>
-                      <input type="range" min="36" max="180" value={pattern.spacing} onChange={(e) => updatePattern({ spacing: Number(e.target.value) })} className="archers-range w-full" style={{ "--range-progress": rangeProgress(pattern.spacing, 36, 180) } as CSSProperties} />
+                      <input type="range" min="36" max="360" value={pattern.spacing} onChange={(e) => updatePattern({ spacing: Number(e.target.value) })} className="archers-range w-full" style={{ "--range-progress": rangeProgress(pattern.spacing, 36, 360) } as CSSProperties} />
                     </label>
                   </div>
                   <label className="block">
