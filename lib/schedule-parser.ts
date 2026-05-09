@@ -199,10 +199,12 @@ function cleanCourse(value: string) {
   // Try to strictly match the Title part, discarding extra appended noise if it looks like a standard code-title format
   const match = withoutBullet.match(/^([A-Z0-9-]{2,}\s+-\s+[A-Za-z0-9 &.,:()/-]+?)(?=\s+(?:Teacher|Room|Section|Prof|Venue|Bldg|Bldg\.|Rm|Rm\.)|\s{2,}|\t|$)/i);
   if (match) {
-    return normalizeSpaces(match[1]).trim();
+    withoutBullet = normalizeSpaces(match[1]).trim();
+  } else {
+    withoutBullet = normalizeSpaces(withoutBullet).trim();
   }
 
-  return normalizeSpaces(withoutBullet).trim();
+  return withoutBullet.replace(/\s*\b(?:OFFLINE|ONLINE)\b\s*$/i, "").trim();
 }
 
 function getRoomValue(text: string) {
