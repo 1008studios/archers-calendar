@@ -318,10 +318,23 @@ export default function PreviewCanvas({ canvasRef, previewScale }: { canvasRef: 
     : { pad: 20,  subtitle: 8, title: 18, dayHeader: 8, courseCode: 8,  courseTitle: 8,    meta: 7,    cellPad: 2, blockPad: 2, titleMb: 5, gap: 2, mt: 0, timePx: 5, timePy: 2, dayPy: 3 };
 
   const PAD_SCALE = { 1: 0.4, 2: 0.7, 3: 1.0, 4: 1.4, 5: 1.8 };
-  const FONT_SCALE = { 1: 1.3, 2: 1.12, 3: 1.0, 4: 0.9, 5: 0.82 };
-  const MIN_FONT_PX = device === "iphone" ? 7 : 0;
-  const fsScale = device === "share" ? 1 : (FONT_SCALE[calendarSize as keyof typeof FONT_SCALE] || 1.0);
+  const FONT_SCALE_BASE = { 1: 1.3, 2: 1.12, 3: 1.0, 4: 0.9, 5: 0.82 };
+  
+  // Dynamic scaling for density (the more courses/slots, the smaller the text)
+  const densityFactor = (() => {
+    const slotCount = timeSlots.length;
+    const entryCount = visibleEntries.length;
+    if (slotCount <= 6 && entryCount <= 8) return 1.0;
+    if (slotCount > 12 || entryCount > 18) return 0.75;
+    if (slotCount > 9 || entryCount > 14) return 0.85;
+    return 0.92;
+  })();
+
+  const MIN_FONT_PX = device === "iphone" ? 4 : 0;
+  const fsScale = (device === "share" ? 1 : (FONT_SCALE_BASE[calendarSize as keyof typeof FONT_SCALE_BASE] || 1.0)) * densityFactor;
   const scalePx = (val: number) => \`\${Math.round(Math.max(MIN_FONT_PX, val * fsScale))}px\`;
+  const scalePad = (val: number) => \`\${Math.round(val * (densityFactor < 0.9 ? fsScale * 0.8 : fsScale))}px\`; 
+  
   const sz = {
     pad:        device === "share" ? "0px" : \`\${Math.round(szBase.pad * (PAD_SCALE[calendarSize as keyof typeof PAD_SCALE] || 1.0))}px\`,
     subtitle:   scalePx(szBase.subtitle),
@@ -330,14 +343,14 @@ export default function PreviewCanvas({ canvasRef, previewScale }: { canvasRef: 
     courseCode: scalePx(szBase.courseCode),
     courseTitle: scalePx(szBase.courseTitle),
     meta:       scalePx(szBase.meta),
-    cellPad:    scalePx(szBase.cellPad),
-    blockPad:   scalePx(szBase.blockPad),
-    titleMb:    scalePx(szBase.titleMb),
-    gap:        scalePx(szBase.gap),
-    mt:         scalePx(szBase.mt),
-    timePx:     scalePx(szBase.timePx),
-    timePy:     scalePx(szBase.timePy),
-    dayPy:      scalePx(szBase.dayPy)
+    cellPad:    scalePad(szBase.cellPad),
+    blockPad:   scalePad(Math.max(2, szBase.blockPad * (densityFactor < 0.8 ? 0.6 : 1.0))),
+    titleMb:    scalePad(szBase.titleMb),
+    gap:        scalePad(Math.max(1, szBase.gap * (densityFactor < 0.8 ? 0.5 : 1.0))),
+    mt:         scalePad(Math.max(0, szBase.mt * (densityFactor < 0.8 ? 0.2 : 1.0))),
+    timePx:     scalePad(szBase.timePx),
+    timePy:     scalePad(szBase.timePy),
+    dayPy:      scalePad(szBase.dayPy)
   };
   const canvasRadius =
     device === "share"    ? "0px" :
@@ -507,7 +520,7 @@ export default function PreviewCanvas({ canvasRef, previewScale }: { canvasRef: 
                             </p>
                           )}
                           {showCourseTitle && parts.title ? (
-                            <p style={{ fontSize: sz.courseTitle, marginTop: sz.mt, lineHeight: 1.1 }} className="font-semibold opacity-80 leading-tight line-clamp-2">{parts.title}</p>
+                            <p style={{ fontSize: sz.courseTitle, marginTop: sz.mt, lineHeight: 1.1 }} className="font-semibold opacity-80 leading-tight line-clamp-3">{parts.title}</p>
                           ) : null}
                           {meta ? <p style={{ fontSize: sz.meta, marginTop: sz.mt, lineHeight: 1.1 }} className="font-bold opacity-75 truncate">{meta}</p> : null}
                         </div>
