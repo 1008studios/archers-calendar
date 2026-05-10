@@ -4017,32 +4017,6 @@ function MainApp() {
         {/* Right: preview area */}
         <section className="flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden">
 
-          {/* Mobile header */}
-          <header className="flex min-h-16 w-full max-w-full shrink-0 items-center justify-between gap-3 border-b border-white/10 bg-[#080B09]/95 px-3 backdrop-blur-md md:hidden">
-            <div className="flex flex-1 items-center gap-3">
-              <img src="/logos/logo-mini-green.png" alt="Archers Calendar" className="h-8 w-auto object-contain" />
-              <button
-                type="button"
-                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/[0.03] text-white/70 transition hover:bg-white/[0.06] hover:text-white"
-                onClick={() => setAppTheme(appTheme === "dark" ? "light" : "dark")}
-                title="Toggle App Theme"
-              >
-                {appTheme === "dark" ? <Sun size={14} /> : <Moon size={14} />}
-              </button>
-            </div>
-            <div className="relative shrink-0">
-              <button
-                className="flex h-10 items-center gap-1.5 rounded-lg bg-dlsu-vivid px-3 text-xs font-bold text-white shadow-lg shadow-dlsu-vivid/20 transition hover:bg-dlsu disabled:opacity-60 active:scale-95"
-                type="button"
-                onClick={() => setShowExportPopup(true)}
-                disabled={isExporting}
-              >
-                <Download size={15} />
-                {isExporting ? "..." : "Save"}
-              </button>
-            </div>
-          </header>
-
           {/* Desktop header */}
           <header className="hidden min-h-20 shrink-0 items-center justify-between border-b border-white/5 bg-[#090D0B]/80 px-8 backdrop-blur-md md:flex">
             <div>
@@ -4097,7 +4071,7 @@ function MainApp() {
               so the preview is pixel-perfect with the export output */}
           <div
             ref={previewContainerRef}
-            className="flex min-h-0 flex-1 items-center justify-center overflow-hidden p-4 md:p-6"
+            className="relative flex min-h-0 flex-1 items-center justify-center overflow-hidden p-4 md:p-6"
             onClick={() => { if (isMobileExpanded) setIsMobileExpanded(false); }}
             onTouchStart={(e) => {
               const touch = e.targetTouches[0];
@@ -4111,6 +4085,18 @@ function MainApp() {
               }
             }}
           >
+            {/* Mobile floating header (logo & theme toggle) */}
+            <div className="absolute left-4 right-4 top-4 z-10 flex items-center justify-between md:hidden">
+              <img src="/logos/logo-mini-green.png" alt="Archers Calendar" className="h-8 w-auto object-contain drop-shadow-md" />
+              <button
+                type="button"
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/20 bg-black/40 text-white shadow-md backdrop-blur-md transition hover:bg-black/60"
+                onClick={(e) => { e.stopPropagation(); setAppTheme(appTheme === "dark" ? "light" : "dark"); }}
+                title="Toggle App Theme"
+              >
+                {appTheme === "dark" ? <Sun size={14} /> : <Moon size={14} />}
+              </button>
+            </div>
             <div
               style={{
                 width: canvasSize.width,
