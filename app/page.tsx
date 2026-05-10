@@ -1327,6 +1327,7 @@ function MainApp() {
     calendarSubtitle, setCalendarSubtitle,
     isExporting, setIsExporting,
     isParsing, setIsParsing,
+    isMobileExpanded, setIsMobileExpanded,
     importError, setImportError,
     importSource, setImportSource,
     saveNotice, setSaveNotice,
@@ -4097,6 +4098,7 @@ function MainApp() {
           <div
             ref={previewContainerRef}
             className="flex min-h-0 flex-1 items-center justify-center overflow-hidden p-4 md:p-6"
+            onClick={() => { if (isMobileExpanded) setIsMobileExpanded(false); }}
           >
             <div
               style={{

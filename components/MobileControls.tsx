@@ -3,7 +3,7 @@
 import { useSchedule } from "@/lib/ScheduleContext";
 import { Palette, CalendarDays, Download } from "lucide-react";
 import { classNames } from "@/lib/utils";
-import React, { useState } from "react";
+import React from "react";
 
 const MOBILE_TABS = [
   { id: "start",   label: "Courses", icon: CalendarDays },
@@ -12,14 +12,13 @@ const MOBILE_TABS = [
 ] as const;
 
 export default function MobileControls({ children }: { children: React.ReactNode }) {
-  const { mobileTab, setMobileTab, setDesktopPanel } = useSchedule();
-  const [isExpanded, setIsExpanded] = useState(false);
+  const { mobileTab, setMobileTab, setDesktopPanel, isMobileExpanded, setIsMobileExpanded } = useSchedule();
 
   return (
     <div className="flex shrink-0 flex-col border-t border-white/10 bg-[#090D0B]/95 pb-safe backdrop-blur-xl md:hidden">
       {/* Toggle button */}
       <button 
-        onClick={() => setIsExpanded(!isExpanded)} 
+        onClick={() => setIsMobileExpanded(!isMobileExpanded)} 
         className="flex w-full items-center justify-center py-2 text-white/40 hover:text-white/80 transition-colors"
       >
         <div className="h-1 w-10 rounded-full bg-white/20" />
@@ -38,9 +37,15 @@ export default function MobileControls({ children }: { children: React.ReactNode
               )}
               type="button"
               onClick={() => {
-                setMobileTab(tab.id as any);
-                setDesktopPanel(tab.id as any);
-                setIsExpanded(true); // Auto-expand when a tab is clicked
+                if (active) {
+                  // If tapping the active tab, toggle expansion
+                  setIsMobileExpanded(!isMobileExpanded);
+                } else {
+                  // If tapping a new tab, switch to it and expand
+                  setMobileTab(tab.id as any);
+                  setDesktopPanel(tab.id as any);
+                  setIsMobileExpanded(true);
+                }
               }}
             >
               <TabIcon size={17} strokeWidth={active ? 2.5 : 2} />
@@ -53,7 +58,7 @@ export default function MobileControls({ children }: { children: React.ReactNode
       <div 
         className={classNames(
           "overflow-y-auto border-white/[0.06] scrollbar-thin transition-all duration-300 ease-in-out",
-          isExpanded ? "max-h-[50dvh] border-t opacity-100" : "max-h-0 border-t-0 opacity-0"
+          isMobileExpanded ? "max-h-[50dvh] border-t opacity-100" : "max-h-0 border-t-0 opacity-0"
         )}
       >
         {children}

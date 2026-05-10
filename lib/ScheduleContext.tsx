@@ -115,6 +115,8 @@ interface ScheduleContextType {
   setIsExporting: (val: boolean) => void;
   isParsing: boolean;
   setIsParsing: (val: boolean) => void;
+  isMobileExpanded: boolean;
+  setIsMobileExpanded: (val: boolean) => void;
   importError: string;
   setImportError: (val: string) => void;
   importSource: ImportSource | "";
@@ -167,6 +169,7 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
   const [calendarSubtitle, setCalendarSubtitle] = useState("Term 3");
   const [isExporting, setIsExporting] = useState(false);
   const [isParsing, setIsParsing] = useState(false);
+  const [isMobileExpanded, setIsMobileExpanded] = useState(false);
   const [importError, setImportError] = useState("");
   const [importSource, setImportSource] = useState<ImportSource | "">("");
   const [saveNotice, setSaveNotice] = useState("");
@@ -207,6 +210,7 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
     calendarSubtitle, setCalendarSubtitle,
     isExporting, setIsExporting,
     isParsing, setIsParsing,
+    isMobileExpanded, setIsMobileExpanded,
     importError, setImportError,
     importSource, setImportSource,
     saveNotice, setSaveNotice,
@@ -216,7 +220,7 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
     expandedCourses, setExpandedCourses,
     selectedExportDevices, setSelectedExportDevices
   }), [
-    activeCoursePalette, rawText, entries, visibleDays, showRoom, showProfessor, showSection, showCourseTitle, autoHideEmptyDays, device, wallpaperStyle, appTheme, calendarThemeMode, gridPosition, gridOffsetX, gridOffsetY, backgroundKind, background, backgroundImage, backgroundTone, gradient, pattern, geometric, overlayKind, mobileTab, desktopPanel, calendarTitle, calendarSubtitle, isExporting, isParsing, importError, importSource, saveNotice, exportVariant, calendarFont, calendarSize, expandedCourses, selectedExportDevices
+    activeCoursePalette, rawText, entries, visibleDays, showRoom, showProfessor, showSection, showCourseTitle, autoHideEmptyDays, device, wallpaperStyle, appTheme, calendarThemeMode, gridPosition, gridOffsetX, gridOffsetY, backgroundKind, background, backgroundImage, backgroundTone, gradient, pattern, geometric, overlayKind, mobileTab, desktopPanel, calendarTitle, calendarSubtitle, isExporting, isParsing, isMobileExpanded, importError, importSource, saveNotice, exportVariant, calendarFont, calendarSize, expandedCourses, selectedExportDevices
   ]);
 
   return <ScheduleContext.Provider value={value}>{children}</ScheduleContext.Provider>;
