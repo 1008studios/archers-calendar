@@ -486,10 +486,10 @@ export default function PreviewCanvas({ canvasRef, previewScale }: { canvasRef: 
               return (
                 <div
                   key={\`\${timeSlot}-\${days[0]}\`}
-                  className={classNames("min-w-0 border-b border-r", cellBorder)}
+                  className={classNames("min-w-0 min-h-0 border-b border-r", cellBorder)}
                   style={{ padding: sz.cellPad, ...(span > 1 ? { gridColumn: \`span \${span}\` } : {}) }}
                 >
-                  <div className="flex h-full flex-col" style={{ gap: sz.gap }}>
+                  <div className="flex h-full flex-col min-h-0" style={{ gap: sz.gap }}>
                     {entries.map((entry) => {
                       const textColor = uniformCourseTextColor ?? getTextColor(entry.color);
                       const parts = courseParts(entry.course);
@@ -499,17 +499,17 @@ export default function PreviewCanvas({ canvasRef, previewScale }: { canvasRef: 
                         color: textColor
                       };
                       return (
-                        <div key={entry.id} className={classNames("flex flex-1 flex-col justify-center overflow-visible transition-all", activeStyle.cellStyle)} style={{ ...courseBlockStyle, padding: sz.blockPad, lineHeight: 1.05 }}>
-                          <p style={{ fontSize: sz.courseCode, lineHeight: 1.05 }} className="font-black leading-tight tracking-tight">{parts.code}</p>
+                        <div key={entry.id} className={classNames("flex flex-1 flex-col justify-center overflow-hidden transition-all", activeStyle.cellStyle)} style={{ ...courseBlockStyle, padding: sz.blockPad, lineHeight: 1.05 }}>
+                          <p style={{ fontSize: sz.courseCode, lineHeight: 1.05 }} className="font-black leading-tight tracking-tight truncate">{parts.code}</p>
                           {span > 1 && (
-                            <p style={{ fontSize: sz.meta, marginTop: sz.mt, lineHeight: 1.1 }} className="font-bold opacity-60">
+                            <p style={{ fontSize: sz.meta, marginTop: sz.mt, lineHeight: 1.1 }} className="font-bold opacity-60 truncate">
                               {days.join(" · ")}
                             </p>
                           )}
                           {showCourseTitle && parts.title ? (
-                            <p style={{ fontSize: sz.courseTitle, marginTop: sz.mt, lineHeight: 1.1 }} className="font-semibold opacity-80 leading-tight">{parts.title}</p>
+                            <p style={{ fontSize: sz.courseTitle, marginTop: sz.mt, lineHeight: 1.1 }} className="font-semibold opacity-80 leading-tight line-clamp-2">{parts.title}</p>
                           ) : null}
-                          {meta ? <p style={{ fontSize: sz.meta, marginTop: sz.mt, lineHeight: 1.1 }} className="font-bold opacity-75">{meta}</p> : null}
+                          {meta ? <p style={{ fontSize: sz.meta, marginTop: sz.mt, lineHeight: 1.1 }} className="font-bold opacity-75 truncate">{meta}</p> : null}
                         </div>
                       );
                     })}
