@@ -325,19 +325,30 @@ export default function PreviewCanvas({ canvasRef, previewScale }: { canvasRef: 
   const densityFactor = React.useMemo(() => {
     const slotCount = timeSlots.length;
     const entryCount = visibleEntries.length;
-    if (slotCount <= 6 && entryCount <= 8) return 1.0;
-    if (slotCount > 12 || entryCount > 18) return 0.75;
-    if (slotCount > 9 || entryCount > 14) return 0.85;
-    return 0.92;
+    
+    // Calculate a continuous factor based on slots and entries
+    // Baseline: 6 slots and 8 entries = 1.0 factor
+    // Each extra slot above 6 reduces factor by ~3%
+    // Each extra entry above 8 reduces factor by ~1.5%
+    const slotImpact = Math.max(0, slotCount - 6) * 0.035;
+    const entryImpact = Math.max(0, entryCount - 8) * 0.018;
+    
+    const factor = 1.0 - (slotImpact + entryImpact);
+    
+    // Clamp between 0.45 and 1.0
+    return Math.max(0.45, Math.min(1.0, factor));
   }, [timeSlots.length, visibleEntries.length]);
 
   const MIN_FONT_PX = device === "iphone" ? 4 : 0;
   const fsScale = (device === "share" ? 1 : (FONT_SCALE_BASE[calendarSize as keyof typeof FONT_SCALE_BASE] || 1.0)) * densityFactor;
   const scalePx  = (val: number) => `${Math.round(Math.max(MIN_FONT_PX, val * fsScale))}px`;
-  const scalePad = (val: number) => `${Math.round(val * (densityFactor < 0.9 ? fsScale * 0.8 : fsScale))}px`; 
+  
+  // Padding scales even more aggressively to save vertical space
+  const padFactor = densityFactor < 0.7 ? densityFactor * 0.65 : densityFactor;
+  const scalePad = (val: number) => `${Math.round(val * padFactor)}px`; 
   
   const sz = {
-    pad:        device === "share" ? "0px" : `${Math.round(szBase.pad * (PAD_SCALE[calendarSize as keyof typeof PAD_SCALE] || 1.0))}px`,
+    pad:        device === "share" ? "0px" : `${Math.round(szBase.pad * (PAD_SCALE[calendarSize as keyof typeof PAD_SCALE] || 1.0) * Math.max(0.4, densityFactor * 0.9))}px`,
     subtitle:   scalePx(szBase.subtitle),
     title:      scalePx(szBase.title),
     dayHeader:  scalePx(szBase.dayHeader),
@@ -345,10 +356,10 @@ export default function PreviewCanvas({ canvasRef, previewScale }: { canvasRef: 
     courseTitle: scalePx(szBase.courseTitle),
     meta:       scalePx(szBase.meta),
     cellPad:    scalePad(szBase.cellPad),
-    blockPad:   scalePad(Math.max(2, szBase.blockPad * (densityFactor < 0.8 ? 0.6 : 1.0))),
+    blockPad:   scalePad(Math.max(1.2, szBase.blockPad * (densityFactor < 0.6 ? 0.4 : 0.7))),
     titleMb:    scalePad(szBase.titleMb),
-    gap:        scalePad(Math.max(1, szBase.gap * (densityFactor < 0.8 ? 0.5 : 1.0))),
-    mt:         scalePad(Math.max(0, szBase.mt * (densityFactor < 0.8 ? 0.2 : 1.0))),
+    gap:        scalePad(Math.max(1, szBase.gap * (densityFactor < 0.6 ? 0.3 : 0.6))),
+    mt:         scalePad(Math.max(0, szBase.mt * (densityFactor < 0.6 ? 0.1 : 0.4))),
     timePx:     scalePad(szBase.timePx),
     timePy:     scalePad(szBase.timePy),
     dayPy:      scalePad(szBase.dayPy)
@@ -417,8 +428,8 @@ export default function PreviewCanvas({ canvasRef, previewScale }: { canvasRef: 
       {!isBackgroundOnlyExport && (
       <div
         className={classNames(
-          "relative z-10 flex max-h-full max-w-full flex-col",
-          device === "share" ? "h-full w-full" : ""
+          "relative z-10 flex max-h-full w-full flex-col",
+          device === "share" ? "h-full" : ""
         )}
         style={{ padding: sz.pad, ...gridOffsetStyle }}
       >
@@ -449,8 +460,8 @@ export default function PreviewCanvas({ canvasRef, previewScale }: { canvasRef: 
         {/* Grid */}
         <div
           className={classNames(
-            "grid min-h-0",
-            wallpaperStyle === "clean" && device !== "share" ? "overflow-hidden rounded-[6px] border" : "overflow-visible rounded-none",
+            "grid min-h-0 w-full",
+            wallpaperStyle === "clean" && device !== "share" ? "overflow-hidden rounded-[6px] border" : "overflow-visible rounded-none border-l border-t",
             isBorderlessStyle ? "shadow-none" : "shadow-lg",
             gridBg,
             device === "share" ? "flex-1" : "",
@@ -458,8 +469,7 @@ export default function PreviewCanvas({ canvasRef, previewScale }: { canvasRef: 
           )}
           style={{
             gridTemplateColumns: `repeat(${Math.max(visibleDayList.length, 1)}, minmax(0, 1fr))`,
-            gridTemplateRows: `${device === "share" ? "auto " : ""}auto ${slotRowTemplate}`,
-            ...(iphoneGridHeight ? { height: `${iphoneGridHeight}px` } : {})
+            gridTemplateRows: `${device === "share" ? "auto " : ""}auto ${slotRowTemplate}`
           }}
         >
           {device === "share" && (calendarTitle || calendarSubtitle) && (
@@ -533,8 +543,9 @@ export default function PreviewCanvas({ canvasRef, previewScale }: { canvasRef: 
                         backgroundColor: entry.color,
                         color: textColor
                       };
+                      const courseLineHeight = densityFactor < 0.6 ? 0.9 : densityFactor < 0.75 ? 0.98 : 1.05;
                       return (
-                        <div data-course-block="true" key={entry.id} className={classNames("flex flex-1 flex-col justify-center overflow-hidden transition-all", activeStyle.cellStyle)} style={{ ...courseBlockStyle, padding: sz.blockPad, lineHeight: 1.05 }}>
+                        <div data-course-block="true" key={entry.id} className={classNames("flex flex-1 flex-col justify-center overflow-hidden transition-all", activeStyle.cellStyle)} style={{ ...courseBlockStyle, padding: sz.blockPad, lineHeight: courseLineHeight }}>
                           <p data-course-text="true" style={{ fontSize: sz.courseCode, lineHeight: 1.05 }} className="font-black leading-tight tracking-tight truncate">{parts.code}</p>
                           {span > 1 && (
                             <p data-course-text="true" style={{ fontSize: sz.meta, marginTop: sz.mt, lineHeight: 1.1 }} className="font-bold opacity-60 truncate">
