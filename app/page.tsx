@@ -1357,6 +1357,11 @@ function MainApp() {
   const [showDesignApplyConfirm, setShowDesignApplyConfirm] = useState(false);
   const [showExportPopup, setShowExportPopup] = useState(false);
 
+  // Synchronize the currently previewed device with the export selection.
+  useEffect(() => {
+    setSelectedExportDevices(new Set([device]));
+  }, [device, setSelectedExportDevices]);
+
   useEffect(() => {
     const hasSeenBeta = sessionStorage.getItem("archers_calendar_beta_seen");
     if (!hasSeenBeta) {
