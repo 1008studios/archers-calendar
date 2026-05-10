@@ -683,7 +683,7 @@ const CALENDAR_FONT_OPTIONS: Array<{
   }
 ];
 
-const COMMON_EXPORT_DEVICES: DeviceId[] = ["iphone", "ipad_portrait", "ipad_landscape", "laptop", "macbook", "share"];
+const COMMON_EXPORT_DEVICES: DeviceId[] = ["iphone", "ipad_portrait", "ipad_landscape", "laptop", "macbook"];
 const EXPORT_DEVICE_LABELS: Record<DeviceId, string> = {
   iphone: "iPhone",
   ipad_portrait: "iPad Portrait",
@@ -2350,6 +2350,23 @@ function MainApp() {
 
   async function downloadCanvas(canvas: HTMLCanvasElement, filename: string) {
     const blob = await canvasToPngBlob(canvas);
+    
+    // On mobile, try to use Web Share API for direct "Save to Photos" experience
+    if (window.innerWidth < 768 && navigator.share && navigator.canShare && navigator.canShare({ files: [new File([blob], 'temp.png', { type: 'image/png' })] })) {
+      try {
+        const file = new File([blob], `${filename}.png`, { type: "image/png" });
+        await navigator.share({
+          files: [file],
+          title: "My Schedule",
+          text: "My class schedule for this term."
+        });
+        return;
+      } catch (err) {
+        console.error("Share failed", err);
+        // fall back to standard download if user cancels or it fails
+      }
+    }
+
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
