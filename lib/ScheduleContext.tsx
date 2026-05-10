@@ -5,8 +5,8 @@ import { ScheduleEntry } from "@/lib/schedule-parser";
 import { ImportSource } from "@/lib/import-calendar";
 
 // --- Types (Moved from page.tsx) ---
-export type MobileTab = "start" | "design" | "export";
-export type SidebarPanel = "start" | "design" | "export";
+export type MobileTab = "start" | "design" | "export" | "saved";
+export type SidebarPanel = "start" | "design" | "export" | "saved";
 export type CalendarTone = "dark" | "light";
 export type CalendarThemeMode = "normal" | "light" | "dark";
 export type WallpaperStyle = "clean" | "compact" | "bold" | "glass";

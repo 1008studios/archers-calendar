@@ -231,12 +231,33 @@ export function getSlotDurationMinutes(timeSlot: string): number {
   return end - start;
 }
 
+export function getEntryMinutes(entry: ScheduleEntry) {
+  const dash = entry.timeSlot.indexOf(" - ");
+  if (dash < 0) return { start: 0, end: 0 };
+  return {
+    start: getStartMinutes(entry.timeSlot.slice(0, dash)),
+    end: getStartMinutes(entry.timeSlot.slice(dash + 3))
+  };
+}
+
+export function hasConflict(entry: ScheduleEntry, all: ScheduleEntry[]) {
+  const { start, end } = getEntryMinutes(entry);
+  if (start === 0 && end === 0) return false;
+
+  return all.some((other) => {
+    if (other.id === entry.id || other.day !== entry.day) return false;
+    const { start: oStart, end: oEnd } = getEntryMinutes(other);
+    return start < oEnd && end > oStart;
+  });
+}
+
 export function groupEntriesByCourse(entries: ScheduleEntry[]): Array<{
   id: string;
   code: string;
   title: string;
   color: string;
   createdAt: number;
+  emoji?: string;
   slots: Array<{ timeSlot: string; days: DayKey[]; room: string; teacher: string; section: string }>;
 }> {
   const groups = new Map<string, {
@@ -245,6 +266,7 @@ export function groupEntriesByCourse(entries: ScheduleEntry[]): Array<{
     title: string;
     color: string;
     createdAt: number;
+    emoji?: string;
     slots: Array<{ timeSlot: string; days: DayKey[]; room: string; teacher: string; section: string }>;
   }>();
 
@@ -252,11 +274,14 @@ export function groupEntriesByCourse(entries: ScheduleEntry[]): Array<{
     const { code, title } = courseParts(entry.course);
     const key = courseKeyFromCode(code);
     if (!groups.has(key)) {
-      groups.set(key, { id: entry.id, code, title, color: entry.color, createdAt: entry.createdAt || 0, slots: [] });
+      groups.set(key, { id: entry.id, code, title, color: entry.color, createdAt: entry.createdAt || 0, emoji: entry.emoji, slots: [] });
     }
     const group = groups.get(key)!;
     if (entry.createdAt && entry.createdAt > group.createdAt) {
       group.createdAt = entry.createdAt;
+    }
+    if (!group.emoji && entry.emoji) {
+      group.emoji = entry.emoji;
     }
     const day = (normalizeDay(entry.day) || entry.day) as DayKey;
 

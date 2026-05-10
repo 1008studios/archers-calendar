@@ -2,8 +2,9 @@
 "use client";
 import React from "react";
 import { useSchedule } from "@/lib/ScheduleContext";
-import { classNames, getTextColor, computeRowCells, formatTimeSlot, courseParts, getStartMinutes, toneFromRgb, toneFromHex, toneFromColors, getPaletteTextColor, buildGradientBackground, buildEmojiPatternBackground, buildGeometricBackground, normalizeHexColor, hexToRgb, estimateImageTone, courseKeyFromCode, courseKeyFromCourse, getExpandedCourseSet, formatMeetingDays, getSlotDurationMinutes, groupEntriesByCourse, rangeProgress, formatPixels } from "@/lib/utils";
+import { classNames, getTextColor, computeRowCells, formatTimeSlot, courseParts, getStartMinutes, toneFromRgb, toneFromHex, toneFromColors, getPaletteTextColor, buildGradientBackground, buildEmojiPatternBackground, buildGeometricBackground, normalizeHexColor, hexToRgb, estimateImageTone, courseKeyFromCode, courseKeyFromCourse, getExpandedCourseSet, formatMeetingDays, getSlotDurationMinutes, groupEntriesByCourse, rangeProgress, formatPixels, hasConflict } from "@/lib/utils";
 import { DAY_ORDER, DayKey, normalizeDay, parseScheduleHtml, parseScheduleText, scheduleTableHtmlToText, ScheduleEntry } from "@/lib/schedule-parser";
+import { AlertCircle, Sparkles } from "lucide-react";
 
 const EXPORT_VARIANT_OPTIONS = [
   { value: "full", label: "Full", description: "Wallpaper + schedule" },
@@ -198,7 +199,8 @@ export default function PreviewCanvas({ canvasRef, previewScale }: { canvasRef: 
     calendarFont, backgroundKind, backgroundImage, gradient,
     pattern, geometric, background, exportVariant, overlayKind,
     gridPosition, gridOffsetX, gridOffsetY, calendarTitle, calendarSubtitle,
-    showRoom, showSection, showProfessor, showCourseTitle, calendarSize
+    showRoom, showSection, showProfessor, showCourseTitle, calendarSize,
+    setExpandedCourses, setMobileTab, setDesktopPanel
   } = useSchedule();
 
   const ANIMO_PALETTE = COURSE_THEMES.find(t => t.name === "Animo")?.colors || BLOCK_PALETTES.map(p => p.hex);
@@ -544,9 +546,44 @@ export default function PreviewCanvas({ canvasRef, previewScale }: { canvasRef: 
                         color: textColor
                       };
                       const courseLineHeight = densityFactor < 0.6 ? 0.9 : densityFactor < 0.75 ? 0.98 : 1.05;
+                      const conflict = hasConflict(entry, visibleEntries);
+
+                      const handleBlockClick = (e: React.MouseEvent) => {
+                        // Prevent triggering on export
+                        if (device === "share") return;
+                        e.stopPropagation();
+                        
+                        const key = courseKeyFromCode(parts.code);
+                        setExpandedCourses(new Set([key]));
+                        setMobileTab("start");
+                        setDesktopPanel("start");
+
+                        // Small haptic-like scroll or focus if we can find the element
+                        window.setTimeout(() => {
+                          const el = document.getElementById(`course-editor-${key}`);
+                          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }, 100);
+                      };
+
                       return (
-                        <div data-course-block="true" key={entry.id} className={classNames("flex flex-1 flex-col justify-center overflow-hidden transition-all", activeStyle.cellStyle)} style={{ ...courseBlockStyle, padding: sz.blockPad, lineHeight: courseLineHeight }}>
-                          <p data-course-text="true" style={{ fontSize: sz.courseCode, lineHeight: 1.05 }} className="font-black leading-tight tracking-tight truncate">{parts.code}</p>
+                        <div 
+                          data-course-block="true" 
+                          key={entry.id} 
+                          onClick={handleBlockClick}
+                          className={classNames(
+                            "group/block relative flex flex-1 flex-col justify-center overflow-hidden transition-all", 
+                            activeStyle.cellStyle,
+                            device !== "share" ? "cursor-pointer hover:brightness-110 active:scale-[0.98]" : ""
+                          )} 
+                          style={{ ...courseBlockStyle, padding: sz.blockPad, lineHeight: courseLineHeight }}
+                        >
+                          <div className="flex min-w-0 items-center gap-1">
+                            {entry.emoji && <span style={{ fontSize: sz.courseCode }} className="shrink-0">{entry.emoji}</span>}
+                            <p data-course-text="true" style={{ fontSize: sz.courseCode, lineHeight: 1.05 }} className="min-w-0 truncate font-black leading-tight tracking-tight">{parts.code}</p>
+                            {conflict && (
+                              <AlertCircle size={10} className="shrink-0 animate-pulse text-red-500" strokeWidth={3} />
+                            )}
+                          </div>
                           {span > 1 && (
                             <p data-course-text="true" style={{ fontSize: sz.meta, marginTop: sz.mt, lineHeight: 1.1 }} className="font-bold opacity-60 truncate">
                               {days.join(" · ")}
@@ -556,6 +593,13 @@ export default function PreviewCanvas({ canvasRef, previewScale }: { canvasRef: 
                             <p data-course-text="true" style={{ fontSize: sz.courseTitle, marginTop: sz.mt, lineHeight: 1.1 }} className="font-semibold opacity-80 leading-tight line-clamp-3">{parts.title}</p>
                           ) : null}
                           {meta ? <p data-course-text="true" style={{ fontSize: sz.meta, marginTop: sz.mt, lineHeight: 1.1 }} className="font-bold opacity-75 truncate">{meta}</p> : null}
+                          
+                          {/* Interactive indicator for desktop only */}
+                          {device !== "share" && (
+                            <div className="absolute right-1 top-1 opacity-0 transition-opacity group-hover/block:opacity-30">
+                              <Sparkles size={8} />
+                            </div>
+                          )}
                         </div>
                       );
                     })}

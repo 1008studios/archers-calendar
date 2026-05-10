@@ -1,12 +1,13 @@
 "use client";
 
 import { useSchedule } from "@/lib/ScheduleContext";
-import { Palette, CalendarDays, Download } from "lucide-react";
+import { Palette, CalendarDays, Download, Files } from "lucide-react";
 import { classNames } from "@/lib/utils";
 import React, { useRef, useEffect } from "react";
 
 const MOBILE_TABS = [
   { id: "start",   label: "Courses", icon: CalendarDays },
+  { id: "saved",   label: "Stored",  icon: Files },
   { id: "design",  label: "Design",  icon: Palette },
   { id: "export",  label: "Export",  icon: Download },
 ] as const;

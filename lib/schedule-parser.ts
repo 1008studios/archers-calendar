@@ -8,6 +8,7 @@ export type ScheduleEntry = {
   section: string;
   color: string;
   createdAt?: number;
+  emoji?: string;
 };
 
 export const DAY_ORDER = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] as const;

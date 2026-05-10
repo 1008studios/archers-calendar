@@ -1,11 +1,12 @@
 "use client";
 
-import { classNames, getTextColor, computeRowCells, formatTimeSlot, courseParts, getStartMinutes, toneFromRgb, toneFromHex, toneFromColors, getPaletteTextColor, buildGradientBackground, buildEmojiPatternBackground, buildGeometricBackground, normalizeHexColor, hexToRgb, estimateImageTone, courseKeyFromCode, courseKeyFromCourse, getExpandedCourseSet, formatMeetingDays, getSlotDurationMinutes, groupEntriesByCourse, rangeProgress, formatPixels } from "@/lib/utils";
+import { classNames, getTextColor, computeRowCells, formatTimeSlot, courseParts, getStartMinutes, toneFromRgb, toneFromHex, toneFromColors, getPaletteTextColor, buildGradientBackground, buildEmojiPatternBackground, buildGeometricBackground, normalizeHexColor, hexToRgb, estimateImageTone, courseKeyFromCode, courseKeyFromCourse, getExpandedCourseSet, formatMeetingDays, getSlotDurationMinutes, groupEntriesByCourse, rangeProgress, formatPixels, hasConflict } from "@/lib/utils";
 import { toCanvas } from "html-to-image";
 import JSZip from "jszip";
 import dynamic from "next/dynamic";
 import {
   AlignLeft,
+  AlertCircle,
   BookOpen,
   CalendarDays,
   Check,
@@ -13,6 +14,7 @@ import {
   Copy,
   Download,
   Eye,
+  Files,
   Hash,
   History,
   Image as ImageIcon,
@@ -67,8 +69,8 @@ type ImportCalendarResponse = {
   message?: string;
 };
 
-type MobileTab = "start" | "design" | "export";
-type SidebarPanel = "start" | "design" | "export";
+type MobileTab = "start" | "design" | "export" | "saved";
+type SidebarPanel = "start" | "design" | "export" | "saved";
 type CalendarTone = "dark" | "light";
 type CalendarThemeMode = "normal" | "light" | "dark";
 type WallpaperStyle = "clean" | "compact" | "bold" | "glass";
@@ -548,12 +550,14 @@ const EMOJI_PICKER_LIGHT_STYLE = {
 
 const MOBILE_TABS: Array<{ id: MobileTab; label: string; icon: LucideIcon }> = [
   { id: "start",   label: "Courses", icon: CalendarDays },
+  { id: "saved",   label: "Stored",  icon: Files },
   { id: "design",  label: "Design",  icon: Palette },
   { id: "export",  label: "Export",  icon: Download },
 ];
 const SIDEBAR_PANELS: Array<{ id: SidebarPanel; label: string; icon: LucideIcon }> = [
-  { id: "start",    label: "Courses",  icon: CalendarDays },
-  { id: "design",   label: "Design",   icon: Palette },
+  { id: "start",    label: "Courses", icon: CalendarDays },
+  { id: "saved",    label: "Stored",  icon: Files },
+  { id: "design",   label: "Design",  icon: Palette },
 ];
 
 const CALENDAR_SIZE_LABELS: Record<number, string> = { 1: "XL", 2: "L", 3: "M", 4: "S", 5: "XS" };
@@ -1358,6 +1362,7 @@ function MainApp() {
   const [showExportPopup, setShowExportPopup] = useState(false);
   const [parsingProgress, setParsingProgress] = useState(0);
   const [justAddedId, setJustAddedId] = useState<string | null>(null);
+  const [activeEmojiPickerCode, setActiveEmojiPickerCode] = useState<string | null>(null);
 
   // Synchronize the currently previewed device with the export selection.
   useEffect(() => {
@@ -2654,6 +2659,14 @@ function MainApp() {
     );
   }
 
+  function updateCourseEmoji(code: string, emoji: string) {
+    setEntries((current) =>
+      current.map((e) =>
+        courseKeyFromCourse(e.course) === courseKeyFromCode(code) ? { ...e, emoji } : e
+      )
+    );
+  }
+
   function applyColorTheme(colors: string[]) {
     setActiveCoursePalette(colors);
     applyCoursePalette(colors);
@@ -2744,7 +2757,7 @@ function MainApp() {
 
   const sidebarPanelTabs = (
     <div className="shrink-0 border-b border-white/[0.06] px-4 py-3">
-      <div className="grid grid-cols-2 gap-1 rounded-lg border border-white/[0.06] bg-white/[0.03] p-1">
+      <div className="grid grid-cols-3 gap-1 rounded-lg border border-white/[0.06] bg-white/[0.03] p-1">
         {SIDEBAR_PANELS.map(({ id, label }) => {
           const active = desktopPanel === id;
           return (
@@ -3111,25 +3124,43 @@ function MainApp() {
               const isExpanded = expandedCourses.has(courseKey);
               const isJustAdded = justAddedId === courseKey;
               const displayCode = course.code || "Untitled";
+              const conflict = course.slots.some(s => 
+                s.days.some(d => hasConflict({ id: course.id, day: d, timeSlot: s.timeSlot } as ScheduleEntry, entries))
+              );
+
               return (
-                <div key={course.id} className={classNames(
-                  "overflow-hidden rounded-lg border transition-all duration-300",
-                  isExpanded ? "border-white/20 bg-[#111713]" : "border-white/10 bg-[#0C100E] hover:border-white/20 hover:bg-[#101612]",
-                  isJustAdded ? "animate-added-row ring-1 ring-dlsu-vivid/40" : ""
-                )}>
+                <div 
+                  id={`course-editor-${courseKey}`}
+                  key={course.id} 
+                  className={classNames(
+                    "overflow-hidden rounded-lg border transition-all duration-300",
+                    isExpanded ? "border-white/20 bg-[#111713]" : "border-white/10 bg-[#0C100E] hover:border-white/20 hover:bg-[#101612]",
+                    isJustAdded ? "animate-added-row ring-1 ring-dlsu-vivid/40" : ""
+                  )}
+                >
                   <div className="flex items-start gap-1.5 p-2.5">
                     <button
                       type="button"
                       className="group flex min-w-0 flex-1 items-start gap-2.5 rounded-md p-1 text-left transition-colors duration-150 hover:bg-white/[0.04]"
                       onClick={() => toggleCourseExpand(course.code)}
                     >
-                      <span
-                        className="mt-0.5 h-9 w-1.5 shrink-0 rounded-full border border-black/20"
-                        style={{ backgroundColor: course.color }}
-                      />
+                      <div className="relative mt-0.5 shrink-0">
+                        <span
+                          className="block h-9 w-1.5 rounded-full border border-black/20"
+                          style={{ backgroundColor: course.color }}
+                        />
+                        {course.emoji && (
+                          <span className="absolute -left-1.5 -top-1.5 grid h-4.5 w-4.5 place-items-center rounded-full bg-[#111713] text-[11px] ring-2 ring-black/40">
+                            {course.emoji}
+                          </span>
+                        )}
+                      </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex min-w-0 items-center gap-2">
                           <p className="truncate text-sm font-black text-white">{displayCode}</p>
+                          {conflict && (
+                            <AlertCircle size={12} className="shrink-0 animate-pulse text-red-500" />
+                          )}
                         </div>
                         {course.title && (
                           <p className="mt-0.5 line-clamp-1 text-[11px] leading-snug text-white/50">{course.title}</p>
@@ -3239,6 +3270,40 @@ function MainApp() {
 
                       <div className="space-y-3">
                         <div className="flex items-center justify-between gap-3">
+                          <p className="text-[10px] font-black uppercase tracking-[0.14em] text-white/38">Emoji</p>
+                          <div className="relative">
+                            <button
+                              type="button"
+                              className={classNames(
+                                "flex h-8 items-center gap-2 rounded-md border px-2.5 text-[11px] font-bold shadow-sm transition active:scale-[0.98]",
+                                activeEmojiPickerCode === course.code
+                                  ? "border-dlsu-vivid bg-dlsu-vivid/10 text-white"
+                                  : "border-white/12 bg-white/[0.045] text-white/62 hover:border-white/25 hover:bg-white/[0.075]"
+                              )}
+                              onClick={() => setActiveEmojiPickerCode(activeEmojiPickerCode === course.code ? null : course.code)}
+                            >
+                              <Sparkles size={12} className="opacity-70" />
+                              <span>{course.emoji || "Add Icon"}</span>
+                            </button>
+                            {activeEmojiPickerCode === course.code && (
+                              <div className="absolute right-0 top-full z-[70] mt-2">
+                                <div className="fixed inset-0" onClick={() => setActiveEmojiPickerCode(null)} />
+                                <div className="relative shadow-2xl">
+                                  <EmojiPicker
+                                    theme={appTheme === "dark" ? "dark" as any : "light" as any}
+                                    style={appTheme === "light" ? EMOJI_PICKER_LIGHT_STYLE : EMOJI_PICKER_DARK_STYLE}
+                                    onEmojiClick={(emojiData) => {
+                                      updateCourseEmoji(course.code, emojiData.emoji);
+                                      setActiveEmojiPickerCode(null);
+                                    }}
+                                  />
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between gap-3">
                           <p className="text-[10px] font-black uppercase tracking-[0.14em] text-white/38">Color</p>
                           <label
                             className={classNames(
@@ -3307,6 +3372,21 @@ function MainApp() {
         )}
         </ControlGroup>
         </div>
+      </section>
+
+      {/* ── Stored (Tabs/Schedules) ────────────── */}
+      <section
+        className={classNames(
+          "flex-col gap-5",
+          mobileTab === "saved" ? "flex" : "hidden",
+          desktopPanel === "saved" ? "md:flex" : "md:hidden"
+        )}
+      >
+        <ControlGroup title="Stored">
+          <div className="space-y-4">
+            {renderSavedScheduleActions()}
+          </div>
+        </ControlGroup>
       </section>
 
       {/* ── Design ─────────────────────────────── */}
