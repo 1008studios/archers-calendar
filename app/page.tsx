@@ -4099,6 +4099,17 @@ function MainApp() {
             ref={previewContainerRef}
             className="flex min-h-0 flex-1 items-center justify-center overflow-hidden p-4 md:p-6"
             onClick={() => { if (isMobileExpanded) setIsMobileExpanded(false); }}
+            onTouchStart={(e) => {
+              const touch = e.targetTouches[0];
+              previewContainerRef.current?.setAttribute('data-touch-start-y', touch.clientY.toString());
+            }}
+            onTouchEnd={(e) => {
+              const startY = parseFloat(previewContainerRef.current?.getAttribute('data-touch-start-y') || '0');
+              const endY = e.changedTouches[0].clientY;
+              if (startY && endY - startY > 40 && isMobileExpanded) {
+                setIsMobileExpanded(false);
+              }
+            }}
           >
             <div
               style={{
