@@ -3780,6 +3780,34 @@ function MainApp() {
           desktopPanel === "export" ? "md:block" : "md:hidden"
         )}
       >
+        <div className="md:hidden">
+          <ControlGroup title="Preview Device">
+            <div className="flex items-center gap-1 rounded-xl border border-white/10 bg-black/40 p-1.5 shadow-inner">
+              {(Object.keys(DEVICES) as DeviceId[]).map((deviceId) => {
+                const DeviceIcon = DEVICES[deviceId].icon;
+                const active = device === deviceId;
+                return (
+                  <button
+                    key={deviceId}
+                    className={classNames(
+                      "flex flex-1 h-10 place-items-center justify-center rounded-lg transition-all duration-200",
+                      active 
+                        ? "bg-dlsu-vivid text-white shadow-lg shadow-dlsu-vivid/20" 
+                        : "text-white/40 hover:bg-white/[0.06] hover:text-white/80"
+                    )}
+                    type="button"
+                    title={DEVICES[deviceId].label}
+                    aria-label={DEVICES[deviceId].label}
+                    onClick={() => setDevice(deviceId)}
+                  >
+                    <DeviceIcon size={18} strokeWidth={active ? 2.5 : 2} />
+                  </button>
+                );
+              })}
+            </div>
+          </ControlGroup>
+        </div>
+
         <ControlGroup title="Save As">
           <div className="grid grid-cols-3 gap-1.5">
             {EXPORT_VARIANT_OPTIONS.map(({ value, label, description, icon: VariantIcon }) => (
@@ -3806,13 +3834,20 @@ function MainApp() {
           <button
             type="button"
             className="group flex min-h-12 w-full items-center justify-center gap-2.5 rounded-xl bg-dlsu-vivid px-4 text-white shadow-lg shadow-dlsu-vivid/25 transition-all duration-200 hover:bg-dlsu active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-60"
-            onClick={() => setShowExportPopup(true)}
+            onClick={() => {
+              if (window.innerWidth < 768) {
+                // On mobile, bypass the multi-device popup and just download directly
+                handleExport();
+              } else {
+                setShowExportPopup(true);
+              }
+            }}
             disabled={isExporting}
           >
             {isExporting
               ? <Loader2 size={18} className="animate-spin" />
               : <Download size={18} className="transition-transform group-hover:-translate-y-0.5" />}
-            <span className="text-sm font-black">{isExporting ? "Saving..." : "Save"}</span>
+            <span className="text-sm font-black">{isExporting ? "Saving..." : "Save to Photos"}</span>
           </button>
         </ControlGroup>
       </section>

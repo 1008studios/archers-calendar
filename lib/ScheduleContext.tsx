@@ -146,7 +146,7 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
   const [showSection, setShowSection] = useState(true);
   const [showCourseTitle, setShowCourseTitle] = useState(false);
   const [autoHideEmptyDays, setAutoHideEmptyDays] = useState(true);
-  const [device, setDevice] = useState<DeviceId>("laptop");
+  const [device, setDevice] = useState<DeviceId>("iphone");
   const [wallpaperStyle, setWallpaperStyle] = useState<WallpaperStyle>("clean");
   const [appTheme, setAppTheme] = useState<AppTheme>("dark");
   const [calendarThemeMode, setCalendarThemeMode] = useState<CalendarThemeMode>("normal");
@@ -174,7 +174,7 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
   const [calendarFont, setCalendarFont] = useState<CalendarFont>("geist");
   const [calendarSize, setCalendarSize] = useState(3);
   const [expandedCourses, setExpandedCourses] = useState<Set<string>>(new Set());
-  const [selectedExportDevices, setSelectedExportDevices] = useState<Set<DeviceId>>(new Set<DeviceId>(["iphone", "laptop", "macbook"]));
+  const [selectedExportDevices, setSelectedExportDevices] = useState<Set<DeviceId>>(new Set<DeviceId>(["iphone"]));
 
   const value = useMemo(() => ({
     activeCoursePalette, setActiveCoursePalette,
