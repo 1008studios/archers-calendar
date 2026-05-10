@@ -7,6 +7,7 @@ export type ScheduleEntry = {
   teacher: string;
   section: string;
   color: string;
+  createdAt?: number;
 };
 
 export const DAY_ORDER = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] as const;
@@ -67,7 +68,7 @@ const COURSE_ROW_PATTERN =
 const CELL_LABELS = "Offline Venue|Online Venue|Room No|Room|Teacher|Professor|Prof|Co-Teacher|Section|Batch|Venue|Bldg|Building|Location";
 const LOOSE_CELL_LABELS = "Offline Venue|Online Venue|Room No|Room|Teacher|Professor|Prof|Co-Teacher|Section|Batch|Venue|Bldg|Building|Location";
 const DAY_WORD_PATTERN = /\b(MON(?:DAY)?|TUE(?:S|SDAY)?|WED(?:NESDAY)?|THU(?:R|RS|RSDAY)?|FRI(?:DAY)?|SAT(?:URDAY)?|SUN(?:DAY)?)\b/gi;
-const COMPACT_DAY_PATTERN = /\b(?:MTH|TTH|MWF|MTWTHF|MTWTF|MW|MF|TF|WF|TH|M\/W|M\/TH|T\/TH|T\/F|W\/F|M-TH|T-TH|M-W-F|T-W-F|T-H|T-TH)\b/i;
+const COMPACT_DAY_PATTERN = /\b(?:MTH|TTH|MWF|MTWTHF|MTWTF|MW|MF|TF|WF|TH|M\/W|M\/TH|T\/TH|T\/F|W\/F|M-TH|T-TH|M-W-F|T-W-F|T-H|T-TH|M-W)\b/i;
 
 function makeId() {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) {

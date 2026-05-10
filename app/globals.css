@@ -266,3 +266,14 @@ button {
 [data-app-theme="light"] .archers-range::-moz-range-track {
   background: rgba(8, 28, 16, 0.18);
 }
+
+@keyframes added-row-pulse {
+  0% { transform: scale(0.98); background-color: rgba(0, 112, 60, 0.2); }
+  30% { transform: scale(1.02); background-color: rgba(0, 112, 60, 0.4); }
+  100% { transform: scale(1); background-color: transparent; }
+}
+
+.animate-added-row {
+  animation: added-row-pulse 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+

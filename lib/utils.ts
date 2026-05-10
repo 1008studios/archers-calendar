@@ -236,6 +236,7 @@ export function groupEntriesByCourse(entries: ScheduleEntry[]): Array<{
   code: string;
   title: string;
   color: string;
+  createdAt: number;
   slots: Array<{ timeSlot: string; days: DayKey[]; room: string; teacher: string; section: string }>;
 }> {
   const groups = new Map<string, {
@@ -243,6 +244,7 @@ export function groupEntriesByCourse(entries: ScheduleEntry[]): Array<{
     code: string;
     title: string;
     color: string;
+    createdAt: number;
     slots: Array<{ timeSlot: string; days: DayKey[]; room: string; teacher: string; section: string }>;
   }>();
 
@@ -250,9 +252,12 @@ export function groupEntriesByCourse(entries: ScheduleEntry[]): Array<{
     const { code, title } = courseParts(entry.course);
     const key = courseKeyFromCode(code);
     if (!groups.has(key)) {
-      groups.set(key, { id: entry.id, code, title, color: entry.color, slots: [] });
+      groups.set(key, { id: entry.id, code, title, color: entry.color, createdAt: entry.createdAt || 0, slots: [] });
     }
     const group = groups.get(key)!;
+    if (entry.createdAt && entry.createdAt > group.createdAt) {
+      group.createdAt = entry.createdAt;
+    }
     const day = (normalizeDay(entry.day) || entry.day) as DayKey;
 
     // Find a matching slot (same time) to merge days into

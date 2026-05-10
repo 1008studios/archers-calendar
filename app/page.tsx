@@ -1356,6 +1356,8 @@ function MainApp() {
   const [previewScale, setPreviewScale] = useState(1);
   const [showDesignApplyConfirm, setShowDesignApplyConfirm] = useState(false);
   const [showExportPopup, setShowExportPopup] = useState(false);
+  const [parsingProgress, setParsingProgress] = useState(0);
+  const [justAddedId, setJustAddedId] = useState<string | null>(null);
 
   // Synchronize the currently previewed device with the export selection.
   useEffect(() => {
@@ -2124,6 +2126,30 @@ function MainApp() {
     setIsParsing(true);
     setImportError("");
     setImportSource("");
+    setParsingProgress(0);
+
+    const progressInterval = setInterval(() => {
+      setParsingProgress((prev) => {
+        if (prev >= 99.7) return prev;
+        
+        let increment = 0;
+        if (prev < 70) {
+          // Fast initial progress
+          increment = Math.random() * 2.5 + 1.5;
+        } else if (prev < 90) {
+          // Slow down starting at 70%
+          increment = Math.random() * 0.2 + 0.05;
+        } else if (prev < 98) {
+          // Very slow crawl
+          increment = Math.random() * 0.02 + 0.005;
+        } else {
+          // Micro-crawl near the limit
+          increment = 0.001;
+        }
+        
+        return Math.min(99.72, prev + increment);
+      });
+    }, 100);
 
     const localImport = parseScheduleImport(rawText);
 
@@ -2154,6 +2180,7 @@ function MainApp() {
 
       const parsed = sanitizeScheduleEntries(result.entries ?? []);
       if (parsed.length) {
+        setParsingProgress(100);
         applyParsedEntries(parsed);
         setImportSource(result.source ?? "local");
         if (result.message) setImportError(result.message);
@@ -2165,16 +2192,16 @@ function MainApp() {
       if (localImport.entries.length) {
         applyParsedEntries(localImport.entries);
         setImportSource("local");
-        setImportError("AI fallback was unavailable, so the local import was used.");
+        setImportError("Compatibility Layer was unavailable, so the local import was used.");
         return;
       }
 
       setImportError(error instanceof Error ? error.message : "Import failed.");
     } finally {
+      clearInterval(progressInterval);
       setIsParsing(false);
     }
   }
-
   function handlePaste(event: ClipboardEvent<HTMLTextAreaElement>) {
     const html = event.clipboardData.getData("text/html");
     const text = event.clipboardData.getData("text/plain");
@@ -2203,24 +2230,91 @@ function MainApp() {
   }
 
   function addEntry() {
-    const code = `NEWCLASS ${Math.floor(Math.random() * 1000)}`;
-    const timeSlot = "09:00 AM - 10:30 AM";
-    const days: DayKey[] = ["Mon", "Thu"];
+    const nextNum = (groupedCourses.filter(c => c.code.toLowerCase().includes("new class")).length) + 1;
+    const code = `New Class ${nextNum}`;
+    
+    // Find a non-overlapping slot
+    const candidateSlots = [
+      "07:30 AM - 09:00 AM",
+      "09:15 AM - 10:45 AM",
+      "11:00 AM - 12:30 PM",
+      "12:45 PM - 02:15 PM",
+      "02:30 PM - 04:00 PM",
+      "04:15 PM - 05:45 PM",
+      "06:00 PM - 07:30 PM"
+    ];
+    
+    const dayPairs: DayKey[][] = [["Mon", "Thu"], ["Tue", "Fri"], ["Wed", "Sat"]];
+    
+    let selectedSlot = candidateSlots[0];
+    let selectedDays: DayKey[] = ["Mon", "Thu"];
+    let found = false;
+
+    // Helper to check overlap
+    const isOverlapping = (days: DayKey[], slot: string) => {
+      const parts = slot.split(" - ");
+      const start = getStartMinutes(parts[0]);
+      const end = getStartMinutes(parts[1]);
+      
+      return entries.some(e => {
+        if (!days.includes(e.day as DayKey)) return false;
+        const eParts = e.timeSlot.split(" - ");
+        const eStart = getStartMinutes(eParts[0]);
+        const eEnd = getStartMinutes(eParts[1]);
+        return (start < eEnd && end > eStart);
+      });
+    };
+
+    for (const slot of candidateSlots) {
+      for (const pair of dayPairs) {
+        if (!isOverlapping(pair, slot)) {
+          selectedSlot = slot;
+          selectedDays = pair;
+          found = true;
+          break;
+        }
+      }
+      if (found) break;
+    }
+
+    // If still not found, try single days
+    if (!found) {
+      for (const slot of candidateSlots) {
+        for (const day of DAY_ORDER) {
+          if (day === "Sun" && !visibleDays.Sun) continue;
+          if (!isOverlapping([day], slot)) {
+            selectedSlot = slot;
+            selectedDays = [day];
+            found = true;
+            break;
+          }
+        }
+        if (found) break;
+      }
+    }
+
+    const createdAt = Date.now();
+    const newCourseKey = courseKeyFromCode(code);
 
     setEntries((current) => {
-      const newEntries = days.map((day) => ({
+      const newEntries = selectedDays.map((day) => ({
         id: crypto.randomUUID(),
-        timeSlot,
+        timeSlot: selectedSlot,
         day,
         course: code,
         room: "",
         teacher: "",
         section: "",
-        color: BLOCK_PALETTES[0].hex
+        color: BLOCK_PALETTES[Math.floor(Math.random() * BLOCK_PALETTES.length)].hex,
+        createdAt
       }));
-      return [...current, ...newEntries];
+      return [...newEntries, ...current];
     });
-    setExpandedCourses((current) => new Set(current).add(courseKeyFromCode(code)));
+    
+    setJustAddedId(newCourseKey);
+    setTimeout(() => setJustAddedId(null), 2400);
+
+    setExpandedCourses((current) => new Set(current).add(newCourseKey));
     setMobileTab("start");
     setDesktopPanel("start");
   }
@@ -2543,7 +2637,14 @@ function MainApp() {
   }
 
   // Grouped courses for simplified sidebar (Mon+Thu, Tue+Fri, Wed+Sat treated as one)
-  const groupedCourses = useMemo(() => groupEntriesByCourse(entries), [entries]);
+  const groupedCourses = useMemo(() => {
+    return groupEntriesByCourse(entries).sort((a, b) => {
+      if (a.createdAt !== b.createdAt) {
+        return (b.createdAt || 0) - (a.createdAt || 0);
+      }
+      return getStartMinutes(a.slots[0]?.timeSlot ?? "") - getStartMinutes(b.slots[0]?.timeSlot ?? "");
+    });
+  }, [entries]);
 
   function updateCourseColor(code: string, color: string) {
     setEntries((current) =>
@@ -2951,8 +3052,23 @@ function MainApp() {
           )}
           {!importError && importSource === "ai" && (
             <p className="rounded-lg border border-dlsu-vivid/25 bg-dlsu-vivid/10 px-3 py-2 text-xs font-medium leading-5 text-white/70">
-              Imported with AI fallback.
+              Imported with Compatibility Layer.
             </p>
+          )}
+          {isParsing && (
+            <div className="space-y-2 py-1">
+              <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-wider text-dlsu-vivid">
+                <span>Analyzing Format</span>
+                <span>{parsingProgress.toFixed(2)}%</span>
+              </div>
+              <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/5 shadow-inner">
+                <div 
+                  className="h-full bg-dlsu-vivid transition-all duration-300 ease-out shadow-[0_0_8px_rgba(0,140,77,0.4)]"
+                  style={{ width: `${parsingProgress}%` }}
+                />
+              </div>
+              <p className="text-[10px] font-bold text-white/30 animate-pulse">Running Compatibility Layer...</p>
+            </div>
           )}
           {!importError && importSource === "local" && (
             <p className="rounded-lg border border-white/[0.06] bg-white/[0.03] px-3 py-2 text-xs font-medium leading-5 text-white/55">
@@ -2993,11 +3109,13 @@ function MainApp() {
             {groupedCourses.map((course) => {
               const courseKey = courseKeyFromCode(course.code);
               const isExpanded = expandedCourses.has(courseKey);
+              const isJustAdded = justAddedId === courseKey;
               const displayCode = course.code || "Untitled";
               return (
                 <div key={course.id} className={classNames(
-                  "overflow-hidden rounded-lg border transition-colors duration-150",
-                  isExpanded ? "border-white/20 bg-[#111713]" : "border-white/10 bg-[#0C100E] hover:border-white/20 hover:bg-[#101612]"
+                  "overflow-hidden rounded-lg border transition-all duration-300",
+                  isExpanded ? "border-white/20 bg-[#111713]" : "border-white/10 bg-[#0C100E] hover:border-white/20 hover:bg-[#101612]",
+                  isJustAdded ? "animate-added-row ring-1 ring-dlsu-vivid/40" : ""
                 )}>
                   <div className="flex items-start gap-1.5 p-2.5">
                     <button
@@ -4017,10 +4135,10 @@ function MainApp() {
           </div>
         </div>
       )}
-      <div className="flex h-full w-full min-w-0 flex-col md:grid md:grid-cols-[300px_minmax(0,1fr)] lg:grid-cols-[360px_minmax(0,1fr)]">
+      <div className="flex h-full w-full min-w-0 flex-col lg:grid lg:grid-cols-[320px_minmax(0,1fr)] xl:grid-cols-[360px_minmax(0,1fr)]">
 
         {/* Desktop sidebar */}
-        <aside className="hidden min-h-0 border-r border-white/5 bg-[#070A08] md:flex md:flex-col">
+        <aside className="hidden min-h-0 border-r border-white/5 bg-[#070A08] lg:flex lg:flex-col">
           <div className="flex min-h-20 shrink-0 items-center justify-between border-b border-white/5 bg-[#090D0B]/50 px-6 backdrop-blur-md">
             <img src="/logos/logo-full-green.png" alt="Archers Calendar" className="h-10 w-auto object-contain object-left" />
             <button
@@ -4040,7 +4158,7 @@ function MainApp() {
         <section className="flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden">
 
           {/* Desktop header */}
-          <header className="hidden min-h-20 shrink-0 items-center justify-between border-b border-white/5 bg-[#090D0B]/80 px-8 backdrop-blur-md md:flex">
+          <header className="hidden min-h-20 shrink-0 items-center justify-between border-b border-white/5 bg-[#090D0B]/80 px-8 backdrop-blur-md lg:flex">
             <div>
               <p className="text-[10px] font-bold text-white/40">Live preview</p>
               <h2 className="mt-0.5 text-xl font-black text-white">
@@ -4093,7 +4211,7 @@ function MainApp() {
               so the preview is pixel-perfect with the export output */}
           <div
             ref={previewContainerRef}
-            className="relative flex min-h-0 flex-1 items-center justify-center overflow-hidden p-4 md:p-6"
+            className="relative flex min-h-0 flex-1 items-center justify-center overflow-hidden p-4 md:p-6 lg:p-8"
             onClick={() => { if (isMobileExpanded) setIsMobileExpanded(false); }}
             onTouchStart={(e) => {
               const touch = e.targetTouches[0];
@@ -4107,8 +4225,8 @@ function MainApp() {
               }
             }}
           >
-            {/* Mobile floating header (logo & theme toggle) */}
-            <div className="absolute left-4 right-4 top-4 z-10 flex items-center justify-between md:hidden">
+            {/* Mobile floating header (logo & theme toggle) — visible when sidebar is hidden */}
+            <div className="absolute left-4 right-4 top-4 z-10 flex items-center justify-between lg:hidden">
               <img src="/logos/logo-mini-green.png" alt="Archers Calendar" className="h-8 w-auto object-contain drop-shadow-md" />
               <button
                 type="button"
@@ -4133,7 +4251,9 @@ function MainApp() {
             </div>
           </div>
           
-          <MobileControls>{controls}</MobileControls>
+          <div className="lg:hidden">
+            <MobileControls>{controls}</MobileControls>
+          </div>
 </section>
 
       </div>
