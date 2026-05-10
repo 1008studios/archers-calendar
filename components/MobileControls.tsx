@@ -16,6 +16,14 @@ export default function MobileControls({ children }: { children: React.ReactNode
   
   const contentRef = useRef<HTMLDivElement>(null);
   const touchStartRef = useRef<{ y: number; time: number; height: number } | null>(null);
+  const rafRef = useRef<number | null>(null);
+
+  // Cleanup RAF on unmount
+  useEffect(() => {
+    return () => {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    };
+  }, []);
 
   // Sync React state to DOM inline styles when NOT dragging
   useEffect(() => {
@@ -38,6 +46,8 @@ export default function MobileControls({ children }: { children: React.ReactNode
 
   const handleTouchStart = (e: React.TouchEvent) => {
     if (!contentRef.current) return;
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    
     const startHeight = contentRef.current.getBoundingClientRect().height;
     touchStartRef.current = {
       y: e.touches[0].clientY,
@@ -58,13 +68,20 @@ export default function MobileControls({ children }: { children: React.ReactNode
     // Add rubber banding effect when dragging past the max height
     if (newHeight > maxH) newHeight = maxH + (newHeight - maxH) * 0.15;
     
-    contentRef.current.style.maxHeight = `${newHeight}px`;
-    contentRef.current.style.opacity = `${Math.min(1, newHeight / 40)}`; // Fade in quickly
-    contentRef.current.style.borderTopWidth = newHeight > 0 ? "1px" : "0px";
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    
+    // Use requestAnimationFrame for 120fps display syncing
+    rafRef.current = requestAnimationFrame(() => {
+      if (!contentRef.current) return;
+      contentRef.current.style.maxHeight = `${newHeight}px`;
+      contentRef.current.style.opacity = `${Math.min(1, newHeight / 40)}`; // Fade in quickly
+      contentRef.current.style.borderTopWidth = newHeight > 0 ? "1px" : "0px";
+    });
   };
 
   const handleTouchEnd = (e: React.TouchEvent) => {
     if (!touchStartRef.current || !contentRef.current) return;
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
     
     const deltaY = e.changedTouches[0].clientY - touchStartRef.current.y;
     const deltaTime = Date.now() - touchStartRef.current.time;
