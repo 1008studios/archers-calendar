@@ -33,9 +33,9 @@ const TIME_RANGE_PATTERN =
 const TIME_RANGE_EXTRACT_PATTERN =
   /((?:[01]?\d|2[0-3])(?::[0-5]\d)?\s*(?:A\.?M\.?|P\.?M\.?)?\s*(?:-|to|\u2013|\u2014)\s*(?:[01]?\d|2[0-3])(?::[0-5]\d)?\s*(?:A\.?M\.?|P\.?M\.?)?)/i;
 
-const COURSE_CODE_PATTERN = /\b[A-Z]{2,}[A-Z0-9-]{2,}\b/g;
+const COURSE_CODE_PATTERN = /\b[A-Z]{2,}(?:\s?\d+|\d+)[A-Z0-9-]*\b/g;
 const DAY_WORD_PATTERN = /\b(?:MON(?:DAY)?|TUE(?:S|SDAY)?|WED(?:NESDAY)?|THU(?:R|RS|RSDAY)?|FRI(?:DAY)?|SAT(?:URDAY)?|SUN(?:DAY)?)\b/gi;
-const COMPACT_DAY_PATTERN = /\b(?:MTH|TTH|MWF|MTWTHF|MTWTF|MW|MF|TF|WF|TH|M\/W|M\/TH|T\/TH|T\/F|W\/F|M-TH|T-TH)\b/i;
+const COMPACT_DAY_PATTERN = /\b(?:MTH|TTH|MWF|MTWTHF|MTWTF|MW|MF|TF|WF|TH|M\/W|M\/TH|T\/TH|T\/F|W\/F|M-TH|T-TH|M-W-F|T-W-F|T-H|T-TH)\b/i;
 
 function normalizeSpaces(value: string) {
   return value.replace(/\u00a0/g, " ").replace(/[ \f\v]+/g, " ").trim();
@@ -131,7 +131,7 @@ function getImportSignals(input: string) {
   const timeRanges = countMatches(input, TIME_RANGE_PATTERN);
   const dayWords = new Set(Array.from(input.matchAll(DAY_WORD_PATTERN)).map((match) => normalizeDay(match[0]))).size;
   const courseCodes = countMatches(upper, COURSE_CODE_PATTERN);
-  const fieldLabels = countMatches(input, /\b(?:Room|Teacher|Professor|Prof|Section|Time Slot|Schedule Week)\b/gi);
+  const fieldLabels = countMatches(input, /\b(?:Room|Teacher|Professor|Prof|Section|Time Slot|Schedule Week|Bldg|Building|Location|Venue)\b/gi);
   const hasCompactDays = COMPACT_DAY_PATTERN.test(upper);
   const hasTableShape = input.includes("\t") || /\bTime Slot\b/i.test(input) || /\bSchedule Week\b/i.test(input);
 

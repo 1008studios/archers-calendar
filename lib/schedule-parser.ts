@@ -61,13 +61,13 @@ const TIME_RANGE_PATTERN =
 const LOOSE_TIME_RANGE_PATTERN =
   /((?:[01]?\d|2[0-3])(?::[0-5]\d)?\s*(?:AM|PM|am|pm)?\s*(?:-|to|\u2013|\u2014)\s*(?:[01]?\d|2[0-3])(?::[0-5]\d)?\s*(?:AM|PM|am|pm)?)/;
 
-const COURSE_START_PATTERN = /^[-•*]?\s*([A-Z0-9-]{2,})\s+-\s+(.+)/;
+const COURSE_START_PATTERN = /^[-•*]?\s*([A-Z0-9-]{2,})(?:\s+-\s+|\s{2,}|\t|\s+)(.+)/;
 const COURSE_ROW_PATTERN =
   /^#?\s*([A-Z0-9-]{2,})\s+(.+?)\s+(Lecture and Laboratory|Practicum \/ Internship|Research \/ Capstone|Examination \/ Defense|Administrative \/ Residency|Seminar \/ Workshop|Lecture|Laboratory)\s+(?:[-A-Za-z &.]+?\s+)?(\d+)$/i;
-const CELL_LABELS = "Offline Venue|Online Venue|Room No|Room|Teacher|Professor|Prof|Co-Teacher|Section|Batch|Venue";
-const LOOSE_CELL_LABELS = "Offline Venue|Online Venue|Room No|Room|Teacher|Professor|Prof|Co-Teacher|Section|Batch|Venue";
+const CELL_LABELS = "Offline Venue|Online Venue|Room No|Room|Teacher|Professor|Prof|Co-Teacher|Section|Batch|Venue|Bldg|Building|Location";
+const LOOSE_CELL_LABELS = "Offline Venue|Online Venue|Room No|Room|Teacher|Professor|Prof|Co-Teacher|Section|Batch|Venue|Bldg|Building|Location";
 const DAY_WORD_PATTERN = /\b(MON(?:DAY)?|TUE(?:S|SDAY)?|WED(?:NESDAY)?|THU(?:R|RS|RSDAY)?|FRI(?:DAY)?|SAT(?:URDAY)?|SUN(?:DAY)?)\b/gi;
-const COMPACT_DAY_PATTERN = /\b(?:MTH|TTH|MWF|MTWTHF|MTWTF|MW|MF|TF|WF|TH|M\/W|M\/TH|T\/TH|T\/F|W\/F|M-TH|T-TH)\b/i;
+const COMPACT_DAY_PATTERN = /\b(?:MTH|TTH|MWF|MTWTHF|MTWTF|MW|MF|TF|WF|TH|M\/W|M\/TH|T\/TH|T\/F|W\/F|M-TH|T-TH|M-W-F|T-W-F|T-H|T-TH)\b/i;
 
 function makeId() {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
@@ -197,7 +197,7 @@ function cleanCourse(value: string) {
   withoutBullet = withoutBullet.replace(/(?:\s*[\/,+&]\s*)+$/, "").trim();
   
   // Try to strictly match the Title part, discarding extra appended noise if it looks like a standard code-title format
-  const match = withoutBullet.match(/^([A-Z0-9-]{2,}\s+-\s+[A-Za-z0-9 &.,:()/-]+?)(?=\s+(?:Teacher|Room|Section|Prof|Venue|Bldg|Bldg\.|Rm|Rm\.)|\s{2,}|\t|$)/i);
+  const match = withoutBullet.match(new RegExp(`^([A-Z0-9-]{2,}(?:\\s+-\\s+|\\s{2,}|\\t|\\s+)[A-Za-z0-9 &.,:()/-]+?)(?=\\s+(?:${CELL_LABELS})|\\s{2,}|\\t|$)`, "i"));
   if (match) {
     withoutBullet = normalizeSpaces(match[1]).trim();
   } else {
@@ -892,6 +892,7 @@ export function parseScheduleText(input: string): ScheduleEntry[] {
   return dedupeEntries(
     input
       .split(/\r?\n/)
+      .flatMap((line) => line.split(';'))
       .flatMap((line, index) => parseLooseLine(line, index))
   );
 }

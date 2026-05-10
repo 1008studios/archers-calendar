@@ -159,8 +159,17 @@ export function getStartMinutes(timeSlot: string) {
 }
 
 export function courseParts(course: string) {
-  const [code, ...rest] = course.split(/\s+-\s+/);
-  return { code: (code || course).trim(), title: rest.join(" - ").trim() };
+  if (course.includes(" - ")) {
+    const [code, ...rest] = course.split(/\s+-\s+/);
+    return { code: (code || course).trim(), title: rest.join(" - ").trim() };
+  }
+
+  const match = course.match(/^([A-Z0-9-]{2,})\s+(.+)$/);
+  if (match) {
+    return { code: match[1].trim(), title: match[2].trim() };
+  }
+
+  return { code: course.trim(), title: "" };
 }
 
 export function courseKeyFromCode(code: string) {
