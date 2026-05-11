@@ -728,7 +728,7 @@ export default React.memo(function PreviewCanvas({
                 </div>
               );
             });
-            return [timeLabel, ...gridCells];
+            return ([timeLabel, ...gridCells]);
           }) : (
             <div className={classNames("col-span-full flex items-center justify-center p-12 text-center text-sm font-bold uppercase opacity-40", headerText)}>No Classes Scheduled</div>
             )}
@@ -786,12 +786,13 @@ export default React.memo(function PreviewCanvas({
                   </div>
                 ))}
               </div>
-            )}            </div>          {/* Bottom safe area spacer (home indicator) */}
-          {(device === "iphone" || device.startsWith("ipad")) && (
-            <div style={{ flexShrink: 0, flexBasis: safeAreaBottom }} aria-hidden="true" />
-          )}
+            )}
+            {/* Bottom safe area spacer (home indicator) */}
+            {(device === "iphone" || device.startsWith("ipad")) && (
+              <div style={{ flexShrink: 0, flexBasis: safeAreaBottom }} aria-hidden="true" />
+            )}
+          </div>
         </div>
-        )}
       </div>
     );
   }

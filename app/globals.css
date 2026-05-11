@@ -298,6 +298,43 @@ button {
   }
 }
 
+/* Precise spotlight effect for buttons and clickable items */
+button:not([data-no-spotlight]),
+[data-clickable="true"] {
+  position: relative;
+  overflow: hidden;
+}
+
+button:not([data-no-spotlight])::after,
+[data-clickable="true"]::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(
+    60px circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
+    rgba(255, 255, 255, 0.12),
+    transparent 100%
+  );
+  opacity: 0;
+  transition: opacity 0.4s;
+  z-index: 1;
+}
+
+button:not([data-no-spotlight]):hover::after,
+[data-clickable="true"]:hover::after {
+  opacity: 1;
+}
+
+[data-app-theme="light"] button:not([data-no-spotlight])::after,
+[data-app-theme="light"] [data-clickable="true"]::after {
+  background: radial-gradient(
+    60px circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
+    rgba(0, 140, 77, 0.08),
+    transparent 100%
+  );
+}
+
 .archers-range {
   --range-progress: 0%;
   -webkit-appearance: none;

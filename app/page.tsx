@@ -475,7 +475,8 @@ const BLOCK_PALETTE_GROUPS = [
       { name: "Tangerine",  hex: "#FF8A3D" },
       { name: "Honey",      hex: "#FFDA8A" },
       { name: "Flame",      hex: "#FF6A3D" },
-      { name: "Ruby",       hex: "#E0115F" }
+      { name: "Ruby",       hex: "#E0115F" },
+      { name: "Maroon",     hex: "#800000" }
     ]
   },
   {
@@ -503,7 +504,8 @@ const BLOCK_PALETTE_GROUPS = [
       { name: "Denim",      hex: "#4A6FA5" },
       { name: "Navy",       hex: "#385A8C" },
       { name: "Azure",      hex: "#38A3FF" },
-      { name: "Indigo",     hex: "#4B0082" }
+      { name: "Indigo",     hex: "#4B0082" },
+      { name: "Violet",     hex: "#8F00FF" }
     ]
   },
   {
@@ -517,7 +519,8 @@ const BLOCK_PALETTE_GROUPS = [
       { name: "Violet",     hex: "#9B7AE5" },
       { name: "Grape",      hex: "#7B4FCB" },
       { name: "Amethyst",   hex: "#A855F7" },
-      { name: "Orchid",     hex: "#DA70D6" }
+      { name: "Orchid",     hex: "#DA70D6" },
+      { name: "Plum",       hex: "#DDA0DD" }
     ]
   },
   {
@@ -5220,7 +5223,7 @@ function CalendarFontDropdown({ value, onChange }: { value: CalendarFont; onChan
             Aa
           </span>
           <span className="min-w-0">
-            <span className="block truncate text-sm font-black leading-tight">{active.label}</span>
+            <span className="block text-sm font-black leading-tight">{active.label}</span>
           </span>
         </span>
         <ChevronDown size={16} className={classNames("shrink-0 text-white/45 transition-transform duration-150", open ? "rotate-180" : "")} />
