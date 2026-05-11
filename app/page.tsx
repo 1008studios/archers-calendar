@@ -40,7 +40,8 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { EmojiClickData, PickerProps } from "emoji-picker-react";
-import { ChangeEvent, CSSProperties, ClipboardEvent, useEffect, useMemo, useRef, useState } from "react";
+import { ChangeEvent, CSSProperties, ClipboardEvent, useEffect, useMemo, useRef, useState, useCallback } from "react";
+import { createPortal } from "react-dom";
 import {
   parseScheduleImport,
   sanitizeScheduleEntries,
@@ -1617,22 +1618,6 @@ function MainApp() {
   const dragStartRef = useRef<ManipulationDragStart>({ x: 0, y: 0, ox: 0, oy: 0, osx: 3, osy: 3, frameWidth: 0, frameHeight: 0, gridWidth: 0, gridHeight: 0 });
   const [showManipulationHint, setShowManipulationHint] = useState(false);
 
-  // Synchronize the currently previewed device with the export selection.
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      const target = (e.target as HTMLElement).closest("button, [data-clickable='true']");
-      if (target instanceof HTMLElement) {
-        const rect = target.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
-        target.style.setProperty("--mouse-x", `${x}px`);
-        target.style.setProperty("--mouse-y", `${y}px`);
-      }
-    };
-    window.addEventListener("mousemove", handleMouseMove);
-    return () => window.removeEventListener("mousemove", handleMouseMove);
-  }, []);
-
   useEffect(() => {
     setSelectedExportDevices(new Set([device]));
   }, [device, setSelectedExportDevices]);
@@ -2505,87 +2490,98 @@ function MainApp() {
     };
 
     document.body.style.cursor = getManipulationCursor(type);
-    };
+  };
 
-    const handleManipulationMove = (e: React.MouseEvent) => {
+  const manipulationRafRef = useRef<number | null>(null);
+
+  const handleManipulationMove = useCallback((e: React.MouseEvent) => {
     if (!manipulation) return;
+    if (manipulationRafRef.current) cancelAnimationFrame(manipulationRafRef.current);
 
-    const dx = e.clientX - dragStartRef.current.x;
-    const dy = e.clientY - dragStartRef.current.y;
-    const activeCanvas = CANVAS_SIZES[device];
-    const { type } = manipulation;
+    const clientX = e.clientX;
+    const clientY = e.clientY;
 
-    setDeviceSettings((prev) => {
-      const current = prev[device] || { x: 0, y: 0, sx: 3, sy: 3 };
-      const next = { ...current };
+    manipulationRafRef.current = requestAnimationFrame(() => {
+      const dx = clientX - dragStartRef.current.x;
+      const dy = clientY - dragStartRef.current.y;
+      const activeCanvas = CANVAS_SIZES[device];
+      const { type } = manipulation;
 
-      if (type === "move") {
-        const pxToX = (dx / (activeCanvas.width * previewScale)) * 100;
-        const pxToY = (dy / (activeCanvas.height * previewScale)) * 100;
+      setDeviceSettings((prev) => {
+        const current = prev[device] || { x: 0, y: 0, sx: 3, sy: 3 };
+        const next = { ...current };
 
-        let nx = dragStartRef.current.ox + pxToX;
-        let ny = dragStartRef.current.oy + pxToY;
+        if (type === "move") {
+          const pxToX = (dx / (activeCanvas.width * previewScale)) * 100;
+          const pxToY = (dy / (activeCanvas.height * previewScale)) * 100;
 
-        // Snapping logic: snap to center (0,0) within threshold
-        const snapThreshold = 2.0;
-        if (Math.abs(nx) < snapThreshold) nx = 0;
-        if (Math.abs(ny) < snapThreshold) ny = 0;
+          let nx = dragStartRef.current.ox + pxToX;
+          let ny = dragStartRef.current.oy + pxToY;
 
-        next.x = Math.max(-80, Math.min(80, nx));
-        next.y = Math.max(-80, Math.min(80, ny));
-      } else {
-        const canvasDx = dx / Math.max(previewScale, 0.001);
-        const canvasDy = dy / Math.max(previewScale, 0.001);
-        const resizeDirection = type.replace("resize-", "");
-        const hasEast = resizeDirection.includes("e");
-        const hasWest = resizeDirection.includes("w");
-        const hasNorth = resizeDirection.includes("n");
-        const hasSouth = resizeDirection.includes("s");
-        const limits = getFrameLimits(device);
-        const gridWidthLimits = getGridWidthLimits(device, manipulationDensityFactor);
-        const horizontalAnchor = gridPosition === "left" ? "start" : gridPosition === "right" ? "end" : "center";
-        const verticalAnchor = gridPosition === "top" ? "start" : gridPosition === "bottom" ? "end" : "center";
+          // Snapping logic: snap to center (0,0) within threshold
+          const snapThreshold = 2.0;
+          if (Math.abs(nx) < snapThreshold) nx = 0;
+          if (Math.abs(ny) < snapThreshold) ny = 0;
 
-        if (hasEast || hasWest) {
-          const requestedGridWidth = dragStartRef.current.gridWidth + (hasEast ? canvasDx : -canvasDx);
-          const targetGridWidth = clampValue(requestedGridWidth, gridWidthLimits.minWidth, gridWidthLimits.maxWidth);
-          const gridWidthDelta = targetGridWidth - dragStartRef.current.gridWidth;
-          const edgeDx = hasEast ? gridWidthDelta : -gridWidthDelta;
-          const anchorOffsetPx =
-            horizontalAnchor === "center" ? edgeDx / 2 :
-            horizontalAnchor === "start" ? (hasWest ? edgeDx : 0) :
-            hasEast ? edgeDx : 0;
+          next.x = Math.max(-80, Math.min(80, nx));
+          next.y = Math.max(-80, Math.min(80, ny));
+        } else {
+          const canvasDx = dx / Math.max(previewScale, 0.001);
+          const canvasDy = dy / Math.max(previewScale, 0.001);
+          const resizeDirection = type.replace("resize-", "");
+          const hasEast = resizeDirection.includes("e");
+          const hasWest = resizeDirection.includes("w");
+          const hasNorth = resizeDirection.includes("n");
+          const hasSouth = resizeDirection.includes("s");
+          const limits = getFrameLimits(device);
+          const gridWidthLimits = getGridWidthLimits(device, manipulationDensityFactor);
+          const horizontalAnchor = gridPosition === "left" ? "start" : gridPosition === "right" ? "end" : "center";
+          const verticalAnchor = gridPosition === "top" ? "start" : gridPosition === "bottom" ? "end" : "center";
 
-          next.sx = settingFromGridWidth(device, targetGridWidth, manipulationDensityFactor);
-          next.x = clampValue(dragStartRef.current.ox + (anchorOffsetPx / activeCanvas.width) * 100, -80, 80);
+          if (hasEast || hasWest) {
+            const requestedGridWidth = dragStartRef.current.gridWidth + (hasEast ? canvasDx : -canvasDx);
+            const targetGridWidth = clampValue(requestedGridWidth, gridWidthLimits.minWidth, gridWidthLimits.maxWidth);
+            const gridWidthDelta = targetGridWidth - dragStartRef.current.gridWidth;
+            const edgeDx = hasEast ? gridWidthDelta : -gridWidthDelta;
+            const anchorOffsetPx =
+              horizontalAnchor === "center" ? edgeDx / 2 :
+              horizontalAnchor === "start" ? (hasWest ? edgeDx : 0) :
+              hasEast ? edgeDx : 0;
+
+            next.sx = settingFromGridWidth(device, targetGridWidth, manipulationDensityFactor);
+            next.x = clampValue(dragStartRef.current.ox + (anchorOffsetPx / activeCanvas.width) * 100, -80, 80);
+          }
+
+          if (hasNorth || hasSouth) {
+            const requestedHeight = dragStartRef.current.frameHeight + (hasSouth ? canvasDy : -canvasDy);
+            const targetHeight = clampValue(requestedHeight, limits.minHeight, limits.maxHeight);
+            const heightDelta = targetHeight - dragStartRef.current.frameHeight;
+            const edgeDy = hasSouth ? heightDelta : -heightDelta;
+            const anchorOffsetPx =
+              verticalAnchor === "center" ? edgeDy / 2 :
+              verticalAnchor === "start" ? (hasNorth ? edgeDy : 0) :
+              hasSouth ? edgeDy : 0;
+
+            next.sy = settingFromFrameHeight(device, targetHeight);
+            next.y = clampValue(dragStartRef.current.oy + (anchorOffsetPx / activeCanvas.height) * 100, -80, 80);
+          }
         }
 
-        if (hasNorth || hasSouth) {
-          const requestedHeight = dragStartRef.current.frameHeight + (hasSouth ? canvasDy : -canvasDy);
-          const targetHeight = clampValue(requestedHeight, limits.minHeight, limits.maxHeight);
-          const heightDelta = targetHeight - dragStartRef.current.frameHeight;
-          const edgeDy = hasSouth ? heightDelta : -heightDelta;
-          const anchorOffsetPx =
-            verticalAnchor === "center" ? edgeDy / 2 :
-            verticalAnchor === "start" ? (hasNorth ? edgeDy : 0) :
-            hasSouth ? edgeDy : 0;
+        return { ...prev, [device]: next };
+      });
+    });
+  }, [manipulation, device, previewScale, manipulationDensityFactor, gridPosition, setDeviceSettings]);
 
-          next.sy = settingFromFrameHeight(device, targetHeight);
-          next.y = clampValue(dragStartRef.current.oy + (anchorOffsetPx / activeCanvas.height) * 100, -80, 80);
-        }
-      }
-
-      return { ...prev, [device]: next };
-    });    };
   const handleManipulationEnd = () => {
     if (!manipulation) return;
+    if (manipulationRafRef.current) cancelAnimationFrame(manipulationRafRef.current);
     setManipulation(null);
-    document.body.style.cursor = '';
+    document.body.style.cursor = "";
 
     // Save locally
     if (!sessionStorage.getItem("archers_manipulation_hud_v2")) {
       setShowManipulationHint(false);
-      sessionStorage.setItem("archers_manipulation_hud_v2", "true");
+      sessionStorage.setItem("archers_calendar_manipulation_hint", "true");
     }
   };
   async function duplicateSavedCopy(snapshot: SavedScheduleSnapshot) {
@@ -3743,7 +3739,7 @@ function MainApp() {
 
   // ── Controls (sidebar on desktop, panels on mobile) ──────────────────────
   const controls = (
-   <div data-controls-panel="true" className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-3 pb-72 pt-3 scrollbar-thin md:px-4 md:pb-64 xl:px-4">      {/* ── Paste Schedule ─────────────────────── */}
+   <div data-controls-panel="true" className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-3 pb-6 pt-3 scrollbar-thin md:px-4 md:pb-5 xl:px-4">      {/* ── Paste Schedule ─────────────────────── */}
       <section
         className={classNames(
           "space-y-4",
@@ -5142,19 +5138,44 @@ function CourseField({ label, value, onBlur, className }: { label: string; value
 
 function CalendarFontDropdown({ value, onChange }: { value: CalendarFont; onChange: (font: CalendarFont) => void }) {
   const [open, setOpen] = useState(false);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const [coords, setCoords] = useState({ top: 0, left: 0, width: 0 });
   const active = getCalendarFontOption(value);
+
+  useEffect(() => {
+    if (open && triggerRef.current) {
+      const updatePosition = () => {
+        const rect = triggerRef.current?.getBoundingClientRect();
+        if (rect) {
+          setCoords({
+            top: rect.bottom + window.scrollY,
+            left: rect.left + window.scrollX,
+            width: rect.width
+          });
+        }
+      };
+      updatePosition();
+      window.addEventListener("scroll", updatePosition, true);
+      window.addEventListener("resize", updatePosition);
+      return () => {
+        window.removeEventListener("scroll", updatePosition, true);
+        window.removeEventListener("resize", updatePosition);
+      };
+    }
+  }, [open]);
 
   return (
     <div className="relative">
       {open && (
         <button
           type="button"
-          className="fixed inset-0 z-40 cursor-default"
+          className="fixed inset-0 z-[150] cursor-default"
           aria-label="Close font menu"
           onClick={() => setOpen(false)}
         />
       )}
       <button
+        ref={triggerRef}
         type="button"
         className={classNames(
           "liquid-glass group flex min-h-11 w-full items-center justify-between gap-3 rounded-lg border border-white/[0.14] px-3 text-left text-white outline-none transition-all hover:-translate-y-px hover:border-white/30 hover:bg-white/[0.08] focus:border-dlsu-vivid focus:ring-1 focus:ring-dlsu-vivid/35",
@@ -5175,10 +5196,16 @@ function CalendarFontDropdown({ value, onChange }: { value: CalendarFont; onChan
         <ChevronDown size={16} className={classNames("shrink-0 text-white/45 transition-transform duration-150", open ? "rotate-180" : "")} />
       </button>
 
-      {open && (
+      {open && typeof document !== "undefined" && createPortal(
         <div
           role="listbox"
-          className="liquid-glass-strong animate-popover-in absolute left-0 right-0 top-full z-50 mt-2 max-h-[min(80dvh,480px)] overflow-y-auto rounded-xl border border-white/[0.14] p-1.5 shadow-2xl shadow-black/45 scrollbar-thin"
+          style={{
+            position: "fixed",
+            top: coords.top + 8,
+            left: coords.left,
+            width: coords.width,
+          }}
+          className="liquid-glass-strong animate-popover-in z-[2000] max-h-[min(60dvh,420px)] overflow-y-auto rounded-xl border border-white/[0.14] p-1.5 shadow-2xl shadow-black/45 scrollbar-thin"
         >
           {CALENDAR_FONT_OPTIONS.map((option) => {
             const selected = option.value === value;
@@ -5212,12 +5239,12 @@ function CalendarFontDropdown({ value, onChange }: { value: CalendarFont; onChan
               </button>
             );
           })}
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
 }
-
 function parseTimeSlotTo24h(slot: string): { start: string; end: string } {
   const m = slot.match(/(\d{1,2})(?::(\d{2}))?\s*(AM|PM)?\s*[-–]\s*(\d{1,2})(?::(\d{2}))?\s*(AM|PM)?/i);
   if (!m) return { start: "07:30", end: "09:00" };

@@ -165,7 +165,7 @@ function splitCourseCodeLines(text: string, fontSizePx: number, availableWidthPx
   return [code.slice(0, bestIndex), code.slice(bestIndex)];
 }
 
-export default function PreviewCanvas({
+export default React.memo(function PreviewCanvas({
   canvasRef,
   previewScale,
   onManipulationStart,
