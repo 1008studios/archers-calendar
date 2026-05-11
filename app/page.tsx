@@ -1601,6 +1601,7 @@ function MainApp() {
   const [showExportPopup, setShowExportPopup] = useState(false);
   const [parsingProgress, setParsingProgress] = useState(0);
   const [justAddedId, setJustAddedId] = useState<string | null>(null);
+  const [backgroundSubTab, setBackgroundSubTab] = useState<"base" | "emoji" | "lines">("base");
 
   // Direct Grid Manipulation State
   type ManipulationType = "move" | "resize-n" | "resize-s" | "resize-e" | "resize-w" | "resize-ne" | "resize-nw" | "resize-se" | "resize-sw";
@@ -4369,331 +4370,359 @@ function MainApp() {
         {/* Background */}
         <div className="order-6">
           <ControlGroup title="Background">
-
-            {/* ── Base background tabs: Color / Gradient / Photo ── */}
-            <div className="grid grid-cols-3 gap-1 rounded-lg border border-white/[0.10] bg-white/[0.045] p-1">
+            {/* ── Sub-tabs for Background customization ── */}
+            <div className="mb-4 grid grid-cols-3 gap-1 rounded-lg border border-white/[0.10] bg-white/[0.045] p-1">
               {([
-                { kind: "solid",    label: "Color",    icon: Palette  },
-                { kind: "gradient", label: "Gradient", icon: Sparkles },
-                { kind: "image",    label: "Photo",    icon: ImageIcon },
-              ] as { kind: BackgroundKind; label: string; icon: LucideIcon }[]).map(({ kind, label, icon: KindIcon }) => (
+                { id: "base",  label: "Base",  icon: ImageIcon },
+                { id: "emoji", label: "Emoji", icon: Sparkles },
+                { id: "lines", label: "Lines", icon: Layers    },
+              ] as { id: "base" | "emoji" | "lines"; label: string; icon: LucideIcon }[]).map(({ id, label, icon: TabIcon }) => (
                 <button
-                  key={kind}
+                  key={id}
                   type="button"
                   className={classNames(
-                    "flex min-h-9 items-center justify-center gap-1.5 rounded-md px-2 text-[10px] font-bold transition-all",
-                    backgroundKind === kind
+                    "flex min-h-9 items-center justify-center gap-1.5 rounded-md px-2 text-[10px] font-black transition-all",
+                    backgroundSubTab === id
                       ? "bg-dlsu-vivid text-white shadow-sm shadow-dlsu-vivid/20"
                       : "bg-white/[0.04] text-white/65 hover:bg-white/[0.08] hover:text-white"
                   )}
-                  onClick={(event) => {
-                    if (kind === "solid") handleSolidBackgroundChange(background);
-                    else if (kind === "gradient") applyGradientPreset(gradient);
-                    else {
-                      if (!backgroundImage) {
-                        openBackgroundUpload(event.currentTarget);
-                      } else {
-                        setBackgroundKind("image");
-                      }
-                    }
-                  }}
+                  onClick={() => setBackgroundSubTab(id)}
                 >
-                  <KindIcon size={13} />
+                  <TabIcon size={13} />
                   {label}
                 </button>
               ))}
             </div>
-            <input data-background-image-upload="true" className="sr-only" type="file" accept="image/*" onChange={handleBackgroundUpload} />
 
-            {/* ── Solid ── */}
-            {backgroundKind === "solid" && (
-              <div className="space-y-3">
-                <label className="relative flex min-h-11 cursor-pointer items-center gap-3 overflow-hidden rounded-lg border border-white/15 bg-white/[0.055] px-3 transition hover:border-white/30 hover:bg-white/[0.08]">
-                  <div className="h-6 w-6 shrink-0 rounded-full border border-white/20 shadow-sm" style={{ backgroundColor: background.startsWith("#") ? background : DEFAULT_BACKGROUND }} />
-                  <span className="flex-1 font-mono text-xs text-white/60">{background.startsWith("#") ? background.toUpperCase() : DEFAULT_BACKGROUND}</span>
-                  <span className="text-[10px] font-bold text-white/55">Change</span>
-                  <input className="absolute inset-0 cursor-pointer opacity-0" type="color" value={background.startsWith("#") ? background : DEFAULT_BACKGROUND} onChange={(e) => handleSolidBackgroundChange(e.target.value)} />
-                </label>
-                <div className="space-y-2.5">
-                  {BACKGROUND_CATEGORIES.map((cat) => (
-                    <div key={cat.label}>
-                      <p className="mb-1 text-[9px] font-black uppercase tracking-wider text-white/25">{cat.label}</p>
-	                      <div className="grid grid-cols-6 gap-1.5 xl:grid-cols-8">
-                        {cat.colors.slice(0, -2).map((preset) => (
+            {/* ── Base background view ── */}
+            {backgroundSubTab === "base" && (
+              <div className="space-y-4">
+                <div className="grid grid-cols-3 gap-1 rounded-lg border border-white/[0.10] bg-white/[0.045] p-1">
+                  {([
+                    { kind: "solid",    label: "Color",    icon: Palette  },
+                    { kind: "gradient", label: "Gradient", icon: Sparkles },
+                    { kind: "image",    label: "Photo",    icon: ImageIcon },
+                  ] as { kind: BackgroundKind; label: string; icon: LucideIcon }[]).map(({ kind, label, icon: KindIcon }) => (
+                    <button
+                      key={kind}
+                      type="button"
+                      className={classNames(
+                        "flex min-h-9 items-center justify-center gap-1.5 rounded-md px-2 text-[10px] font-bold transition-all",
+                        backgroundKind === kind
+                          ? "bg-dlsu-vivid text-white shadow-sm shadow-dlsu-vivid/20"
+                          : "bg-white/[0.04] text-white/65 hover:bg-white/[0.08] hover:text-white"
+                      )}
+                      onClick={(event) => {
+                        if (kind === "solid") handleSolidBackgroundChange(background);
+                        else if (kind === "gradient") applyGradientPreset(gradient);
+                        else {
+                          if (!backgroundImage) {
+                            openBackgroundUpload(event.currentTarget);
+                          } else {
+                            setBackgroundKind("image");
+                          }
+                        }
+                      }}
+                    >
+                      <KindIcon size={13} />
+                      {label}
+                    </button>
+                  ))}
+                </div>
+                <input data-background-image-upload="true" className="sr-only" type="file" accept="image/*" onChange={handleBackgroundUpload} />
+
+                {backgroundKind === "solid" && (
+                  <div className="space-y-3">
+                    <label className="relative flex min-h-11 cursor-pointer items-center gap-3 overflow-hidden rounded-lg border border-white/15 bg-white/[0.055] px-3 transition hover:border-white/30 hover:bg-white/[0.08]">
+                      <div className="h-6 w-6 shrink-0 rounded-full border border-white/20 shadow-sm" style={{ backgroundColor: background.startsWith("#") ? background : DEFAULT_BACKGROUND }} />
+                      <span className="flex-1 font-mono text-xs text-white/60">{background.startsWith("#") ? background.toUpperCase() : DEFAULT_BACKGROUND}</span>
+                      <span className="text-[10px] font-bold text-white/55">Change</span>
+                      <input className="absolute inset-0 cursor-pointer opacity-0" type="color" value={background.startsWith("#") ? background : DEFAULT_BACKGROUND} onChange={(e) => handleSolidBackgroundChange(e.target.value)} />
+                    </label>
+                    <div className="space-y-2.5">
+                      {BACKGROUND_CATEGORIES.map((cat) => (
+                        <div key={cat.label}>
+                          <p className="mb-1 text-[9px] font-black uppercase tracking-wider text-white/25">{cat.label}</p>
+                          <div className="grid grid-cols-6 gap-1.5 xl:grid-cols-8">
+                            {cat.colors.slice(0, -2).map((preset) => (
+                              <button
+                                key={`${preset.name}-${preset.value}`}
+                                type="button"
+                                title={preset.name}
+                                aria-label={preset.name}
+                                className={classNames(
+                                  "grid h-8 place-items-center rounded-md border border-white/15 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.10),0_1px_6px_rgba(0,0,0,0.22)] transition-all hover:scale-105 hover:border-white/35 active:scale-95",
+                                  backgroundKind === "solid" && background === preset.value
+                                    ? "ring-2 ring-white ring-offset-1 ring-offset-[#090D0B] border-transparent"
+                                    : ""
+                                )}
+                                style={{ backgroundColor: preset.value, color: getTextColor(preset.value) }}
+                                onClick={() => handleSolidBackgroundChange(preset.value)}
+                              >
+                                {backgroundKind === "solid" && background === preset.value ? <Check size={12} /> : null}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {backgroundKind === "gradient" && (
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-2 gap-1 rounded-lg border border-white/[0.10] bg-white/[0.045] p-1">
+                      {(["linear", "radial"] as GradientType[]).map((type) => (
+                        <button key={type} type="button"
+                          className={classNames("rounded-md py-2 text-[10px] font-bold capitalize transition-all",
+                            gradient.type === type ? "bg-dlsu-vivid text-white shadow-sm shadow-dlsu-vivid/20" : "bg-white/[0.04] text-white/65 hover:bg-white/[0.08] hover:text-white"
+                          )}
+                          onClick={() => updateGradient({ type })}
+                        >{type}</button>
+                      ))}
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      {gradient.colors.slice(0, 2).map((color, index) => (
+                        <label key={index} className="relative flex min-h-10 cursor-pointer items-center gap-2 overflow-hidden rounded-lg border border-white/15 bg-white/[0.055] px-3 transition hover:border-white/30 hover:bg-white/[0.08]">
+                          <div className="h-5 w-5 rounded-full border border-white/20 shadow-sm" style={{ backgroundColor: color }} />
+                          <span className="flex-1 font-mono text-[10px] uppercase text-white/60">{color}</span>
+                          <input className="absolute inset-0 cursor-pointer opacity-0" type="color" value={color} onChange={(e) => updateGradientColor(index, e.target.value)} />
+                        </label>
+                      ))}
+                    </div>
+                    {gradient.type === "linear" && (
+                      <label className="block">
+                        <span className="mb-1 flex justify-between text-[10px] font-bold text-white/40">
+                          <span>Angle</span><span>{gradient.angle}°</span>
+                        </span>
+                        <input type="range" min="0" max="360" value={gradient.angle} onChange={(e) => updateGradient({ angle: Number(e.target.value) })} className="w-full accent-dlsu-vivid" />
+                      </label>
+                    )}
+                    <div className="grid grid-cols-2 gap-1.5 xl:grid-cols-3">
+                      {GRADIENT_PRESETS.map((preset) => (
+                        <button key={preset.name} type="button"
+                          className="min-h-9 rounded-lg border border-white/15 px-2 text-[10px] font-black text-white shadow-[inset_0_0_0_999px_rgba(0,0,0,0.16)] transition hover:border-white/35 active:scale-95"
+                          style={{ backgroundImage: buildGradientBackground(preset.gradient) }}
+                          onClick={() => applyGradientPreset(preset.gradient)}
+                        >{preset.name}</button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {backgroundKind === "image" && (
+                  <div className="space-y-3">
+                    {backgroundImage ? (
+                      <div className="group relative aspect-video w-full overflow-hidden rounded-lg border border-white/10 bg-black/20">
+                        <img src={backgroundImage} alt="Background preview" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
                           <button
-                            key={`${preset.name}-${preset.value}`}
                             type="button"
-                            title={preset.name}
-                            aria-label={preset.name}
-                            className={classNames(
-                              "grid h-8 place-items-center rounded-md border border-white/15 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.10),0_1px_6px_rgba(0,0,0,0.22)] transition-all hover:scale-105 hover:border-white/35 active:scale-95",
-                              backgroundKind === "solid" && background === preset.value
-                                ? "ring-2 ring-white ring-offset-1 ring-offset-[#090D0B] border-transparent"
-                                : ""
-                            )}
-                            style={{ backgroundColor: preset.value, color: getTextColor(preset.value) }}
-                            onClick={() => handleSolidBackgroundChange(preset.value)}
+                            onClick={(event) => openBackgroundUpload(event.currentTarget)}
+                            className="flex items-center gap-2 rounded-full bg-white px-4 py-2 text-[11px] font-black text-black shadow-xl transition-all hover:bg-white/90 active:scale-95"
                           >
-                            {backgroundKind === "solid" && background === preset.value ? <Check size={12} /> : null}
+                            <ImagePlus size={14} />
+                            Replace Photo
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={(event) => openBackgroundUpload(event.currentTarget)}
+                        onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add("border-dlsu-vivid", "bg-dlsu-vivid/5"); }}
+                        onDragLeave={(e) => { e.preventDefault(); e.currentTarget.classList.remove("border-dlsu-vivid", "bg-dlsu-vivid/5"); }}
+                        onDrop={(e) => {
+                          e.preventDefault();
+                          e.currentTarget.classList.remove("border-dlsu-vivid", "bg-dlsu-vivid/5");
+                          const file = e.dataTransfer.files[0];
+                          if (file && file.type.startsWith("image/")) {
+                            const reader = new FileReader();
+                            reader.onload = (re) => {
+                              const result = re.target?.result as string;
+                              setBackgroundImage(result);
+                              setBackgroundKind("image");
+                              void estimateImageTone(result).then(setBackgroundTone);
+                            };
+                            reader.readAsDataURL(file);
+                          }
+                        }}
+                        className="flex min-h-[140px] w-full cursor-pointer flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-white/15 bg-white/[0.035] text-white/45 transition-all hover:border-white/30 hover:bg-white/[0.06] hover:text-white"
+                      >
+                        <div className="grid h-12 w-12 place-items-center rounded-full bg-white/5 text-white/30 transition-colors group-hover:bg-white/10">
+                          <ImagePlus size={22} strokeWidth={1.5} />
+                        </div>
+                        <div className="text-center">
+                          <p className="text-[11px] font-black uppercase tracking-wider">Drag & Drop Photo</p>
+                          <p className="mt-1 text-[10px] font-medium text-white/25">or click to browse files</p>
+                        </div>
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ── Emoji Overlay view ── */}
+            {backgroundSubTab === "emoji" && (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between gap-3">
+                  <SectionLabel>Emoji Overlay</SectionLabel>
+                  <PillSwitch checked={emojiOverlayEnabled} icon={Sparkles} label={emojiOverlayEnabled ? "On" : "Off"} onChange={() => setEmojiOverlayEnabled(!emojiOverlayEnabled)} />
+                </div>
+
+                <div className={classNames("liquid-glass space-y-3 rounded-xl border p-3 transition-all duration-200", emojiOverlayEnabled ? "border-dlsu-vivid/30 bg-dlsu-vivid/[0.055]" : "border-white/[0.08] bg-white/[0.025] opacity-80")}>
+                  <div className="flex items-start gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setEmojiOverlayEnabled(true)}
+                      className="grid h-14 w-14 shrink-0 place-items-center rounded-xl border border-dlsu-vivid/50 bg-dlsu-vivid/15 text-3xl shadow-inner transition active:scale-95"
+                      aria-label="Enable emoji overlay"
+                    >
+                      {pattern.emoji}
+                    </button>
+                    <div className="min-w-0 flex-1">
+                      <p className="mb-2 text-[10px] font-black uppercase tracking-wide text-white/45">Pattern Layout</p>
+                      <div className="grid grid-cols-2 gap-1.5">
+                        {PATTERN_PRESETS.map((preset) => (
+                          <button
+                            key={preset.value}
+                            type="button"
+                            className={classNames(
+                              "min-h-8 rounded-lg border px-2 text-[10px] font-bold transition active:scale-95",
+                              pattern.preset === preset.value
+                                ? "border-dlsu-vivid bg-dlsu-vivid text-white"
+                                : "border-white/15 bg-white/[0.055] text-white/65 hover:border-white/30 hover:bg-white/[0.08] hover:text-white"
+                            )}
+                            onClick={() => { setEmojiOverlayEnabled(true); applyPatternPreset(preset.value); }}
+                          >
+                            {preset.label}
                           </button>
                         ))}
                       </div>
                     </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* ── Gradient ── */}
-            {backgroundKind === "gradient" && (
-              <div className="space-y-3">
-                <div className="grid grid-cols-2 gap-1 rounded-lg border border-white/[0.10] bg-white/[0.045] p-1">
-                  {(["linear", "radial"] as GradientType[]).map((type) => (
-                    <button key={type} type="button"
-                      className={classNames("rounded-md py-2 text-[10px] font-bold capitalize transition-all",
-                        gradient.type === type ? "bg-dlsu-vivid text-white shadow-sm shadow-dlsu-vivid/20" : "bg-white/[0.04] text-white/65 hover:bg-white/[0.08] hover:text-white"
-                      )}
-                      onClick={() => updateGradient({ type })}
-                    >{type}</button>
-                  ))}
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  {gradient.colors.slice(0, 2).map((color, index) => (
-                    <label key={index} className="relative flex min-h-10 cursor-pointer items-center gap-2 overflow-hidden rounded-lg border border-white/15 bg-white/[0.055] px-3 transition hover:border-white/30 hover:bg-white/[0.08]">
-                      <div className="h-5 w-5 rounded-full border border-white/20 shadow-sm" style={{ backgroundColor: color }} />
-                      <span className="flex-1 font-mono text-[10px] uppercase text-white/60">{color}</span>
-                      <input className="absolute inset-0 cursor-pointer opacity-0" type="color" value={color} onChange={(e) => updateGradientColor(index, e.target.value)} />
-                    </label>
-                  ))}
-                </div>
-                {gradient.type === "linear" && (
-                  <label className="block">
-                    <span className="mb-1 flex justify-between text-[10px] font-bold text-white/40">
-                      <span>Angle</span><span>{gradient.angle}°</span>
-                    </span>
-                    <input type="range" min="0" max="360" value={gradient.angle} onChange={(e) => updateGradient({ angle: Number(e.target.value) })} className="w-full accent-dlsu-vivid" />
-                  </label>
-                )}
-	                <div className="grid grid-cols-2 gap-1.5 xl:grid-cols-3">
-                  {GRADIENT_PRESETS.map((preset) => (
-                    <button key={preset.name} type="button"
-                      className="min-h-9 rounded-lg border border-white/15 px-2 text-[10px] font-black text-white shadow-[inset_0_0_0_999px_rgba(0,0,0,0.16)] transition hover:border-white/35 active:scale-95"
-                      style={{ backgroundImage: buildGradientBackground(preset.gradient) }}
-                      onClick={() => applyGradientPreset(preset.gradient)}
-                    >{preset.name}</button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* ── Image ── */}
-            {backgroundKind === "image" && (
-              <div className="space-y-3">
-                {backgroundImage ? (
-                  <div className="group relative aspect-video w-full overflow-hidden rounded-lg border border-white/10 bg-black/20">
-                    <img src={backgroundImage} alt="Background preview" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110" />
-                    <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
-                      <button
-                        type="button"
-                        onClick={(event) => openBackgroundUpload(event.currentTarget)}
-                        className="flex items-center gap-2 rounded-full bg-white px-4 py-2 text-[11px] font-black text-black shadow-xl transition-all hover:bg-white/90 active:scale-95"
-                      >
-                        <ImagePlus size={14} />
-                        Replace Photo
-                      </button>
-                    </div>
                   </div>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={(event) => openBackgroundUpload(event.currentTarget)}
-                    onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add("border-dlsu-vivid", "bg-dlsu-vivid/5"); }}
-                    onDragLeave={(e) => { e.preventDefault(); e.currentTarget.classList.remove("border-dlsu-vivid", "bg-dlsu-vivid/5"); }}
-                    onDrop={(e) => {
-                      e.preventDefault();
-                      e.currentTarget.classList.remove("border-dlsu-vivid", "bg-dlsu-vivid/5");
-                      const file = e.dataTransfer.files[0];
-                      if (file && file.type.startsWith("image/")) {
-                        const reader = new FileReader();
-                        reader.onload = (re) => {
-                          const result = re.target?.result as string;
-                          setBackgroundImage(result);
-                          setBackgroundKind("image");
-                          void estimateImageTone(result).then(setBackgroundTone);
-                        };
-                        reader.readAsDataURL(file);
-                      }
-                    }}
-                    className="flex min-h-[140px] w-full cursor-pointer flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-white/15 bg-white/[0.035] text-white/45 transition-all hover:border-white/30 hover:bg-white/[0.06] hover:text-white"
-                  >
-                    <div className="grid h-12 w-12 place-items-center rounded-full bg-white/5 text-white/30 transition-colors group-hover:bg-white/10">
-                      <ImagePlus size={22} strokeWidth={1.5} />
+
+                  <div className="grid grid-cols-6 gap-1.5 xl:grid-cols-8">
+                    {QUICK_EMOJI_PICKS.map((emoji) => (
+                      <button
+                        key={emoji}
+                        type="button"
+                        className={classNames(
+                          "grid h-10 min-w-0 place-items-center rounded-lg border text-xl transition hover:border-white/25 hover:bg-white/[0.07] active:scale-95",
+                          pattern.emoji === emoji
+                            ? "border-dlsu-vivid bg-dlsu-vivid/20 shadow-sm shadow-dlsu-vivid/20"
+                            : "border-white/15 bg-white/[0.055] hover:border-white/30 hover:bg-white/[0.08]"
+                        )}
+                        onClick={() => updatePattern({ emoji })}
+                        aria-label={`Use ${emoji}`}
+                      >
+                        {emoji}
+                      </button>
+                    ))}
+                  </div>
+
+                  {emojiOverlayEnabled && (
+                    <div className="overflow-hidden rounded-lg border border-white/[0.08] bg-[#0B100D]">
+                      <EmojiPicker
+                        width="100%"
+                        height={280}
+                        theme={(appTheme === "light" ? "light" : "dark") as PickerProps["theme"]}
+                        emojiStyle={"native" as PickerProps["emojiStyle"]}
+                        lazyLoadEmojis
+                        skinTonesDisabled
+                        autoFocusSearch={false}
+                        searchPlaceholder="Search emoji"
+                        previewConfig={{ showPreview: false }}
+                        className="archers-emoji-picker"
+                        style={appTheme === "light" ? EMOJI_PICKER_LIGHT_STYLE : EMOJI_PICKER_DARK_STYLE}
+                        onEmojiClick={(emojiData: EmojiClickData) => updatePattern({ emoji: emojiData.emoji })}
+                      />
                     </div>
-                    <div className="text-center">
-                      <p className="text-[11px] font-black uppercase tracking-wider">Drag & Drop Photo</p>
-                      <p className="mt-1 text-[10px] font-medium text-white/25">or click to browse files</p>
-                    </div>
-                  </button>
-                )}
+                  )}
+
+                  <div className="grid grid-cols-1 gap-3 xl:grid-cols-3">
+                    <label className="block">
+                      <span className="mb-1.5 flex justify-between text-[10px] font-bold text-white/40"><span>Size</span><span>{pattern.size}px</span></span>
+                      <input type="range" min="12" max="240" value={pattern.size} onChange={(e) => updatePattern({ size: Number(e.target.value) })} className="archers-range w-full" style={{ "--range-progress": rangeProgress(pattern.size, 12, 240) } as CSSProperties} />
+                    </label>
+                    <label className="block">
+                      <span className="mb-1.5 flex justify-between text-[10px] font-bold text-white/40"><span>Spacing</span><span>{pattern.spacing}px</span></span>
+                      <input type="range" min="36" max="360" value={pattern.spacing} onChange={(e) => updatePattern({ spacing: Number(e.target.value) })} className="archers-range w-full" style={{ "--range-progress": rangeProgress(pattern.spacing, 36, 360) } as CSSProperties} />
+                    </label>
+                    <label className="block">
+                      <span className="mb-1.5 flex justify-between text-[10px] font-bold text-white/40"><span>Opacity</span><span>{Math.round(pattern.opacity * 100)}%</span></span>
+                      <input type="range" min="0.04" max="1" step="0.01" value={pattern.opacity} onChange={(e) => updatePattern({ opacity: Number(e.target.value) })} className="archers-range w-full" style={{ "--range-progress": rangeProgress(pattern.opacity, 0.04, 1) } as CSSProperties} />
+                    </label>
+                  </div>
+                </div>
               </div>
             )}
 
+            {/* ── Lines Overlay view ── */}
+            {backgroundSubTab === "lines" && (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between gap-3">
+                  <SectionLabel>Lines Overlay</SectionLabel>
+                  <PillSwitch checked={lineOverlayEnabled} icon={Layers} label={lineOverlayEnabled ? "On" : "Off"} onChange={() => setLineOverlayEnabled(!lineOverlayEnabled)} />
+                </div>
 
-
-            <div className="space-y-3 border-t border-white/[0.06] pt-3">
-              <div className="flex items-center justify-between gap-3">
-                <SectionLabel>Emoji</SectionLabel>
-                <PillSwitch checked={emojiOverlayEnabled} icon={Sparkles} label={emojiOverlayEnabled ? "On" : "Off"} onChange={() => setEmojiOverlayEnabled(!emojiOverlayEnabled)} />
-              </div>
-
-              <div className={classNames("liquid-glass space-y-3 rounded-xl border p-3 transition-all duration-200", emojiOverlayEnabled ? "border-dlsu-vivid/30 bg-dlsu-vivid/[0.055]" : "border-white/[0.08] bg-white/[0.025] opacity-80")}>
-                <div className="flex items-start gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setEmojiOverlayEnabled(true)}
-                    className="grid h-14 w-14 shrink-0 place-items-center rounded-xl border border-dlsu-vivid/50 bg-dlsu-vivid/15 text-3xl shadow-inner transition active:scale-95"
-                    aria-label="Enable emoji overlay"
-                  >
-                    {pattern.emoji}
-                  </button>
-                  <div className="min-w-0 flex-1">
-                    <p className="mb-2 text-[10px] font-black uppercase tracking-wide text-white/45">Pattern Layout</p>
-                    <div className="grid grid-cols-2 gap-1.5">
-                      {PATTERN_PRESETS.map((preset) => (
+                <div className={classNames("liquid-glass space-y-3 rounded-xl border p-3 transition-all duration-200", lineOverlayEnabled ? "border-dlsu-vivid/30 bg-dlsu-vivid/[0.055]" : "border-white/[0.08] bg-white/[0.025] opacity-80")}>
+                  <div className="space-y-2">
+                    <p className="text-[10px] font-black uppercase tracking-wide text-white/45">Presets</p>
+                    <div className="grid grid-cols-3 gap-1 xl:grid-cols-5">
+                      {GEOMETRIC_PRESETS.map((preset) => (
                         <button
-                          key={preset.value}
+                          key={preset.name}
                           type="button"
-                          className={classNames(
-                            "min-h-8 rounded-lg border px-2 text-[10px] font-bold transition active:scale-95",
-                            pattern.preset === preset.value
-                              ? "border-dlsu-vivid bg-dlsu-vivid text-white"
-                              : "border-white/15 bg-white/[0.055] text-white/65 hover:border-white/30 hover:bg-white/[0.08] hover:text-white"
-                          )}
-                          onClick={() => { setEmojiOverlayEnabled(true); applyPatternPreset(preset.value); }}
+                          className="rounded-lg border border-white/10 bg-white/5 py-1.5 text-[10px] font-bold text-white/60 transition hover:border-white/30 hover:bg-white/10 hover:text-white"
+                          onClick={() => { setLineOverlayEnabled(true); setGeometric(prev => ({ ...prev, ...preset.config })); }}
                         >
-                          {preset.label}
+                          {preset.name}
                         </button>
                       ))}
                     </div>
                   </div>
-                </div>
 
-                <div className="grid grid-cols-6 gap-1.5 xl:grid-cols-8">
-                  {QUICK_EMOJI_PICKS.map((emoji) => (
-                    <button
-                      key={emoji}
-                      type="button"
-                      className={classNames(
-                        "grid h-10 min-w-0 place-items-center rounded-lg border text-xl transition hover:border-white/25 hover:bg-white/[0.07] active:scale-95",
-                        pattern.emoji === emoji
-                          ? "border-dlsu-vivid bg-dlsu-vivid/20 shadow-sm shadow-dlsu-vivid/20"
-                          : "border-white/15 bg-white/[0.055] hover:border-white/30 hover:bg-white/[0.08]"
-                      )}
-                      onClick={() => updatePattern({ emoji })}
-                      aria-label={`Use ${emoji}`}
-                    >
-                      {emoji}
-                    </button>
-                  ))}
-                </div>
-
-                {emojiOverlayEnabled && (
-                  <div className="overflow-hidden rounded-lg border border-white/[0.08] bg-[#0B100D]">
-                    <EmojiPicker
-                      width="100%"
-                      height={280}
-                      theme={(appTheme === "light" ? "light" : "dark") as PickerProps["theme"]}
-                      emojiStyle={"native" as PickerProps["emojiStyle"]}
-                      lazyLoadEmojis
-                      skinTonesDisabled
-                      autoFocusSearch={false}
-                      searchPlaceholder="Search emoji"
-                      previewConfig={{ showPreview: false }}
-                      className="archers-emoji-picker"
-                      style={appTheme === "light" ? EMOJI_PICKER_LIGHT_STYLE : EMOJI_PICKER_DARK_STYLE}
-                      onEmojiClick={(emojiData: EmojiClickData) => updatePattern({ emoji: emojiData.emoji })}
-                    />
+                  <div className="flex items-center gap-3">
+                    <div className="grid flex-1 grid-cols-3 gap-1 rounded-lg border border-white/[0.10] bg-white/[0.045] p-1 xl:grid-cols-5">
+                      {GEOMETRIC_KIND_OPTIONS.map((opt) => (
+                        <button key={opt.value} type="button"
+                          className={classNames("rounded-md py-1.5 text-[10px] font-bold transition-all",
+                            geometric.kind === opt.value ? "bg-dlsu-vivid text-white shadow-sm shadow-dlsu-vivid/20" : "bg-white/[0.04] text-white/65 hover:bg-white/[0.08] hover:text-white"
+                          )}
+                          onClick={() => { setLineOverlayEnabled(true); setGeometric(prev => ({ ...prev, kind: opt.value })); }}
+                        >{opt.label}</button>
+                      ))}
+                    </div>
+                    <label className="relative flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-full border border-white/20 bg-white/[0.07] transition hover:border-white/35">
+                      <input type="color" value={geometric.color} onChange={(e) => { setLineOverlayEnabled(true); setGeometric(prev => ({ ...prev, color: e.target.value })); }} className="absolute inset-0 cursor-pointer opacity-0" />
+                      <div className="h-5 w-5 rounded-full border border-white/20" style={{ backgroundColor: geometric.color }} />
+                    </label>
                   </div>
-                )}
-
-                <div className="grid grid-cols-1 gap-3 xl:grid-cols-3">
-                  <label className="block">
-                    <span className="mb-1.5 flex justify-between text-[10px] font-bold text-white/40"><span>Size</span><span>{pattern.size}px</span></span>
-                    <input type="range" min="12" max="240" value={pattern.size} onChange={(e) => updatePattern({ size: Number(e.target.value) })} className="archers-range w-full" style={{ "--range-progress": rangeProgress(pattern.size, 12, 240) } as CSSProperties} />
-                  </label>
-                  <label className="block">
-                    <span className="mb-1.5 flex justify-between text-[10px] font-bold text-white/40"><span>Spacing</span><span>{pattern.spacing}px</span></span>
-                    <input type="range" min="36" max="360" value={pattern.spacing} onChange={(e) => updatePattern({ spacing: Number(e.target.value) })} className="archers-range w-full" style={{ "--range-progress": rangeProgress(pattern.spacing, 36, 360) } as CSSProperties} />
-                  </label>
-                  <label className="block">
-                    <span className="mb-1.5 flex justify-between text-[10px] font-bold text-white/40"><span>Opacity</span><span>{Math.round(pattern.opacity * 100)}%</span></span>
-                    <input type="range" min="0.04" max="1" step="0.01" value={pattern.opacity} onChange={(e) => updatePattern({ opacity: Number(e.target.value) })} className="archers-range w-full" style={{ "--range-progress": rangeProgress(pattern.opacity, 0.04, 1) } as CSSProperties} />
-                  </label>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between gap-3 pt-1">
-                <SectionLabel>Lines</SectionLabel>
-                <PillSwitch checked={lineOverlayEnabled} icon={Layers} label={lineOverlayEnabled ? "On" : "Off"} onChange={() => setLineOverlayEnabled(!lineOverlayEnabled)} />
-              </div>
-
-              <div className={classNames("liquid-glass space-y-3 rounded-xl border p-3 transition-all duration-200", lineOverlayEnabled ? "border-dlsu-vivid/30 bg-dlsu-vivid/[0.055]" : "border-white/[0.08] bg-white/[0.025] opacity-80")}>
-                <div className="space-y-2">
-                  <p className="text-[10px] font-black uppercase tracking-wide text-white/45">Presets</p>
-                  <div className="grid grid-cols-3 gap-1 xl:grid-cols-5">
-                    {GEOMETRIC_PRESETS.map((preset) => (
-                      <button
-                        key={preset.name}
-                        type="button"
-                        className="rounded-lg border border-white/10 bg-white/5 py-1.5 text-[10px] font-bold text-white/60 transition hover:border-white/30 hover:bg-white/10 hover:text-white"
-                        onClick={() => { setLineOverlayEnabled(true); setGeometric(prev => ({ ...prev, ...preset.config })); }}
-                      >
-                        {preset.name}
-                      </button>
-                    ))}
+                  <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
+                    <label className="block">
+                      <span className="mb-1.5 flex justify-between text-[10px] font-bold text-white/40"><span>Thickness</span><span>{geometric.size < 5 ? "Thin" : geometric.size > 12 ? "Thick" : "Medium"}</span></span>
+                      <input type="range" min="1" max="20" step="1" value={geometric.size} onChange={(e) => { setLineOverlayEnabled(true); setGeometric(prev => ({ ...prev, size: Number(e.target.value) })); }} className="archers-range w-full" style={{ "--range-progress": rangeProgress(geometric.size, 1, 20) } as CSSProperties} />
+                    </label>
+                    <label className="block">
+                      <span className="mb-1.5 flex justify-between text-[10px] font-bold text-white/40"><span>Density</span><span>{geometric.spacing < 30 ? "Dense" : geometric.spacing > 80 ? "Spaced" : "Normal"}</span></span>
+                      <input type="range" min="16" max="128" step="4" value={geometric.spacing} onChange={(e) => { setLineOverlayEnabled(true); setGeometric(prev => ({ ...prev, spacing: Number(e.target.value) })); }} className="archers-range w-full" style={{ "--range-progress": rangeProgress(geometric.spacing, 16, 128) } as CSSProperties} />
+                    </label>
+                    <label className="block">
+                      <span className="mb-1.5 flex justify-between text-[10px] font-bold text-white/40"><span>Opacity</span><span>{Math.round(geometric.opacity * 100)}%</span></span>
+                      <input type="range" min="0.05" max="1" step="0.05" value={geometric.opacity} onChange={(e) => { setLineOverlayEnabled(true); setGeometric(prev => ({ ...prev, opacity: Number(e.target.value) })); }} className="archers-range w-full" style={{ "--range-progress": rangeProgress(geometric.opacity, 0.05, 1) } as CSSProperties} />
+                    </label>
+                    <label className="block">
+                      <span className="mb-1.5 flex justify-between text-[10px] font-bold text-white/40"><span>Broken</span><span>{geometric.dash > 0 ? `${geometric.dash}px` : "Solid"}</span></span>
+                      <input type="range" min="0" max="32" step="1" value={geometric.dash} onChange={(e) => { setLineOverlayEnabled(true); setGeometric(prev => ({ ...prev, dash: Number(e.target.value) })); }} className="archers-range w-full" style={{ "--range-progress": rangeProgress(geometric.dash, 0, 32) } as CSSProperties} />
+                    </label>
                   </div>
                 </div>
-
-                <div className="flex items-center gap-3">
-                  <div className="grid flex-1 grid-cols-3 gap-1 rounded-lg border border-white/[0.10] bg-white/[0.045] p-1 xl:grid-cols-5">
-                    {GEOMETRIC_KIND_OPTIONS.map((opt) => (
-                      <button key={opt.value} type="button"
-                        className={classNames("rounded-md py-1.5 text-[10px] font-bold transition-all",
-                          geometric.kind === opt.value ? "bg-dlsu-vivid text-white shadow-sm shadow-dlsu-vivid/20" : "bg-white/[0.04] text-white/65 hover:bg-white/[0.08] hover:text-white"
-                        )}
-                        onClick={() => { setLineOverlayEnabled(true); setGeometric(prev => ({ ...prev, kind: opt.value })); }}
-                      >{opt.label}</button>
-                    ))}
-                  </div>
-                  <label className="relative flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-full border border-white/20 bg-white/[0.07] transition hover:border-white/35">
-                    <input type="color" value={geometric.color} onChange={(e) => { setLineOverlayEnabled(true); setGeometric(prev => ({ ...prev, color: e.target.value })); }} className="absolute inset-0 cursor-pointer opacity-0" />
-                    <div className="h-5 w-5 rounded-full border border-white/20" style={{ backgroundColor: geometric.color }} />
-                  </label>
-                </div>
-                <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
-                  <label className="block">
-                    <span className="mb-1.5 flex justify-between text-[10px] font-bold text-white/40"><span>Thickness</span><span>{geometric.size < 5 ? "Thin" : geometric.size > 12 ? "Thick" : "Medium"}</span></span>
-                    <input type="range" min="1" max="20" step="1" value={geometric.size} onChange={(e) => { setLineOverlayEnabled(true); setGeometric(prev => ({ ...prev, size: Number(e.target.value) })); }} className="archers-range w-full" style={{ "--range-progress": rangeProgress(geometric.size, 1, 20) } as CSSProperties} />
-                  </label>
-                  <label className="block">
-                    <span className="mb-1.5 flex justify-between text-[10px] font-bold text-white/40"><span>Density</span><span>{geometric.spacing < 30 ? "Dense" : geometric.spacing > 80 ? "Spaced" : "Normal"}</span></span>
-                    <input type="range" min="16" max="128" step="4" value={geometric.spacing} onChange={(e) => { setLineOverlayEnabled(true); setGeometric(prev => ({ ...prev, spacing: Number(e.target.value) })); }} className="archers-range w-full" style={{ "--range-progress": rangeProgress(geometric.spacing, 16, 128) } as CSSProperties} />
-                  </label>
-                  <label className="block">
-                    <span className="mb-1.5 flex justify-between text-[10px] font-bold text-white/40"><span>Opacity</span><span>{Math.round(geometric.opacity * 100)}%</span></span>
-                    <input type="range" min="0.05" max="1" step="0.05" value={geometric.opacity} onChange={(e) => { setLineOverlayEnabled(true); setGeometric(prev => ({ ...prev, opacity: Number(e.target.value) })); }} className="archers-range w-full" style={{ "--range-progress": rangeProgress(geometric.opacity, 0.05, 1) } as CSSProperties} />
-                  </label>
-                  <label className="block">
-                    <span className="mb-1.5 flex justify-between text-[10px] font-bold text-white/40"><span>Broken</span><span>{geometric.dash > 0 ? `${geometric.dash}px` : "Solid"}</span></span>
-                    <input type="range" min="0" max="32" step="1" value={geometric.dash} onChange={(e) => { setLineOverlayEnabled(true); setGeometric(prev => ({ ...prev, dash: Number(e.target.value) })); }} className="archers-range w-full" style={{ "--range-progress": rangeProgress(geometric.dash, 0, 32) } as CSSProperties} />
-                  </label>
-                </div>
               </div>
-            </div>
-
+            )}
           </ControlGroup>
-        </div>
-      </section>
+        </div>      </section>
 
       {/* ── Export ─────────────────────────────── */}
       <section
