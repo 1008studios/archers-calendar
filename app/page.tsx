@@ -122,6 +122,14 @@ const GEOMETRIC_KIND_OPTIONS: Array<{ value: GeometricKind; label: string }> = [
   { value: "blueprint", label: "Blueprint" },
 ];
 
+const GEOMETRIC_PRESETS = [
+  { name: "Grid", config: { kind: "grid", size: 1, spacing: 32, opacity: 0.15, dash: 0 } },
+  { name: "Dots", config: { kind: "dots", size: 2.5, spacing: 24, opacity: 0.2, dash: 0 } },
+  { name: "Blueprint", config: { kind: "blueprint", size: 1.5, spacing: 64, opacity: 0.12, dash: 0 } },
+  { name: "Minimal", config: { kind: "lines", size: 1, spacing: 48, opacity: 0.08, dash: 0 } },
+  { name: "Dashed", config: { kind: "lines", size: 1.2, spacing: 16, opacity: 0.1, dash: 6 } },
+];
+
 type SavedScheduleState = {
   rawText: string;
   entries: ScheduleEntry[];
@@ -1608,6 +1616,15 @@ function MainApp() {
   const [showManipulationHint, setShowManipulationHint] = useState(false);
 
   // Synchronize the currently previewed device with the export selection.
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      document.documentElement.style.setProperty("--mouse-x", `${e.clientX}px`);
+      document.documentElement.style.setProperty("--mouse-y", `${e.clientY}px`);
+    };
+    window.addEventListener("mousemove", handleMouseMove);
+    return () => window.removeEventListener("mousemove", handleMouseMove);
+  }, []);
+
   useEffect(() => {
     setSelectedExportDevices(new Set([device]));
   }, [device, setSelectedExportDevices]);
@@ -4189,23 +4206,14 @@ function MainApp() {
                         aria-pressed={active}
                         title={`${label}: ${hints[style]}`}
                         className={classNames(
-                          "group grid min-h-11 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 rounded-lg border px-2 py-1.5 text-left transition-all duration-150 active:scale-[0.98]",
+                          "group relative flex min-h-11 items-center gap-3 rounded-lg border px-3 py-1.5 text-left transition-all duration-150 active:scale-[0.98]",
                           active
                             ? "border-dlsu-vivid/80 bg-[#102017] text-white shadow-sm shadow-dlsu-vivid/20"
                             : "border-white/15 bg-white/[0.035] text-white/72 hover:border-white/30 hover:bg-white/[0.07] hover:text-white"
                         )}
                         onClick={() => setWallpaperStyle(style)}
                       >
-                        <div className={classNames(
-                          "grid h-7 w-7 shrink-0 grid-cols-2 gap-0.5 rounded-md border p-1",
-                          active ? "border-dlsu-vivid/35 bg-dlsu-vivid/15" : "border-white/[0.08] bg-white/[0.04]"
-                        )}>
-                          <span className={classNames("rounded-[2px]", style === "clean" || style.startsWith("glass") ? "border border-white/30 bg-white/10" : "bg-white/15")} />
-                          <span className={classNames("rounded-[2px]", style === "bold" ? "shadow-[0_3px_8px_rgba(0,0,0,0.48)]" : "", style === "glass" ? "border border-white/35 bg-white/20" : "bg-white/10")} />
-                          <span className={classNames("rounded-[2px]", style === "compact" ? "bg-white/25" : "bg-white/10")} />
-                          <span className={classNames("rounded-[2px]", style === "glass" ? "border border-white/30 bg-white/20" : "bg-white/10")} />
-                        </div>
-                        <span className="min-w-0">
+                        <span className="min-w-0 flex-1">
                           <span className="block truncate text-[11px] font-black">{label}</span>
                           <span className={classNames("block truncate text-[9px] font-semibold leading-tight", active ? "text-white/[0.48]" : "text-white/[0.34] group-hover:text-white/[0.45]")}>
                             {hints[style]}
@@ -4479,10 +4487,54 @@ function MainApp() {
 
             {/* ── Image ── */}
             {backgroundKind === "image" && (
-              <button type="button" onClick={(event) => openBackgroundUpload(event.currentTarget)} className="flex min-h-20 cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-white/25 bg-white/[0.055] text-white/65 transition hover:border-white/45 hover:bg-white/[0.08] hover:text-white">
-                <ImagePlus size={20} />
-                <span className="text-[11px] font-bold">{backgroundImage ? "Replace photo" : "Upload a photo"}</span>
-              </button>
+              <div className="space-y-3">
+                {backgroundImage ? (
+                  <div className="group relative aspect-video w-full overflow-hidden rounded-lg border border-white/10 bg-black/20">
+                    <img src={backgroundImage} alt="Background preview" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
+                      <button
+                        type="button"
+                        onClick={(event) => openBackgroundUpload(event.currentTarget)}
+                        className="flex items-center gap-2 rounded-full bg-white px-4 py-2 text-[11px] font-black text-black shadow-xl transition-all hover:bg-white/90 active:scale-95"
+                      >
+                        <ImagePlus size={14} />
+                        Replace Photo
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={(event) => openBackgroundUpload(event.currentTarget)}
+                    onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add("border-dlsu-vivid", "bg-dlsu-vivid/5"); }}
+                    onDragLeave={(e) => { e.preventDefault(); e.currentTarget.classList.remove("border-dlsu-vivid", "bg-dlsu-vivid/5"); }}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      e.currentTarget.classList.remove("border-dlsu-vivid", "bg-dlsu-vivid/5");
+                      const file = e.dataTransfer.files[0];
+                      if (file && file.type.startsWith("image/")) {
+                        const reader = new FileReader();
+                        reader.onload = (re) => {
+                          const result = re.target?.result as string;
+                          setBackgroundImage(result);
+                          setBackgroundKind("image");
+                          void estimateImageTone(result).then(setBackgroundTone);
+                        };
+                        reader.readAsDataURL(file);
+                      }
+                    }}
+                    className="flex min-h-[140px] w-full cursor-pointer flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-white/15 bg-white/[0.035] text-white/45 transition-all hover:border-white/30 hover:bg-white/[0.06] hover:text-white"
+                  >
+                    <div className="grid h-12 w-12 place-items-center rounded-full bg-white/5 text-white/30 transition-colors group-hover:bg-white/10">
+                      <ImagePlus size={22} strokeWidth={1.5} />
+                    </div>
+                    <div className="text-center">
+                      <p className="text-[11px] font-black uppercase tracking-wider">Drag & Drop Photo</p>
+                      <p className="mt-1 text-[10px] font-medium text-white/25">or click to browse files</p>
+                    </div>
+                  </button>
+                )}
+              </div>
             )}
 
 
@@ -4490,7 +4542,7 @@ function MainApp() {
             <div className="space-y-3 border-t border-white/[0.06] pt-3">
               <div className="flex items-center justify-between gap-3">
                 <SectionLabel>Emoji</SectionLabel>
-                <GlassSwitch checked={emojiOverlayEnabled} icon={Sparkles} label={emojiOverlayEnabled ? "On" : "Off"} onChange={() => setEmojiOverlayEnabled(!emojiOverlayEnabled)} />
+                <PillSwitch checked={emojiOverlayEnabled} icon={Sparkles} label={emojiOverlayEnabled ? "On" : "Off"} onChange={() => setEmojiOverlayEnabled(!emojiOverlayEnabled)} />
               </div>
 
               <div className={classNames("liquid-glass space-y-3 rounded-xl border p-3 transition-all duration-200", emojiOverlayEnabled ? "border-dlsu-vivid/30 bg-dlsu-vivid/[0.055]" : "border-white/[0.08] bg-white/[0.025] opacity-80")}>
@@ -4581,10 +4633,26 @@ function MainApp() {
 
               <div className="flex items-center justify-between gap-3 pt-1">
                 <SectionLabel>Lines</SectionLabel>
-                <GlassSwitch checked={lineOverlayEnabled} icon={Layers} label={lineOverlayEnabled ? "On" : "Off"} onChange={() => setLineOverlayEnabled(!lineOverlayEnabled)} />
+                <PillSwitch checked={lineOverlayEnabled} icon={Layers} label={lineOverlayEnabled ? "On" : "Off"} onChange={() => setLineOverlayEnabled(!lineOverlayEnabled)} />
               </div>
 
               <div className={classNames("liquid-glass space-y-3 rounded-xl border p-3 transition-all duration-200", lineOverlayEnabled ? "border-dlsu-vivid/30 bg-dlsu-vivid/[0.055]" : "border-white/[0.08] bg-white/[0.025] opacity-80")}>
+                <div className="space-y-2">
+                  <p className="text-[10px] font-black uppercase tracking-wide text-white/45">Presets</p>
+                  <div className="grid grid-cols-3 gap-1 xl:grid-cols-5">
+                    {GEOMETRIC_PRESETS.map((preset) => (
+                      <button
+                        key={preset.name}
+                        type="button"
+                        className="rounded-lg border border-white/10 bg-white/5 py-1.5 text-[10px] font-bold text-white/60 transition hover:border-white/30 hover:bg-white/10 hover:text-white"
+                        onClick={() => { setLineOverlayEnabled(true); setGeometric(prev => ({ ...prev, ...preset.config })); }}
+                      >
+                        {preset.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
                 <div className="flex items-center gap-3">
                   <div className="grid flex-1 grid-cols-3 gap-1 rounded-lg border border-white/[0.10] bg-white/[0.045] p-1 xl:grid-cols-5">
                     {GEOMETRIC_KIND_OPTIONS.map((opt) => (
@@ -5206,7 +5274,7 @@ function TimeFieldInputs({ parsed, onBlur }: { parsed: { start: string; end: str
   );
 }
 
-function GlassSwitch({ checked, label, icon: Icon, onChange }: { checked: boolean; label: string; icon: LucideIcon; onChange: () => void }) {
+function PillSwitch({ checked, label, icon: Icon, onChange }: { checked: boolean; label: string; icon: LucideIcon; onChange: () => void }) {
   return (
     <button
       type="button"
@@ -5215,15 +5283,15 @@ function GlassSwitch({ checked, label, icon: Icon, onChange }: { checked: boolea
       className={classNames(
         "liquid-glass group inline-flex h-9 shrink-0 items-center gap-2 rounded-full border px-2.5 text-[11px] font-black text-white transition-all duration-200 hover:-translate-y-px active:scale-[0.98]",
         checked
-          ? "border-dlsu-vivid/45 bg-dlsu-vivid/18 shadow-sm shadow-dlsu-vivid/15"
-          : "border-white/[0.12] bg-white/[0.035] text-white/58 hover:border-white/25 hover:text-white/80"
+          ? "border-dlsu-vivid/40 bg-dlsu-vivid/25 shadow-sm"
+          : "border-white/[0.12] bg-white/[0.05] text-white/60 hover:border-white/25 hover:text-white/80"
       )}
     >
       <Icon size={13} className={classNames("transition-colors", checked ? "text-dlsu-vivid" : "text-white/45 group-hover:text-white/70")} />
       <span className="min-w-7 text-left">{label}</span>
       <span className={classNames(
         "relative flex h-5 w-9 items-center rounded-full p-0.5 transition-colors duration-200",
-        checked ? "bg-dlsu-vivid" : "bg-white/[0.16]"
+        checked ? "bg-dlsu-vivid" : "bg-white/[0.18]"
       )}>
         <span className={classNames(
           "h-4 w-4 rounded-full bg-white shadow-sm transition-transform duration-200",

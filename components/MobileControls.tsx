@@ -141,8 +141,8 @@ export default function MobileControls({ children }: { children: React.ReactNode
               <button
                 key={tab.id}
                 className={classNames(
-                  "flex min-h-12 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-lg px-2 text-[11px] font-bold transition-all duration-200",
-                  active ? "bg-dlsu-vivid text-white shadow-md shadow-dlsu-vivid/25" : "liquid-glass text-white/60 hover:bg-white/[0.08] hover:text-white"
+                  "liquid-glass flex min-h-12 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-lg px-2 text-[11px] font-bold transition-all duration-200",
+                  active ? "bg-dlsu-vivid text-white shadow-md shadow-dlsu-vivid/25" : "text-white/60 hover:bg-white/[0.08] hover:text-white"
                 )}
                 type="button"
                 onClick={() => {
