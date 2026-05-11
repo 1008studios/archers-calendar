@@ -165,11 +165,12 @@ export default function MobileControls({ children }: { children: React.ReactNode
       
       <div 
         ref={contentRef}
-        className="overflow-y-auto border-white/[0.06] scrollbar-thin"
+        className="overscroll-contain overflow-y-auto border-white/[0.06] scrollbar-thin"
         style={{
           maxHeight: isMobileExpanded ? "50dvh" : "0px",
           opacity: isMobileExpanded ? 1 : 0,
           borderTopWidth: isMobileExpanded ? "1px" : "0px",
+          touchAction: isMobileExpanded ? "auto" : "none"
         }}
       >
         {children}

@@ -502,7 +502,8 @@ const BLOCK_PALETTE_GROUPS = [
       { name: "Slate",      hex: "#90A4B8" },
       { name: "Denim",      hex: "#4A6FA5" },
       { name: "Navy",       hex: "#385A8C" },
-      { name: "Azure",      hex: "#38A3FF" }
+      { name: "Azure",      hex: "#38A3FF" },
+      { name: "Indigo",     hex: "#4B0082" }
     ]
   },
   {
@@ -515,7 +516,8 @@ const BLOCK_PALETTE_GROUPS = [
       { name: "Mochi",      hex: "#F0D8F8" },
       { name: "Violet",     hex: "#9B7AE5" },
       { name: "Grape",      hex: "#7B4FCB" },
-      { name: "Amethyst",   hex: "#A855F7" }
+      { name: "Amethyst",   hex: "#A855F7" },
+      { name: "Orchid",     hex: "#DA70D6" }
     ]
   },
   {
@@ -2917,9 +2919,6 @@ function MainApp() {
       width: `${size.width}px`,
       height: `${size.height}px`,
       transform: "none",
-      border: "0",
-      borderRadius: "0",
-      boxShadow: "none"
     });
 
     wrapper.appendChild(clone);
@@ -3739,7 +3738,7 @@ function MainApp() {
 
   // ── Controls (sidebar on desktop, panels on mobile) ──────────────────────
   const controls = (
-   <div data-controls-panel="true" className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-3 pb-6 pt-3 scrollbar-thin md:px-4 md:pb-5 xl:px-4">      {/* ── Paste Schedule ─────────────────────── */}
+    <div data-controls-panel="true" className="flex flex-col gap-4 px-3 pb-12 pt-3 md:px-4 md:pb-10 xl:px-4">      {/* ── Paste Schedule ─────────────────────── */}
       <section
         className={classNames(
           "space-y-4",
@@ -4845,7 +4844,9 @@ function MainApp() {
             </button>
           </div>
           {sidebarPanelTabs}
-          {controls}
+          <div className="flex-1 overscroll-contain overflow-y-auto scrollbar-thin">
+            {controls}
+          </div>
         </aside>
 
         {/* Right: preview area */}
@@ -5016,10 +5017,10 @@ function MainApp() {
       {/* Welcome Popup Modal */}
       {showBetaPopup && (
         <div
-          className="fixed inset-0 z-[200] flex items-center justify-center bg-[#080B09]/80 p-4 backdrop-blur-xl"
+          className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 p-4 backdrop-blur-xl"
           onClick={(e) => { if (e.target === e.currentTarget) setShowBetaPopup(false); }}
         >
-          <div className="relative flex w-full max-w-[390px] flex-col overflow-hidden rounded-2xl border border-white/10 bg-[#0D110F] shadow-[0_32px_80px_rgba(0,0,0,0.7)]">
+          <div className="liquid-glass-strong relative flex w-full max-w-[390px] flex-col overflow-hidden rounded-2xl border border-white/10 shadow-[0_32px_80px_rgba(0,0,0,0.7)]">
             <button
               type="button"
               onClick={() => setShowBetaPopup(false)}
@@ -5203,7 +5204,9 @@ function CalendarFontDropdown({ value, onChange }: { value: CalendarFont; onChan
             position: "fixed",
             top: coords.top + 8,
             left: coords.left,
-            width: coords.width,
+            minWidth: Math.max(coords.width, 260),
+            width: "max-content",
+            maxWidth: "calc(100vw - 2rem)"
           }}
           className="liquid-glass-strong animate-popover-in z-[2000] max-h-[min(60dvh,420px)] overflow-y-auto rounded-xl border border-white/[0.14] p-1.5 shadow-2xl shadow-black/45 scrollbar-thin"
         >
@@ -5216,7 +5219,7 @@ function CalendarFontDropdown({ value, onChange }: { value: CalendarFont; onChan
                 role="option"
                 aria-selected={selected}
                 className={classNames(
-                  "group/option flex min-h-11 w-full items-center justify-between gap-3 rounded-lg px-2.5 text-left transition-all duration-150 hover:bg-white/[0.08] active:scale-[0.99]",
+                  "group/option flex min-h-12 w-full items-center justify-between gap-4 rounded-lg px-3 text-left transition-all duration-150 hover:bg-white/[0.08] active:scale-[0.99]",
                   selected ? "bg-dlsu-vivid/18 text-white" : "text-white/72 hover:text-white",
                   option.bodyClass
                 )}
@@ -5225,17 +5228,20 @@ function CalendarFontDropdown({ value, onChange }: { value: CalendarFont; onChan
                   setOpen(false);
                 }}
               >
-                <span className="min-w-0 truncate text-sm font-black">{option.label}</span>
+                <div className="flex min-w-0 flex-1 flex-col">
+                  <span className={classNames("text-[15px] font-black leading-tight", option.headingClass)}>{option.label}</span>
+                  <span className="mt-0.5 text-[10px] font-semibold text-white/30 group-hover/option:text-white/50">The quick brown fox jumps...</span>
+                </div>
                 <span className={classNames(
-                  "flex shrink-0 items-center gap-2 rounded-md border px-2 py-1 text-[12px] font-black transition-colors",
+                  "flex h-8 w-8 shrink-0 items-center justify-center rounded-md border text-[13px] font-black transition-colors",
                   selected
                     ? "border-dlsu-vivid/55 bg-dlsu-vivid/25 text-white"
                     : "border-white/[0.10] bg-white/[0.045] text-white/55 group-hover/option:text-white/85",
                   option.headingClass
                 )}>
                   Aa
-                  {selected && <Check size={12} strokeWidth={3} className="text-dlsu-vivid" />}
                 </span>
+                {selected && <Check size={14} strokeWidth={3} className="shrink-0 text-dlsu-vivid" />}
               </button>
             );
           })}
