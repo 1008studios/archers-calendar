@@ -183,60 +183,75 @@ button {
   background: rgba(0, 0, 0, 0.15);
 }
 
-.liquid-glass:not([data-wallpaper-canvas], [data-wallpaper-canvas] *) {
-  background: rgba(14, 18, 16, 0.98);
-  border-color: rgba(255, 255, 255, 0.08);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
+/* Spotlight effect for buttons and clickable items */
+button:not([data-no-spotlight]),
+[data-clickable="true"] {
   position: relative;
   overflow: hidden;
 }
 
-.liquid-glass::after {
+button:not([data-no-spotlight])::after,
+[data-clickable="true"]::after {
   content: '';
   position: absolute;
   inset: 0;
   pointer-events: none;
   background: radial-gradient(
-    400px circle at var(--mouse-x, 0) var(--mouse-y, 0),
-    rgba(255, 255, 255, 0.06),
-    transparent 40%
+    80px circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
+    rgba(255, 255, 255, 0.12),
+    transparent 100%
   );
   opacity: 0;
-  transition: opacity 0.3s;
+  transition: opacity 0.4s;
+  z-index: 1;
 }
 
-.liquid-glass:hover::after {
+button:not([data-no-spotlight]):hover::after,
+[data-clickable="true"]:hover::after {
   opacity: 1;
 }
 
-.liquid-glass-strong:not([data-wallpaper-canvas], [data-wallpaper-canvas] *) {
-  background: rgba(11, 14, 12, 1);
-  border-color: rgba(255, 255, 255, 0.12);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.24);
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-}
-
-[data-app-theme="light"] .liquid-glass:not([data-wallpaper-canvas], [data-wallpaper-canvas] *) {
-  background: #ffffff;
-  border-color: rgba(0, 0, 0, 0.08);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
-}
-
-[data-app-theme="light"] .liquid-glass::after {
+[data-app-theme="light"] button:not([data-no-spotlight])::after,
+[data-app-theme="light"] [data-clickable="true"]::after {
   background: radial-gradient(
-    400px circle at var(--mouse-x, 0) var(--mouse-y, 0),
-    rgba(0, 140, 77, 0.045),
-    transparent 50%
+    80px circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
+    rgba(0, 140, 77, 0.08),
+    transparent 100%
   );
 }
 
+.liquid-glass:not([data-wallpaper-canvas], [data-wallpaper-canvas] *) {
+  background: rgba(14, 18, 16, 0.82);
+  border-color: rgba(255, 255, 255, 0.10);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  position: relative;
+  overflow: hidden;
+}
+
+.liquid-glass-strong:not([data-wallpaper-canvas], [data-wallpaper-canvas] *) {
+  background: rgba(11, 14, 12, 0.88);
+  border-color: rgba(255, 255, 255, 0.14);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+[data-app-theme="light"] .liquid-glass:not([data-wallpaper-canvas], [data-wallpaper-canvas] *) {
+  background: rgba(255, 255, 255, 0.85);
+  border-color: rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
 [data-app-theme="light"] .liquid-glass-strong:not([data-wallpaper-canvas], [data-wallpaper-canvas] *) {
-  background: #ffffff;
+  background: rgba(255, 255, 255, 0.92);
   border-color: rgba(0, 0, 0, 0.12);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
 }
 
 /* Light mode overrides for hardcoded dark themes in JS */

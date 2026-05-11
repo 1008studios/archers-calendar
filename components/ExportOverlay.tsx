@@ -12,7 +12,7 @@ export default function ExportOverlay() {
 
     return (
         <div className="pointer-events-none fixed bottom-5 left-1/2 z-[210] w-[min(22rem,calc(100vw-2rem))] -translate-x-1/2 lg:bottom-6 lg:left-auto lg:right-6 lg:translate-x-0">
-            <div className="animate-popover-in rounded-xl border border-white/[0.12] bg-[#0B100D]/95 p-4 shadow-2xl shadow-black/50 backdrop-blur-xl">
+            <div className="liquid-glass-strong animate-popover-in rounded-xl border border-white/[0.12] p-4 shadow-2xl shadow-black/50">
                 <div className="flex items-center gap-3">
                     <Loader2 className="h-5 w-5 shrink-0 animate-spin text-dlsu-vivid" />
                     <div className="min-w-0 flex-1">

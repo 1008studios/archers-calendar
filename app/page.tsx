@@ -473,7 +473,8 @@ const BLOCK_PALETTE_GROUPS = [
       { name: "Apricot",    hex: "#FFB36B" },
       { name: "Tangerine",  hex: "#FF8A3D" },
       { name: "Honey",      hex: "#FFDA8A" },
-      { name: "Flame",      hex: "#FF6A3D" }
+      { name: "Flame",      hex: "#FF6A3D" },
+      { name: "Ruby",       hex: "#E0115F" }
     ]
   },
   {
@@ -486,7 +487,8 @@ const BLOCK_PALETTE_GROUPS = [
       { name: "Mint",       hex: "#A8EED5" },
       { name: "Teal",       hex: "#4DB6AC" },
       { name: "Jade",       hex: "#57C785" },
-      { name: "Leaf",       hex: "#2FBF71" }
+      { name: "Leaf",       hex: "#2FBF71" },
+      { name: "Neon",       hex: "#39FF14" }
     ]
   },
   {
@@ -1618,8 +1620,14 @@ function MainApp() {
   // Synchronize the currently previewed device with the export selection.
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
-      document.documentElement.style.setProperty("--mouse-x", `${e.clientX}px`);
-      document.documentElement.style.setProperty("--mouse-y", `${e.clientY}px`);
+      const target = (e.target as HTMLElement).closest("button, [data-clickable='true']");
+      if (target instanceof HTMLElement) {
+        const rect = target.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        target.style.setProperty("--mouse-x", `${x}px`);
+        target.style.setProperty("--mouse-y", `${y}px`);
+      }
     };
     window.addEventListener("mousemove", handleMouseMove);
     return () => window.removeEventListener("mousemove", handleMouseMove);
@@ -3702,8 +3710,7 @@ function MainApp() {
                   <ChevronDown size={14} className={classNames("shrink-0 opacity-45 transition-transform", openDaysDropdown ? "rotate-180" : "")} />
                 </button>
                 {openDaysDropdown && (
-                  <div className="absolute left-0 right-0 top-full z-50 mt-1 rounded-lg border border-white/10 bg-[#0D1210] p-1 shadow-2xl">
-                    {DAY_ORDER.filter((d) => d !== "Sun").map((day) => (
+                  <div className="liquid-glass-strong absolute left-0 right-0 top-full z-50 mt-1 rounded-lg border border-white/10 p-1 shadow-2xl">                    {DAY_ORDER.filter((d) => d !== "Sun").map((day) => (
                       <label key={day} className="flex cursor-pointer items-center justify-between rounded-md px-3 py-2 transition hover:bg-white/[0.05]">
                         <span className="text-xs font-bold text-white/80">{DAY_NAMES_FULL[day]}</span>
                         <input
@@ -3736,8 +3743,7 @@ function MainApp() {
 
   // ── Controls (sidebar on desktop, panels on mobile) ──────────────────────
   const controls = (
-   <div data-controls-panel="true" className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-3 pb-6 pt-3 scrollbar-thin md:px-4 md:pb-5 xl:px-4">
-      {/* ── Paste Schedule ─────────────────────── */}
+   <div data-controls-panel="true" className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-3 pb-72 pt-3 scrollbar-thin md:px-4 md:pb-64 xl:px-4">      {/* ── Paste Schedule ─────────────────────── */}
       <section
         className={classNames(
           "space-y-4",
@@ -3927,7 +3933,7 @@ function MainApp() {
                                     <ChevronDown size={12} className={classNames("opacity-40 transition-transform", isDropdownOpen ? "rotate-180" : "")} />
                                   </button>
                                   {isDropdownOpen && (
-                                    <div className="absolute left-0 right-0 top-full z-[60] mt-1 rounded-lg border border-white/10 bg-[#0D1210] p-1 shadow-2xl">
+                                    <div className="liquid-glass-strong absolute left-0 right-0 top-full z-[60] mt-1 rounded-lg border border-white/10 p-1 shadow-2xl">
                                       {DAY_ORDER.filter((d) => d !== "Sun").map((day) => (
                                         <label key={day} className="flex cursor-pointer items-center justify-between rounded-md px-2 py-1.5 transition hover:bg-white/[0.05]">
                                           <span className="text-[11px] font-bold text-white/80">{DAY_NAMES_FULL[day]}</span>
@@ -4800,10 +4806,9 @@ function MainApp() {
       {/* Design load confirmation modal */}
       {showDesignApplyConfirm && (
         <div
-          className="fixed inset-0 z-[200] flex items-center justify-center bg-black/70 backdrop-blur-sm px-4"
+          className="fixed inset-0 z-[200] flex items-center justify-center bg-black/75 backdrop-blur-md px-4"
           onClick={(e) => { if (e.target === e.currentTarget) setShowDesignApplyConfirm(false); }}
-        >
-          <div className="w-full max-w-sm rounded-2xl border border-white/10 bg-[#0E1410] p-6 shadow-2xl">
+        >          <div className="w-full max-w-sm rounded-2xl border border-white/10 bg-[#0E1410] p-6 shadow-2xl">
             <div className="mb-1 text-base font-black text-white">Load this design?</div>
             <p className="mb-5 text-sm leading-relaxed text-white/50">
               This changes the background, colors, font, and layout. Your courses stay as-is.
@@ -5173,7 +5178,7 @@ function CalendarFontDropdown({ value, onChange }: { value: CalendarFont; onChan
       {open && (
         <div
           role="listbox"
-          className="liquid-glass-strong animate-popover-in absolute left-0 right-0 top-full z-50 mt-2 max-h-72 overflow-y-auto rounded-xl border border-white/[0.14] p-1.5 shadow-2xl shadow-black/45 scrollbar-thin"
+          className="liquid-glass-strong animate-popover-in absolute left-0 right-0 top-full z-50 mt-2 max-h-[min(80dvh,480px)] overflow-y-auto rounded-xl border border-white/[0.14] p-1.5 shadow-2xl shadow-black/45 scrollbar-thin"
         >
           {CALENDAR_FONT_OPTIONS.map((option) => {
             const selected = option.value === value;
