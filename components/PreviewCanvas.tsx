@@ -793,6 +793,7 @@ export default React.memo(function PreviewCanvas({
             )}
           </div>
         </div>
-      </div>
-    );
-  }
+      )}
+    </div>
+  );
+});
