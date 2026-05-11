@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
-import { Redis } from "@upstash/redis";
 import {
   parseScheduleImport,
   sanitizeScheduleEntries,
   type ImportSource
 } from "@/lib/import-calendar";
 import type { ScheduleEntry } from "@/lib/schedule-parser";
+import { hitRateLimit } from "@/lib/server/redis";
 
 export const runtime = "nodejs";
 
@@ -157,23 +157,6 @@ export async function POST(request: Request) {
     );
   }
 
-  // Rate limiting & Spam protection
-  try {
-    const redis = Redis.fromEnv();
-    const ip = request.headers.get("x-forwarded-for") ?? "unknown";
-    const rlKey = `rate_limit_import:${ip}`;
-    const count = await redis.incr(rlKey);
-    if (count === 1) await redis.expire(rlKey, 60 * 60); // 1 hour window
-    if (count > 10) {
-      return jsonResponse(
-        { entries: [], source: "local", message: "Too many requests." },
-        { status: 429 }
-      );
-    }
-  } catch (error) {
-    console.error("Redis error:", error);
-  }
-
   const local = parseScheduleImport(text);
 
   if (local.entries.length && !local.shouldUseAi) {
@@ -186,6 +169,18 @@ export async function POST(request: Request) {
       source: "local",
       message: "No schedule found."
     });
+  }
+
+  // Only rate-limit AI fallback attempts. Confident local parsing stays fast and avoids Redis latency.
+  try {
+    if (await hitRateLimit(request, "import", 10, 60 * 60)) {
+      return jsonResponse(
+        { entries: [], source: "local", message: "Too many requests." },
+        { status: 429 }
+      );
+    }
+  } catch (error) {
+    console.error("Redis rate limit error:", error);
   }
 
   try {

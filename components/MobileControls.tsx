@@ -1,13 +1,12 @@
 "use client";
 
 import { useSchedule } from "@/lib/ScheduleContext";
-import { Palette, CalendarDays, Download, Files } from "lucide-react";
+import { Palette, CalendarDays, Download } from "lucide-react";
 import { classNames } from "@/lib/utils";
 import React, { useRef, useEffect } from "react";
 
 const MOBILE_TABS = [
   { id: "start",   label: "Courses", icon: CalendarDays },
-  { id: "saved",   label: "Stored",  icon: Files },
   { id: "design",  label: "Design",  icon: Palette },
   { id: "export",  label: "Export",  icon: Download },
 ] as const;
@@ -115,7 +114,11 @@ export default function MobileControls({ children }: { children: React.ReactNode
   };
 
   return (
-    <div className="flex shrink-0 flex-col border-t border-white/10 bg-[#090D0B]/95 pb-safe backdrop-blur-xl md:hidden">
+    <nav
+      aria-label="Mobile navigation"
+      data-mobile-controls="true"
+      className="liquid-glass-strong flex shrink-0 flex-col border-t border-white/10 pb-safe md:hidden"
+    >
       <div
         className="touch-none select-none"
         onTouchStart={handleTouchStart}
@@ -138,16 +141,16 @@ export default function MobileControls({ children }: { children: React.ReactNode
               <button
                 key={tab.id}
                 className={classNames(
-                  "flex min-h-12 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-lg px-2 text-[11px] font-bold transition-all",
-                  active ? "bg-dlsu-vivid text-white shadow-md shadow-dlsu-vivid/25" : "bg-white/[0.04] text-white/60 hover:bg-white/[0.08] hover:text-white"
+                  "flex min-h-12 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-lg px-2 text-[11px] font-bold transition-all duration-200",
+                  active ? "bg-dlsu-vivid text-white shadow-md shadow-dlsu-vivid/25" : "liquid-glass text-white/60 hover:bg-white/[0.08] hover:text-white"
                 )}
                 type="button"
                 onClick={() => {
                   if (active) {
                     setIsMobileExpanded(!isMobileExpanded);
                   } else {
-                    setMobileTab(tab.id as any);
-                    setDesktopPanel(tab.id as any);
+                    setMobileTab(tab.id);
+                    setDesktopPanel(tab.id);
                     setIsMobileExpanded(true);
                   }
                 }}
@@ -171,6 +174,6 @@ export default function MobileControls({ children }: { children: React.ReactNode
       >
         {children}
       </div>
-    </div>
+    </nav>
   );
 }

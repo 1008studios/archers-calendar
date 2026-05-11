@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import { Redis } from "@upstash/redis";
+import { getRedisClient, hitRateLimit } from "@/lib/server/redis";
 
 export const runtime = "edge";
 
-let redis: Redis | null = null;
 const DESIGN_TTL_DAYS = 30;
 const DESIGN_TTL_SECONDS = DESIGN_TTL_DAYS * 24 * 60 * 60;
 const DESIGN_PIN_WINDOWS = [
@@ -11,18 +11,6 @@ const DESIGN_PIN_WINDOWS = [
   { digits: 5, attempts: 30 },
   { digits: 6, attempts: 30 }
 ] as const;
-
-function getRedis() {
-  const url = (process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL || "").trim();
-  const token = (process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN || "").trim();
-  if (!url || !token) return null;
-
-  if (!redis) {
-    redis = new Redis({ url, token, automaticDeserialization: false });
-  }
-
-  return redis;
-}
 
 async function hashDesignCode(code: string) {
   const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(code));
@@ -52,7 +40,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Invalid code" }, { status: 400 });
     }
 
-    const redis = getRedis();
+    const redis = getRedisClient();
     if (!redis) {
       return NextResponse.json(
         { error: "Short share links are not configured on this server." },
@@ -60,19 +48,8 @@ export async function POST(req: Request) {
       );
     }
 
-    // Rate Limiting by IP
-    let ip = req.headers.get("x-real-ip") || req.headers.get("x-forwarded-for") || "unknown";
-    ip = ip.split(",")[0].trim();
-    
-    if (ip !== "unknown") {
-      const rlKey = `rl:design:${ip}`;
-      const count = await redis.incr(rlKey);
-      if (count === 1) {
-        await redis.expire(rlKey, 3600); // 1 hour
-      }
-      if (count > 50) {
-        return NextResponse.json({ error: "Too many requests. Try again later." }, { status: 429 });
-      }
+    if (await hitRateLimit(req, "design:save", 50, 3600)) {
+      return NextResponse.json({ error: "Too many requests. Try again later." }, { status: 429 });
     }
 
     // Check if exactly this code already has a short ID without using the whole code as a Redis key.

@@ -1,13 +1,12 @@
 const fs = require('fs');
-let pageContent = fs.readFileSync('app/page.tsx', 'utf-8');
-
-// We know that `PreviewCanvas` will need a bunch of imports. Let's just create it directly.
 const content = `
+
 "use client";
 import React from "react";
-import { useSchedule } from "@/lib/ScheduleContext";
-import { classNames, getTextColor, computeRowCells, formatTimeSlot, courseParts, getStartMinutes, toneFromRgb, toneFromHex, toneFromColors, getPaletteTextColor, buildGradientBackground, buildEmojiPatternBackground, buildGeometricBackground, normalizeHexColor, hexToRgb, estimateImageTone, courseKeyFromCode, courseKeyFromCourse, getExpandedCourseSet, formatMeetingDays, getSlotDurationMinutes, groupEntriesByCourse, rangeProgress, formatPixels } from "@/lib/utils";
+import { useSchedule, CalendarTone, WallpaperStyle } from "@/lib/ScheduleContext";
+import { classNames, getTextColor, computeRowCells, formatTimeSlot, courseParts, getStartMinutes, toneFromRgb, toneFromHex, toneFromColors, getPaletteTextColor, buildGradientBackground, buildEmojiPatternBackground, buildGeometricBackground, normalizeHexColor, hexToRgb, estimateImageTone, courseKeyFromCode, courseKeyFromCourse, getExpandedCourseSet, formatMeetingDays, getSlotDurationMinutes, groupEntriesByCourse, rangeProgress, formatPixels, hasConflict } from "@/lib/utils";
 import { DAY_ORDER, DayKey, normalizeDay, parseScheduleHtml, parseScheduleText, scheduleTableHtmlToText, ScheduleEntry } from "@/lib/schedule-parser";
+import { AlertCircle, Sparkles, Maximize2 } from "lucide-react";
 
 const EXPORT_VARIANT_OPTIONS = [
   { value: "full", label: "Full", description: "Wallpaper + schedule" },
@@ -118,7 +117,17 @@ const CANVAS_SIZES = {
   share:          { width: 1080, height: 1080 }
 };
 
-const STYLE_PRESETS = {
+interface StyleConfig {
+  name: string;
+  headerFont: string;
+  gridOpacity: string;
+  cellStyle: string;
+  borderColor: string;
+  showLines: boolean;
+  forceTheme?: CalendarTone;
+}
+
+const STYLE_PRESETS: Record<WallpaperStyle, StyleConfig> = {
   clean: {
     name: "Classic",
     headerFont: "font-sans",
@@ -127,7 +136,24 @@ const STYLE_PRESETS = {
     borderColor: "border-white/[0.08]",
     showLines: true
   },
-  compact: {
+  glass_light: {
+    name: "Light",
+    headerFont: "font-sans",
+    gridOpacity: "bg-white/[0.82]",
+    cellStyle: "rounded-[4px] border border-black/[0.08] shadow-none",
+    borderColor: "border-black/[0.08]",
+    showLines: true,
+    forceTheme: "light"
+  },
+  glass_dark: {
+    name: "Dark",
+    headerFont: "font-sans",
+    gridOpacity: "bg-black/[0.36]",
+    cellStyle: "rounded-[4px] border border-white/[0.14] shadow-none",
+    borderColor: "border-white/[0.14]",
+    showLines: true,
+    forceTheme: "dark"
+  },  compact: {
     name: "Minimal",
     headerFont: "font-sans font-black",
     gridOpacity: "bg-transparent",
@@ -152,7 +178,6 @@ const STYLE_PRESETS = {
     showLines: true
   }
 };
-
 const COURSE_THEMES = [
   { name: "Blossom",  colors: ["#FFB3C1","#FF85A1","#FFD6E7","#F5A0B8","#FFCCE0","#FFC4D6","#FF9BB5","#FFDDE8"] },
   { name: "Pastel",   colors: ["#FFB3C1","#FFCBA4","#FFF3A3","#A8EED5","#A8D8F0","#D4BFFF","#B5D5A0","#E8C8F8"] },
@@ -188,25 +213,44 @@ const BLOCK_PALETTES = [
   { name: "Latte",       hex: "#D8C0A8" },
 ];
 
-export default function PreviewCanvas({ canvasRef, previewScale }: { canvasRef: React.RefObject<HTMLDivElement | null>, previewScale: number }) {
+export default function PreviewCanvas({ 
+  canvasRef, 
+  previewScale,
+  onManipulationStart,
+  isManipulating
+}: { 
+  canvasRef: React.RefObject<HTMLDivElement | null>, 
+  previewScale: number,
+  onManipulationStart?: (type: any, e: React.MouseEvent) => void,
+  isManipulating?: boolean
+}) {
   const {
     entries, visibleDays, autoHideEmptyDays,
-    device, wallpaperStyle, calendarThemeMode, backgroundTone,
+    device, wallpaperStyle, backgroundTone,
     calendarFont, backgroundKind, backgroundImage, gradient,
-    pattern, geometric, background, exportVariant,
-    gridPosition, calendarTitle, calendarSubtitle,
-    showRoom, showSection, showProfessor, showCourseTitle, calendarSize
+    pattern, geometric, background, exportVariant, overlayKind,
+    gridPosition, deviceSettings, calendarTitle, calendarSubtitle,
+    showRoom, showSection, showProfessor, showCourseTitle,
+    setExpandedCourses, setMobileTab, setDesktopPanel
   } = useSchedule();
+
+  const current = deviceSettings[device] || { x: 0, y: 0, sx: 3, sy: 3 };
+  const gridOffsetX = current.x;
+  const gridOffsetY = current.y;
 
   const ANIMO_PALETTE = COURSE_THEMES.find(t => t.name === "Animo")?.colors || BLOCK_PALETTES.map(p => p.hex);
 
   const activeStyle = STYLE_PRESETS[wallpaperStyle] || STYLE_PRESETS["clean"];
   const activeCalendarFont = CALENDAR_FONT_OPTIONS.find((option) => option.value === calendarFont) ?? CALENDAR_FONT_OPTIONS[0];
   const headerStyleClass = activeStyle.headerFont.replace(/\\bfont-(?:sans|serif|mono)\\b/g, "").trim();
-  const canvasSize = CANVAS_SIZES[device];
+  
+  const canvasSize = CANVAS_SIZES[device] || CANVAS_SIZES.laptop;
+  const isSharingSquare = device === "share";
+  const isSquareDevice = isSharingSquare;
+  const showSquareHeader = isSharingSquare && Boolean(calendarTitle);
   const isDarkBg = backgroundTone === "dark";
   const automaticCalendarTone = isDarkBg ? "dark" : "light";
-  const resolvedCalendarTone = calendarThemeMode === "normal" ? automaticCalendarTone : calendarThemeMode;
+  const resolvedCalendarTone = activeStyle.forceTheme || automaticCalendarTone;
   const logoSrc = backgroundTone === "dark" ? "/logos/logo-mini-white.png" : "/logos/logo-mini-black.png";
 
   const visibleDayList = React.useMemo(() => {
@@ -252,23 +296,28 @@ export default function PreviewCanvas({ canvasRef, previewScale }: { canvasRef: 
     [slotDurations, minDuration]
   );
 
+  const overlayCssImage =
+    overlayKind === "pattern"
+      ? buildEmojiPatternBackground(pattern, backgroundTone)
+      : overlayKind === "geometric"
+      ? buildGeometricBackground(geometric)
+      : undefined;
+
   const backgroundCssImage =
     backgroundKind === "image" && backgroundImage
       ? \`url(\${backgroundImage})\`
       : backgroundKind === "gradient"
       ? buildGradientBackground(gradient)
-      : backgroundKind === "pattern"
-      ? buildEmojiPatternBackground(pattern, backgroundTone)
-      : backgroundKind === "geometric"
-      ? buildGeometricBackground(geometric)
       : undefined;
+      
+  const combinedCssImage = [overlayCssImage, backgroundCssImage].filter(Boolean).join(", ");
       
   const previewStyle = {
     backgroundColor: backgroundKind === "gradient" ? gradient.colors[0] : background,
-    backgroundImage: backgroundCssImage,
-    backgroundSize: backgroundKind === "pattern" ? \`\${pattern.spacing}px \${pattern.spacing}px\` : backgroundKind === "geometric" ? \`\${geometric.spacing}px \${geometric.spacing}px\` : backgroundKind === "image" ? "cover" : undefined,
+    backgroundImage: combinedCssImage || undefined,
+    backgroundSize: overlayKind === "pattern" ? \`\${pattern.spacing}px \${pattern.spacing}px, cover\` : overlayKind === "geometric" ? \`\${geometric.spacing}px \${geometric.spacing}px, cover\` : backgroundKind === "image" ? "cover" : undefined,
     backgroundPosition: backgroundKind === "gradient" ? gradient.position : "center",
-    backgroundRepeat: backgroundKind === "pattern" || backgroundKind === "geometric" ? "repeat" : undefined
+    backgroundRepeat: overlayKind === "pattern" || overlayKind === "geometric" ? "repeat, no-repeat" : undefined
   };
   
   const isTransparentExport = exportVariant === "transparent";
@@ -285,9 +334,9 @@ export default function PreviewCanvas({ canvasRef, previewScale }: { canvasRef: 
     ? "bg-white/[0.82]"
     : "bg-black/[0.36]";
   const themeBorder = isCalendarLight ? "border-black/[0.08]" : "border-white/[0.14]";
-  const gridBg        = isBorderlessStyle ? activeStyle.gridOpacity : calendarThemeMode === "normal" ? activeStyle.gridOpacity : forcedGridBg;
-  const gridBorder    = isBorderlessStyle ? "border-transparent" : calendarThemeMode === "normal" ? activeStyle.borderColor : themeBorder;
-  const headerCellBg  = isBorderlessStyle ? "bg-transparent" : isCalendarLight ? "bg-black/[0.05]" : "bg-white/[0.08]";
+  const gridBg        = isBorderlessStyle ? activeStyle.gridOpacity : activeStyle.gridOpacity;
+  const gridBorder    = isBorderlessStyle ? "border-transparent" : activeStyle.borderColor;
+  const headerCellBg  = isBorderlessStyle ? "bg-transparent" : (isCalendarLight ? "bg-black/[0.05]" : "bg-white/[0.08]");
   const headerBorder  = isBorderlessStyle ? "border-transparent" : gridBorder;
   const headerText    = isCalendarLight ? "text-black/80" : "text-white";
   const timeRowStyle  = isBorderlessStyle ? "" : "border-b";
@@ -306,48 +355,94 @@ export default function PreviewCanvas({ canvasRef, previewScale }: { canvasRef: 
   }[gridPosition] || "justify-center items-center";
 
   const szBase = device === "laptop"
-    ? { pad: 96,  subtitle: 15, title: 44, dayHeader: 13,   courseCode: 13.5, courseTitle: 11,   meta: 10.5, cellPad: 6, blockPad: 6, titleMb: 20, gap: 4, mt: 2, timePx: 12, timePy: 8, dayPy: 12 }
+    ? { pad: 64,  subtitle: 13, title: 34, dayHeader: 12,   courseCode: 11,   courseTitle: 9.5,  meta: 9,    cellPad: 4, blockPad: 4, titleMb: 14, gap: 3, mt: 1, timePx: 8, timePy: 5, dayPy: 8 }
     : device === "macbook"
-    ? { pad: 104, subtitle: 16, title: 46, dayHeader: 13.5, courseCode: 14,   courseTitle: 11.5, meta: 11,   cellPad: 6, blockPad: 8, titleMb: 24, gap: 4, mt: 2, timePx: 12, timePy: 8, dayPy: 12 }
-    : device === "share"
+    ? { pad: 72,  subtitle: 14, title: 36, dayHeader: 12.5, courseCode: 11.5, courseTitle: 10,   meta: 9.5,  cellPad: 4, blockPad: 5, titleMb: 16, gap: 3, mt: 1, timePx: 8, timePy: 5, dayPy: 8 }
+    : isSquareDevice
     ? { pad: 0,   subtitle: 18, title: 64, dayHeader: 18,   courseCode: 18,   courseTitle: 15,   meta: 15,   cellPad: 8, blockPad: 10, titleMb: 0, gap: 6, mt: 3, timePx: 16, timePy: 12, dayPy: 16 }
     : device === "ipad_landscape"
-    ? { pad: 80,  subtitle: 14, title: 40, dayHeader: 13,   courseCode: 13,   courseTitle: 11,   meta: 10.5, cellPad: 4, blockPad: 6, titleMb: 16, gap: 4, mt: 2, timePx: 8, timePy: 6, dayPy: 8 }
+    ? { pad: 56,  subtitle: 12.5, title: 32, dayHeader: 11.5, courseCode: 11.5, courseTitle: 9.5,  meta: 9,    cellPad: 4, blockPad: 4, titleMb: 12, gap: 3, mt: 1, timePx: 6, timePy: 4, dayPy: 6 }
     : device === "ipad_portrait"
-    ? { pad: 72,  subtitle: 13, title: 36, dayHeader: 12,   courseCode: 12,   courseTitle: 10,   meta: 10,   cellPad: 4, blockPad: 6, titleMb: 16, gap: 4, mt: 2, timePx: 8, timePy: 6, dayPy: 8 }
-    : { pad: 20,  subtitle: 8, title: 18, dayHeader: 8, courseCode: 8,  courseTitle: 8,    meta: 7,    cellPad: 2, blockPad: 2, titleMb: 5, gap: 2, mt: 0, timePx: 5, timePy: 2, dayPy: 3 };
+    ? { pad: 56,  subtitle: 14, title: 34, dayHeader: 12.5, courseCode: 12.5, courseTitle: 10.5, meta: 10,   cellPad: 5, blockPad: 6, titleMb: 14, gap: 4, mt: 1, timePx: 8, timePy: 5, dayPy: 8 }
+    : { pad: 20,  subtitle: 10, title: 24, dayHeader: 10.5, courseCode: 10, courseTitle: 8.5, meta: 8, cellPad: 4, blockPad: 4, titleMb: 8, gap: 3.5, mt: 1, timePx: 6, timePy: 4, dayPy: 6 };
 
-  const PAD_SCALE = { 1: 0.4, 2: 0.7, 3: 1.0, 4: 1.4, 5: 1.8 };
-  const FONT_SCALE_BASE = { 1: 1.3, 2: 1.12, 3: 1.0, 4: 0.9, 5: 0.82 };
-  
-  // Dynamic scaling for density (the more courses/slots, the smaller the text)
-  const densityFactor = (() => {
+  const PAD_SCALE:  Record<number, number> = { 1: 0.45, 2: 0.75, 3: 1.0, 4: 1.3, 5: 1.6 };
+  const FONT_SCALE: Record<number, number> = { 1: 1.25, 2: 1.1, 3: 1.0, 4: 0.9, 5: 0.8 };
+
+  const lerpScale = (map: Record<number, number>, val: number) => {
+    const keys = Object.keys(map).map(Number).sort((a, b) => a - b);
+    if (val <= keys[0]) return map[keys[0]];
+    if (val >= keys[keys.length - 1]) return map[keys[keys.length - 1]];
+    const lower = keys.filter(k => k <= val).pop()!;
+    const upper = keys.filter(k => k > val).shift()!;
+    const t = (val - lower) / (upper - lower);
+    return map[lower] + (map[upper] - map[lower]) * t;
+  };
+
+  const densityFactor = React.useMemo(() => {
     const slotCount = timeSlots.length;
     const entryCount = visibleEntries.length;
-    
-    // Calculate a continuous factor based on slots and entries
-    // Baseline: 6 slots and 8 entries = 1.0 factor
-    // Each extra slot above 6 reduces factor by ~3%
-    // Each extra entry above 8 reduces factor by ~1.5%
     const slotImpact = Math.max(0, slotCount - 6) * 0.035;
     const entryImpact = Math.max(0, entryCount - 8) * 0.018;
-    
     const factor = 1.0 - (slotImpact + entryImpact);
-    
-    // Clamp between 0.45 and 1.0
     return Math.max(0.45, Math.min(1.0, factor));
-  })();
+  }, [timeSlots.length, visibleEntries.length]);
+
+  const globalCodeShrink = React.useMemo(() => {
+    if (!visibleEntries.length) return 1.0;
+    const maxCodeLen = Math.max(...visibleEntries.map((e) => courseParts(e.course).code.length));
+    const codeFitLimit = device === "iphone" ? 7 : isSquareDevice ? 13 : device.startsWith("ipad") ? 10 : 11;
+    return maxCodeLen > codeFitLimit ? Math.max(0.35, codeFitLimit / maxCodeLen) : 1.0;
+  }, [visibleEntries, device, isSquareDevice]);
+
+  const globalMetaShrink = React.useMemo(() => {
+    if (!visibleEntries.length) return 1.0;
+    const maxMetaLen = Math.max(...visibleEntries.map((e) => {
+      return [showRoom ? e.room : "", showSection ? e.section : "", showProfessor ? e.teacher : ""].filter(Boolean).join(" | ").length;
+    }));
+    const metaFitLimit = device === "iphone" ? 13 : isSquareDevice ? 24 : 22;
+    return maxMetaLen > metaFitLimit ? Math.max(0.35, metaFitLimit / maxMetaLen) : 1.0;
+  }, [visibleEntries, device, isSquareDevice, showRoom, showSection, showProfessor]);
+
+  const FRAME_WIDTH_MAP: Record<number, number> = device === "iphone"
+    ? { 0.2: 1.08, 3: 1.0, 12: 0.1 }
+    : { 0.2: 1.0, 3: 0.64, 12: 0.1 };
+
+  const frameScale = lerpScale(FRAME_WIDTH_MAP, current.sx);
+  const minFrameMargin = isSquareDevice ? 0 : (device === "iphone" ? 0 : (device.startsWith("ipad") ? 58 : 84));
+  const maxFrameWidth = Math.max(1, canvasSize.width - minFrameMargin * 2);
+  const maxFrameHeight = Math.max(1, canvasSize.height - minFrameMargin * 2);
+  const rawFrameWidth = Math.round(maxFrameWidth * (isSquareDevice ? 1 : frameScale));
+  const frameWidth = device === "iphone" ? Math.min(maxFrameWidth, rawFrameWidth) : rawFrameWidth;
+
+  const shouldStretchHeight = true; // Always stretch to allow sy (vertical resize) to work on all devices
+
+  const FRAME_HEIGHT_MAP: Record<number, number> = isSquareDevice 
+    ? { 0.2: 1, 12: 1 }
+    : device === "iphone"
+    ? { 0.2: 1.2, 3: 0.90, 12: 0.1 }
+    : { 0.2: 1.1, 3: 0.84, 12: 0.1 };
+
+  const frameHeightScale = lerpScale(FRAME_HEIGHT_MAP, current.sy);
+  const frameHeight = Math.round(maxFrameHeight * frameHeightScale);
+
+  const defaultFrameWidthScale = isSquareDevice ? 1 : lerpScale(FRAME_WIDTH_MAP, 3);
+  const defaultFrameHeightScale = isSquareDevice ? 1 : lerpScale(FRAME_HEIGHT_MAP, 3);
+  const frameWidthRatio = isSquareDevice ? 1 : frameScale / defaultFrameWidthScale;
+  const frameHeightRatio = isSquareDevice ? 1 : frameHeightScale / defaultFrameHeightScale;
+  const frameAreaScale = Math.sqrt(frameWidthRatio * frameHeightRatio);
+  const calendarGrowthScale = isSquareDevice ? 1.28 : Math.max(0.68, Math.min(1.85, frameAreaScale));
+  const controlFontScale = isSquareDevice ? 1.12 : Math.max(0.9, Math.min(1.18, lerpScale(FONT_SCALE, current.sx)));
 
   const MIN_FONT_PX = device === "iphone" ? 4 : 0;
-  const fsScale = (device === "share" ? 1 : (FONT_SCALE_BASE[calendarSize as keyof typeof FONT_SCALE_BASE] || 1.0)) * densityFactor;
+  const fsScale = controlFontScale * calendarGrowthScale * densityFactor;
   const scalePx = (val: number) => \`\${Math.round(Math.max(MIN_FONT_PX, val * fsScale))}px\`;
-  
-  // Padding scales even more aggressively to save vertical space
-  const padFactor = densityFactor < 0.7 ? densityFactor * 0.65 : densityFactor;
-  const scalePad = (val: number) => \`\${Math.round(val * padFactor)}px\`; 
-  
+  const padFactor = densityFactor < 0.7 ? densityFactor * 0.7 : densityFactor;
+  const spacingScale = isSquareDevice ? 1.2 : Math.max(0.75, Math.min(1.55, calendarGrowthScale));
+  const scalePad = (val: number) => \`\${Math.round(val * padFactor * spacingScale)}px\`; 
+
   const sz = {
-    pad:        device === "share" ? "0px" : \`\${Math.round(szBase.pad * (PAD_SCALE[calendarSize as keyof typeof PAD_SCALE] || 1.0) * Math.max(0.4, densityFactor * 0.9))}px\`,
+    pad:        \`\${Math.round(szBase.pad * lerpScale(PAD_SCALE, current.sx) * (isSquareDevice ? 1.0 : Math.max(0.4, densityFactor * 0.9)))}px\`,
     subtitle:   scalePx(szBase.subtitle),
     title:      scalePx(szBase.title),
     dayHeader:  scalePx(szBase.dayHeader),
@@ -355,26 +450,49 @@ export default function PreviewCanvas({ canvasRef, previewScale }: { canvasRef: 
     courseTitle: scalePx(szBase.courseTitle),
     meta:       scalePx(szBase.meta),
     cellPad:    scalePad(szBase.cellPad),
-    blockPad:   scalePad(Math.max(1.2, szBase.blockPad * (densityFactor < 0.6 ? 0.4 : 0.7))),
+    blockPad:   scalePad(isSquareDevice ? szBase.blockPad : Math.max(1.2, szBase.blockPad * (densityFactor < 0.6 ? 0.55 : 0.85))),
     titleMb:    scalePad(szBase.titleMb),
-    gap:        scalePad(Math.max(1, szBase.gap * (densityFactor < 0.6 ? 0.3 : 0.6))),
-    mt:         scalePad(Math.max(0, szBase.mt * (densityFactor < 0.6 ? 0.1 : 0.4))),
+    gap:        scalePad(isSquareDevice ? szBase.gap : Math.max(1, szBase.gap * (densityFactor < 0.6 ? 0.35 : 0.7))),
+    mt:         scalePad(isSquareDevice ? szBase.mt : Math.max(0, szBase.mt * (densityFactor < 0.6 ? 0.15 : 0.55))),
     timePx:     scalePad(szBase.timePx),
     timePy:     scalePad(szBase.timePy),
     dayPy:      scalePad(szBase.dayPy)
   };
+
   const canvasRadius =
-    device === "share"    ? "0px" :
+    isSquareDevice        ? "0px" :
     device === "iphone"   ? "1rem" :
     device.startsWith("ipad") ? "0.75rem" : "0.5rem";
 
+  // Standard safe areas for lock screen wallpapers (clock area and home indicator)
+  const safeAreaTop = 
+    device === "iphone" ? (gridPosition === "bottom" ? "25%" : gridPosition === "center" ? "12%" : "8%") :
+    device.startsWith("ipad") ? (gridPosition === "bottom" ? "20%" : gridPosition === "center" ? "10%" : "6%") :
+    "0%";
+
+  const safeAreaBottom = 
+    device === "iphone" ? (gridPosition === "top" ? "15%" : gridPosition === "center" ? "12%" : "6%") :
+    device.startsWith("ipad") ? (gridPosition === "top" ? "12%" : gridPosition === "center" ? "10%" : "4%") :
+    "0%";
+
+  const gridOffsetStyle: React.CSSProperties = {
+    transform: \`translate(\${Math.round((canvasSize.width * gridOffsetX) / 100)}px, \${Math.round((canvasSize.height * gridOffsetY) / 100)}px)\`
+  };
+  const contentFrameStyle: React.CSSProperties = {
+    boxSizing: "border-box",
+    width: \`\${frameWidth}px\`,
+    maxWidth: "150%",
+    maxHeight: "150%",
+    ...(shouldStretchHeight ? { height: \`\${frameHeight}px\` } : {}),
+    ...gridOffsetStyle
+  };
   return (
     <div
       ref={canvasRef}
       data-wallpaper-canvas="true"
       className={classNames(
         "relative flex overflow-hidden",
-        device === "share" || isTransparentExport || isBackgroundOnlyExport ? "border-0" : "border border-white/20",
+        isSquareDevice || isTransparentExport || isBackgroundOnlyExport ? "border-0" : "border border-white/20",
         activeCalendarFont.bodyClass,
         gridPositionClasses
       )}
@@ -384,41 +502,48 @@ export default function PreviewCanvas({ canvasRef, previewScale }: { canvasRef: 
         height: canvasSize.height,
         color: "#ffffff",
         borderRadius: canvasRadius,
-        boxShadow: device === "share" || isTransparentExport || isBackgroundOnlyExport ? "none" : "0 18px 48px rgba(0,0,0,0.38)"
+        boxShadow: isSquareDevice || isTransparentExport || isBackgroundOnlyExport ? "none" : "0 18px 48px rgba(0,0,0,0.38)"
       }}
     >
-      {/* Visual textures */}
       {!isTransparentExport && <div className="absolute inset-0 bg-black/5" />}
       {!isTransparentExport && activeStyle.showLines && (
         <div className="absolute inset-0 opacity-10 [background-image:linear-gradient(rgba(255,255,255,.07)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.07)_1px,transparent_1px)] [background-size:28px_28px]" />
       )}
 
-      {/* Brand Watermark */}
-      {!isTransparentExport && !isBackgroundOnlyExport && (
+      {/* Visual Snap Guides (Visible during drag) */}
+      {isManipulating && !isSquareDevice && (
+        <>
+          {gridOffsetX === 0 && (
+            <div className="absolute inset-y-0 left-1/2 z-50 w-0.5 -translate-x-1/2 bg-dlsu-vivid/40 shadow-[0_0_12px_rgba(0,140,77,0.8)]" />
+          )}
+          {gridOffsetY === 0 && (
+            <div className="absolute inset-x-0 top-1/2 z-50 h-0.5 -translate-y-1/2 bg-dlsu-vivid/40 shadow-[0_0_12px_rgba(0,140,77,0.8)]" />
+          )}
+        </>
+      )}
+
+      {/* Brand Watermark */}      {!isTransparentExport && !isBackgroundOnlyExport && (
       <div className={classNames(
         "absolute bottom-8 right-8 z-50 pointer-events-none opacity-15 transition-opacity hover:opacity-100",
-        device === "share" ? "bottom-6 right-6 opacity-10" : ""
+        isSquareDevice ? "bottom-6 right-6 opacity-10" : ""
       )}>
         <img src={logoSrc} alt="" className="h-8 w-auto object-contain" />
       </div>
       )}
 
-      {/* Content */}
       {!isBackgroundOnlyExport && (
       <div
         className={classNames(
-          "relative z-10 flex max-h-full w-full flex-col",
-          device === "share" ? "h-full" : ""
+          "relative z-10 flex flex-col",
+          shouldStretchHeight ? "h-full" : "max-h-full max-w-full"
         )}
-        style={{ padding: sz.pad }}
+        style={{ padding: sz.pad, ...contentFrameStyle }}
       >
-        {/* iPhone only: push content to lower portion so clock area stays clear */}
-        {device === "iphone" && (gridPosition === "center" || gridPosition === "bottom") && (
-          <div style={{ flexShrink: 0, flexBasis: "55%" }} aria-hidden="true" />
+        {/* Top safe area spacer (clock area) */}
+        {(device === "iphone" || device.startsWith("ipad")) && (
+          <div style={{ flexShrink: 0, flexBasis: safeAreaTop }} aria-hidden="true" />
         )}
-
-        {/* Title block — hidden for share (rendered as overlay below) */}
-        {device !== "share" && (calendarTitle || calendarSubtitle) && (
+        {!isSquareDevice && (calendarTitle || calendarSubtitle) && (
           <div className={classNames(
             "flex flex-col",
             gridPosition === "right" ? "items-end text-right" : "items-start"
@@ -436,37 +561,43 @@ export default function PreviewCanvas({ canvasRef, previewScale }: { canvasRef: 
           </div>
         )}
 
-        {/* Grid */}
         <div
           className={classNames(
             "grid min-h-0 w-full",
-            wallpaperStyle === "clean" && device !== "share" ? "overflow-hidden rounded-[6px] border" : "overflow-visible rounded-none border-l border-t",
+            wallpaperStyle === "clean" && !isSquareDevice ? "overflow-hidden rounded-[6px] border" : "overflow-visible rounded-none border-l border-t",
             isBorderlessStyle ? "shadow-none" : "shadow-lg",
             gridBg,
-            device === "share" ? "flex-1" : "",
+            shouldStretchHeight ? "flex-1" : "",
             gridBorder
           )}
           style={{
             gridTemplateColumns: \`repeat(\${Math.max(visibleDayList.length, 1)}, minmax(0, 1fr))\`,
-            gridTemplateRows: \`\${device === "share" ? "auto " : ""}auto \${slotRowTemplate}\`
+            gridTemplateRows: \`\${showSquareHeader ? "auto " : ""}auto \${slotRowTemplate}\`
           }}
         >
-          {device === "share" && (calendarTitle || calendarSubtitle) && (
+          {showSquareHeader && (
             <div
-              className={classNames("flex min-w-0 items-end px-8 pb-5 pt-7", headerCellBg, headerBorder)}
+              className={classNames("flex min-w-0 items-center justify-between border-b px-6 py-4", headerCellBg, headerBorder)}
               style={{ gridColumn: "1 / -1" }}
             >
-              <div className="min-w-0">
-                {calendarSubtitle && (
-                  <p style={{ fontSize: sz.subtitle }} className={classNames("font-bold uppercase", activeCalendarFont.headingClass, headerStyleClass, subtitleText)}>
-                    {calendarSubtitle}
-                  </p>
-                )}
+              <div className="flex min-w-0 flex-1 items-center gap-3">
                 {calendarTitle && (
-                  <h2 style={{ fontSize: sz.title }} className={classNames("mt-1 font-black leading-none", device === "share" ? "break-words" : "truncate", activeCalendarFont.headingClass, headerStyleClass, titleText)}>
+                  <h2 style={{ fontSize: \`calc(\${sz.title} * 0.42)\` }} className={classNames("truncate font-black uppercase tracking-wider leading-none", activeCalendarFont.headingClass)}>
                     {calendarTitle}
                   </h2>
                 )}
+                {calendarSubtitle && (
+                  <>
+                    <div className="h-3 w-px bg-white/10" />
+                    <p style={{ fontSize: \`calc(\${sz.subtitle} * 0.62)\` }} className={classNames("truncate font-bold opacity-50 leading-none", activeCalendarFont.headingClass)}>
+                      {calendarSubtitle}
+                    </p>
+                  </>
+                )}
+              </div>
+              <div className="flex shrink-0 items-center gap-2 opacity-30">
+                <Sparkles size={12} />
+                <span className="text-[10px] font-black uppercase tracking-tighter">Archers Calendar</span>
               </div>
             </div>
           )}
@@ -478,26 +609,14 @@ export default function PreviewCanvas({ canvasRef, previewScale }: { canvasRef: 
 
           {timeSlots.length ? timeSlots.flatMap((timeSlot) => {
             const rowCells = computeRowCells(visibleDayList, timeSlot, entriesByCell);
-
             const timeLabel = (
               <div
                 key={\`time-\${timeSlot}\`}
-                className={classNames(
-                  "flex items-center",
-                  timeRowStyle,
-                  headerCellBg,
-                  headerBorder
-                )}
+                className={classNames("flex items-center", timeRowStyle, headerCellBg, headerBorder)}
                 style={{ gridColumn: "1 / -1", gap: sz.gap, paddingLeft: sz.timePx, paddingRight: sz.timePx, paddingTop: sz.timePy, paddingBottom: sz.timePy }}
               >
                 <span className={classNames("h-px shrink-0 rounded-full", timeRuleStyle)} style={{ width: sz.gap, minWidth: sz.gap }} />
-                <span
-                  style={{ fontSize: sz.meta, lineHeight: 1, letterSpacing: '-0.025em' }}
-                  className={classNames(
-                    "shrink-0 font-black uppercase tabular-nums whitespace-nowrap",
-                    timeTextStyle
-                  )}
-                >
+                <span style={{ fontSize: sz.meta, lineHeight: 1, letterSpacing: '-0.025em' }} className={classNames("shrink-0 font-black uppercase tabular-nums whitespace-nowrap", timeTextStyle)}>
                   {formatTimeSlot(timeSlot)}
                 </span>
                 <span className={classNames("h-px flex-1 rounded-full", timeRuleStyle)} />
@@ -518,44 +637,135 @@ export default function PreviewCanvas({ canvasRef, previewScale }: { canvasRef: 
                       const textColor = uniformCourseTextColor ?? getTextColor(entry.color);
                       const parts = courseParts(entry.course);
                       const meta = [showRoom ? entry.room : "", showSection ? entry.section : "", showProfessor ? entry.teacher : ""].filter(Boolean).join(" | ");
-                      const courseBlockStyle: React.CSSProperties = {
-                        backgroundColor: entry.color,
-                        color: textColor
-                      };
+                      const courseBlockStyle: React.CSSProperties = { backgroundColor: entry.color, color: textColor };
                       const courseLineHeight = densityFactor < 0.6 ? 0.9 : densityFactor < 0.75 ? 0.98 : 1.05;
+                      const conflict = hasConflict(entry, visibleEntries);
+
+                      // Boost font size if there's very little text (only code and room, no long titles)
+                      const isMinimalContent = (!showCourseTitle || !parts.title) && !showSection && !showProfessor;
+                      const localFsBoost = isMinimalContent ? 1.15 : 1.0;
+
+                      const handleBlockClick = (e: React.MouseEvent) => {
+                        if (isSquareDevice) return;
+                        e.stopPropagation();
+                        const key = courseKeyFromCode(parts.code);
+                        setExpandedCourses(new Set([key]));
+                        setMobileTab("start");
+                        setDesktopPanel("start");
+                        window.setTimeout(() => {
+                          const el = document.getElementById(\`course-editor-\${key}\`);
+                          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }, 100);
+                      };
+
                       return (
-                        <div key={entry.id} className={classNames("flex flex-1 flex-col justify-center overflow-hidden transition-all", activeStyle.cellStyle)} style={{ ...courseBlockStyle, padding: sz.blockPad, lineHeight: courseLineHeight }}>
-                          <p style={{ fontSize: sz.courseCode, lineHeight: 1.05 }} className="font-black leading-tight tracking-tight truncate">{parts.code}</p>
-                          {span > 1 && (
-                            <p style={{ fontSize: sz.meta, marginTop: sz.mt, lineHeight: 1.1 }} className="font-bold opacity-60 truncate">
-                              {days.join(" · ")}
-                            </p>
-                          )}
-                          {showCourseTitle && parts.title ? (
-                            <p style={{ fontSize: sz.courseTitle, marginTop: sz.mt, lineHeight: 1.1 }} className="font-semibold opacity-80 leading-tight line-clamp-3">{parts.title}</p>
-                          ) : null}
-                          {meta ? <p style={{ fontSize: sz.meta, marginTop: sz.mt, lineHeight: 1.1 }} className="font-bold opacity-75 truncate">{meta}</p> : null}
-                        </div>
-                      );
-                    })}
+                        <div 
+                          data-course-block="true" 
+                          key={entry.id} 
+                          onClick={handleBlockClick}
+                          className={classNames(
+                            "group/block relative flex flex-1 flex-col justify-center overflow-hidden transition-all", 
+                            activeStyle.cellStyle,
+                            !isSquareDevice ? "cursor-pointer hover:brightness-110 active:scale-[0.98]" : ""
+                          )} 
+                          style={{ ...courseBlockStyle, padding: sz.blockPad, lineHeight: courseLineHeight }}
+                        >
+                      <div className="flex min-w-0 items-center gap-1">
+                        {entry.emoji && <span style={{ fontSize: \`calc(\${sz.courseCode} * \${localFsBoost})\` }} className="shrink-0">{entry.emoji}</span>}
+                        <p
+                          data-course-text="true"
+                          style={{
+                            fontSize: \`calc(\${sz.courseCode} * \${localFsBoost} * \${globalCodeShrink})\`,
+                            lineHeight: 1.05,
+                            whiteSpace: "nowrap"
+                          }}
+                          className="min-w-0 font-black leading-tight tracking-tight"
+                        >
+                          {parts.code}
+                        </p>
+                        {conflict && <AlertCircle size={10} className="shrink-0 animate-pulse text-red-500" strokeWidth={3} />}
+                      </div>
+                      {span > 1 && <p data-course-text="true" style={{ fontSize: sz.meta, marginTop: sz.mt, lineHeight: 1.1, whiteSpace: "nowrap" }} className="font-bold opacity-60">{days.join(" · ")}</p>}
+                      {showCourseTitle && parts.title && (
+                        <p data-course-text="true" style={{ fontSize: sz.courseTitle, marginTop: sz.mt, lineHeight: 1.1 }} className="font-semibold opacity-80 leading-tight line-clamp-3">{parts.title}</p>
+                      )}
+                      {meta && (
+                        <p
+                          data-course-text="true"
+                          style={{
+                            fontSize: \`calc(\${sz.meta} * \${localFsBoost} * \${globalMetaShrink})\`,
+                            marginTop: sz.mt,
+                            lineHeight: 1.1,
+                            whiteSpace: "nowrap"
+                          }}
+                          className="font-bold opacity-75"
+                        >
+                          {meta}
+                        </p>
+                      )}
+                      {!isSquareDevice && (
+                        <div className="absolute right-1 top-1 opacity-0 transition-opacity group-hover/block:opacity-30"><Sparkles size={8} /></div>
+                      )}
+                    </div>
+                  );
+                })}
                   </div>
                 </div>
               );
             });
-
             return [timeLabel, ...gridCells];
           }) : (
-            <div className={classNames("col-span-full flex items-center justify-center p-12 text-center text-sm font-bold uppercase opacity-40", headerText)}>
-              No Classes Scheduled
-            </div>
+            <div className={classNames("col-span-full flex items-center justify-center p-12 text-center text-sm font-bold uppercase opacity-40", headerText)}>No Classes Scheduled</div>
+            )}
+
+            {/* High-Fidelity Manipulation Handles (Desktop Only) */}
+            {!isTransparentExport && !isBackgroundOnlyExport && !isSquareDevice && (
+              <div className="absolute -inset-1.5 z-[60] hidden pointer-events-none group/manip lg:block">
+                {/* Main Animated Outline */}
+                <div className="absolute inset-0 opacity-0 group-hover/manip:opacity-100 transition-opacity duration-300 animate-marching-ants rounded-lg" />
+
+                {/* Center Move Handle */}
+                <div 
+                  className="absolute inset-8 cursor-grab active:cursor-grabbing pointer-events-auto"
+                  onMouseDown={(e) => onManipulationStart?.("move", e)}
+                  title="Click and drag to move"
+                />
+
+                {/* Edge Handles */}
+                <div className="absolute left-8 right-8 -top-1 h-5 cursor-ns-resize pointer-events-auto" onMouseDown={(e) => onManipulationStart?.("resize-n", e)} />
+                <div className="absolute left-8 right-8 -bottom-1 h-5 cursor-ns-resize pointer-events-auto" onMouseDown={(e) => onManipulationStart?.("resize-s", e)} />
+                <div className="absolute -left-1 top-8 bottom-8 w-5 cursor-ew-resize pointer-events-auto" onMouseDown={(e) => onManipulationStart?.("resize-w", e)} />
+                <div className="absolute -right-1 top-8 bottom-8 w-5 cursor-ew-resize pointer-events-auto" onMouseDown={(e) => onManipulationStart?.("resize-e", e)} />
+
+                {/* Corner Handles */}
+                {[
+                  { type: "resize-nw", class: "left-0 top-0 cursor-nwse-resize" },
+                  { type: "resize-ne", class: "right-0 top-0 cursor-nesw-resize" },
+                  { type: "resize-sw", class: "left-0 bottom-0 cursor-nesw-resize" },
+                  { type: "resize-se", class: "right-0 bottom-0 cursor-nwse-resize" }
+                ].map((h) => (
+                  <div 
+                    key={h.type}
+                    onMouseDown={(e) => onManipulationStart?.(h.type, e)}
+                    className={classNames(
+                      "absolute h-7 w-7 pointer-events-auto flex items-center justify-center",
+                      h.class
+                    )}
+                  >
+                    <div className="h-2.5 w-2.5 rounded-full bg-white opacity-0 scale-50 group-hover/manip:opacity-100 group-hover/manip:scale-100 transition-all shadow-[0_0_12px_rgba(0,140,77,0.6)] ring-2 ring-dlsu-vivid animate-pulse-glow" />
+                  </div>
+                ))}
+              </div>
+            )}            </div>          {/* Bottom safe area spacer (home indicator) */}
+          {(device === "iphone" || device.startsWith("ipad")) && (
+            <div style={{ flexShrink: 0, flexBasis: safeAreaBottom }} aria-hidden="true" />
           )}
         </div>
+        )}
       </div>
-      )}
-    </div>
-  );
-}
-`;
+    );
+  }
 
+`;
 fs.writeFileSync('components/PreviewCanvas.tsx', content);
 console.log('PreviewCanvas created successfully');

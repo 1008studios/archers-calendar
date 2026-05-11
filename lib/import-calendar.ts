@@ -200,6 +200,8 @@ export function sanitizeScheduleEntries(value: unknown, maxEntries = MAX_IMPORT_
           ? record.color
           : DEFAULT_COLORS[index % DEFAULT_COLORS.length]
     };
+    const emoji = typeof record.emoji === "string" ? Array.from(record.emoji.trim())[0] : "";
+    if (emoji) entry.emoji = emoji;
 
     const key = [
       entry.day,

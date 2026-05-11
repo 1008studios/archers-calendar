@@ -3,23 +3,28 @@
 import React, { createContext, useContext, useState, useMemo, ReactNode } from "react";
 import { ScheduleEntry } from "@/lib/schedule-parser";
 import { ImportSource } from "@/lib/import-calendar";
+import type { CalendarFont } from "@/lib/calendar-fonts";
+export type { CalendarFont } from "@/lib/calendar-fonts";
 
 // --- Types (Moved from page.tsx) ---
-export type MobileTab = "start" | "design" | "export" | "saved";
-export type SidebarPanel = "start" | "design" | "export" | "saved";
+export type MobileTab = "start" | "design" | "export";
+export type SidebarPanel = "start" | "design" | "export";
 export type CalendarTone = "dark" | "light";
-export type CalendarThemeMode = "normal" | "light" | "dark";
-export type WallpaperStyle = "clean" | "compact" | "bold" | "glass";
+export type WallpaperStyle = "clean" | "compact" | "bold" | "glass" | "glass_light" | "glass_dark";
 export type GridPosition = "center" | "left" | "right" | "top" | "bottom";
 export type ExportVariant = "full" | "transparent" | "background";
-export type CalendarFont = "geist" | "poppins" | "comicSans" | "bangers" | "manrope" | "montserrat" | "nunito" | "rubik" | "outfit" | "lexend" | "spaceGrotesk" | "robotoMono" | "merriweather" | "system";
 export type AppTheme = "dark" | "light";
-export type BackgroundKind = "solid" | "image" | "gradient";
+export type BackgroundKind = "solid" | "image" | "gradient" | "pattern" | "geometric";
 export type OverlayKind = "none" | "pattern" | "geometric";
 export type GradientType = "linear" | "radial";
 export type PatternPreset = "grid" | "diagonal";
 export type GeometricKind = "dots" | "grid" | "lines" | "plus" | "blueprint";
 export type DeviceId = "iphone" | "ipad_portrait" | "ipad_landscape" | "laptop" | "macbook" | "share";
+export type ExportProgress = {
+  label: string;
+  current: number;
+  total: number;
+};
 
 export type GradientConfig = {
   type: GradientType;
@@ -53,6 +58,13 @@ export const DEFAULT_GRADIENT: GradientConfig = { type: "linear", colors: ["#185
 export const DEFAULT_PATTERN: PatternConfig = { emoji: "✨", preset: "diagonal", size: 180, spacing: 180, opacity: 0.16 };
 export const DEFAULT_VISIBLE_DAYS: Record<string, boolean> = { Mon: true, Tue: true, Wed: true, Thu: true, Fri: true, Sat: true, Sun: false };
 
+export type DeviceGridSettings = {
+  x: number;
+  y: number;
+  sx: number; // Horizontal size (1-5)
+  sy: number; // Vertical size (1-5)
+};
+
 // --- Context Interface ---
 interface ScheduleContextType {
   activeCoursePalette: string[];
@@ -71,6 +83,10 @@ interface ScheduleContextType {
   setShowSection: (val: boolean) => void;
   showCourseTitle: boolean;
   setShowCourseTitle: (val: boolean) => void;
+  showCalendarTitle: boolean;
+  setShowCalendarTitle: (val: boolean) => void;
+  showCalendarSubtitle: boolean;
+  setShowCalendarSubtitle: (val: boolean) => void;
   autoHideEmptyDays: boolean;
   setAutoHideEmptyDays: (val: boolean) => void;
   device: DeviceId;
@@ -79,14 +95,13 @@ interface ScheduleContextType {
   setWallpaperStyle: (val: WallpaperStyle) => void;
   appTheme: AppTheme;
   setAppTheme: (val: AppTheme) => void;
-  calendarThemeMode: CalendarThemeMode;
-  setCalendarThemeMode: (val: CalendarThemeMode) => void;
   gridPosition: GridPosition;
   setGridPosition: (val: GridPosition) => void;
-  gridOffsetX: number;
-  setGridOffsetX: (val: number) => void;
-  gridOffsetY: number;
-  setGridOffsetY: (val: number) => void;
+
+  // Per-device settings
+  deviceSettings: Record<DeviceId, DeviceGridSettings>;
+  setDeviceSettings: React.Dispatch<React.SetStateAction<Record<DeviceId, DeviceGridSettings>>>;
+
   backgroundKind: BackgroundKind;
   setBackgroundKind: (val: BackgroundKind) => void;
   background: string;
@@ -103,6 +118,10 @@ interface ScheduleContextType {
   setGeometric: React.Dispatch<React.SetStateAction<GeometricConfig>>;
   overlayKind: OverlayKind;
   setOverlayKind: (val: OverlayKind) => void;
+  emojiOverlayEnabled: boolean;
+  setEmojiOverlayEnabled: (val: boolean) => void;
+  lineOverlayEnabled: boolean;
+  setLineOverlayEnabled: (val: boolean) => void;
   mobileTab: MobileTab;
   setMobileTab: (val: MobileTab) => void;
   desktopPanel: SidebarPanel;
@@ -113,6 +132,8 @@ interface ScheduleContextType {
   setCalendarSubtitle: (val: string) => void;
   isExporting: boolean;
   setIsExporting: (val: boolean) => void;
+  exportProgress: ExportProgress | null;
+  setExportProgress: (val: ExportProgress | null) => void;
   isParsing: boolean;
   setIsParsing: (val: boolean) => void;
   isMobileExpanded: boolean;
@@ -127,8 +148,6 @@ interface ScheduleContextType {
   setExportVariant: (val: ExportVariant) => void;
   calendarFont: CalendarFont;
   setCalendarFont: (val: CalendarFont) => void;
-  calendarSize: number;
-  setCalendarSize: (val: number) => void;
   expandedCourses: Set<string>;
   setExpandedCourses: React.Dispatch<React.SetStateAction<Set<string>>>;
   selectedExportDevices: Set<DeviceId>;
@@ -136,6 +155,15 @@ interface ScheduleContextType {
 }
 
 const ScheduleContext = createContext<ScheduleContextType | undefined>(undefined);
+
+export const DEFAULT_DEVICE_SETTINGS: Record<DeviceId, DeviceGridSettings> = {
+  iphone:         { x: 0, y: 0, sx: 3, sy: 3 },
+  ipad_portrait:  { x: 0, y: 0, sx: 3, sy: 3 },
+  ipad_landscape: { x: 0, y: 0, sx: 3, sy: 3 },
+  laptop:         { x: 0, y: 0, sx: 3, sy: 3 },
+  macbook:        { x: 0, y: 0, sx: 3, sy: 3 },
+  share:          { x: 0, y: 0, sx: 3, sy: 3 },
+};
 
 export function ScheduleProvider({ children }: { children: ReactNode }) {
   // --- State Initialization ---
@@ -147,14 +175,16 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
   const [showProfessor, setShowProfessor] = useState(false);
   const [showSection, setShowSection] = useState(true);
   const [showCourseTitle, setShowCourseTitle] = useState(false);
+  const [showCalendarTitle, setShowCalendarTitle] = useState(true);
+  const [showCalendarSubtitle, setShowCalendarSubtitle] = useState(true);
   const [autoHideEmptyDays, setAutoHideEmptyDays] = useState(true);
   const [device, setDevice] = useState<DeviceId>("iphone");
   const [wallpaperStyle, setWallpaperStyle] = useState<WallpaperStyle>("clean");
   const [appTheme, setAppTheme] = useState<AppTheme>("dark");
-  const [calendarThemeMode, setCalendarThemeMode] = useState<CalendarThemeMode>("normal");
   const [gridPosition, setGridPosition] = useState<GridPosition>("center");
-  const [gridOffsetX, setGridOffsetX] = useState(0);
-  const [gridOffsetY, setGridOffsetY] = useState(0);
+
+  const [deviceSettings, setDeviceSettings] = useState<Record<DeviceId, DeviceGridSettings>>(DEFAULT_DEVICE_SETTINGS);
+
   const [backgroundKind, setBackgroundKind] = useState<BackgroundKind>("solid");
   const [background, setBackground] = useState(DEFAULT_BACKGROUND);
   const [backgroundImage, setBackgroundImage] = useState<string>("");
@@ -163,11 +193,14 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
   const [pattern, setPattern] = useState<PatternConfig>(DEFAULT_PATTERN);
   const [geometric, setGeometric] = useState<GeometricConfig>(DEFAULT_GEOMETRIC);
   const [overlayKind, setOverlayKind] = useState<OverlayKind>("none");
+  const [emojiOverlayEnabled, setEmojiOverlayEnabled] = useState(false);
+  const [lineOverlayEnabled, setLineOverlayEnabled] = useState(false);
   const [mobileTab, setMobileTab] = useState<MobileTab>("start");
   const [desktopPanel, setDesktopPanel] = useState<SidebarPanel>("start");
   const [calendarTitle, setCalendarTitle] = useState("Name's Schedule");
   const [calendarSubtitle, setCalendarSubtitle] = useState("Term 3");
   const [isExporting, setIsExporting] = useState(false);
+  const [exportProgress, setExportProgress] = useState<ExportProgress | null>(null);
   const [isParsing, setIsParsing] = useState(false);
   const [isMobileExpanded, setIsMobileExpanded] = useState(false);
   const [importError, setImportError] = useState("");
@@ -175,7 +208,6 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
   const [saveNotice, setSaveNotice] = useState("");
   const [exportVariant, setExportVariant] = useState<ExportVariant>("full");
   const [calendarFont, setCalendarFont] = useState<CalendarFont>("geist");
-  const [calendarSize, setCalendarSize] = useState(3);
   const [expandedCourses, setExpandedCourses] = useState<Set<string>>(new Set());
   const [selectedExportDevices, setSelectedExportDevices] = useState<Set<DeviceId>>(new Set<DeviceId>(["iphone"]));
 
@@ -188,14 +220,14 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
     showProfessor, setShowProfessor,
     showSection, setShowSection,
     showCourseTitle, setShowCourseTitle,
+    showCalendarTitle, setShowCalendarTitle,
+    showCalendarSubtitle, setShowCalendarSubtitle,
     autoHideEmptyDays, setAutoHideEmptyDays,
     device, setDevice,
     wallpaperStyle, setWallpaperStyle,
     appTheme, setAppTheme,
-    calendarThemeMode, setCalendarThemeMode,
     gridPosition, setGridPosition,
-    gridOffsetX, setGridOffsetX,
-    gridOffsetY, setGridOffsetY,
+    deviceSettings, setDeviceSettings,
     backgroundKind, setBackgroundKind,
     background, setBackground,
     backgroundImage, setBackgroundImage,
@@ -204,11 +236,14 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
     pattern, setPattern,
     geometric, setGeometric,
     overlayKind, setOverlayKind,
+    emojiOverlayEnabled, setEmojiOverlayEnabled,
+    lineOverlayEnabled, setLineOverlayEnabled,
     mobileTab, setMobileTab,
     desktopPanel, setDesktopPanel,
     calendarTitle, setCalendarTitle,
     calendarSubtitle, setCalendarSubtitle,
     isExporting, setIsExporting,
+    exportProgress, setExportProgress,
     isParsing, setIsParsing,
     isMobileExpanded, setIsMobileExpanded,
     importError, setImportError,
@@ -216,11 +251,10 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
     saveNotice, setSaveNotice,
     exportVariant, setExportVariant,
     calendarFont, setCalendarFont,
-    calendarSize, setCalendarSize,
     expandedCourses, setExpandedCourses,
     selectedExportDevices, setSelectedExportDevices
   }), [
-    activeCoursePalette, rawText, entries, visibleDays, showRoom, showProfessor, showSection, showCourseTitle, autoHideEmptyDays, device, wallpaperStyle, appTheme, calendarThemeMode, gridPosition, gridOffsetX, gridOffsetY, backgroundKind, background, backgroundImage, backgroundTone, gradient, pattern, geometric, overlayKind, mobileTab, desktopPanel, calendarTitle, calendarSubtitle, isExporting, isParsing, isMobileExpanded, importError, importSource, saveNotice, exportVariant, calendarFont, calendarSize, expandedCourses, selectedExportDevices
+    activeCoursePalette, rawText, entries, visibleDays, showRoom, showProfessor, showSection, showCourseTitle, showCalendarTitle, showCalendarSubtitle, autoHideEmptyDays, device, wallpaperStyle, appTheme, gridPosition, deviceSettings, backgroundKind, background, backgroundImage, backgroundTone, gradient, pattern, geometric, overlayKind, emojiOverlayEnabled, lineOverlayEnabled, mobileTab, desktopPanel, calendarTitle, calendarSubtitle, isExporting, exportProgress, isParsing, isMobileExpanded, importError, importSource, saveNotice, exportVariant, calendarFont, expandedCourses, selectedExportDevices
   ]);
 
   return <ScheduleContext.Provider value={value}>{children}</ScheduleContext.Provider>;

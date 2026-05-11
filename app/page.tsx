@@ -1,12 +1,12 @@
 "use client";
 
-import { classNames, getTextColor, computeRowCells, formatTimeSlot, courseParts, getStartMinutes, toneFromRgb, toneFromHex, toneFromColors, getPaletteTextColor, buildGradientBackground, buildEmojiPatternBackground, buildGeometricBackground, normalizeHexColor, hexToRgb, estimateImageTone, courseKeyFromCode, courseKeyFromCourse, getExpandedCourseSet, formatMeetingDays, getSlotDurationMinutes, groupEntriesByCourse, rangeProgress, formatPixels, hasConflict } from "@/lib/utils";
+import { classNames, getTextColor, computeRowCells, formatTimeSlot, courseParts, getStartMinutes, toneFromRgb, toneFromHex, toneFromColors, getPaletteTextColor, buildGradientBackground, buildEmojiPatternBackground, buildGeometricBackground, normalizeHexColor, hexToRgb, estimateImageTone, courseKeyFromCode, courseKeyFromCourse, getExpandedCourseSet, formatMeetingDays, getSlotDurationMinutes, groupEntriesByCourse, rangeProgress, formatPixels } from "@/lib/utils";
+import { CALENDAR_FONT_OPTIONS, CALENDAR_FONT_VALUES, getCalendarFontOption, type CalendarFont } from "@/lib/calendar-fonts";
 import { toCanvas } from "html-to-image";
 import JSZip from "jszip";
 import dynamic from "next/dynamic";
 import {
   AlignLeft,
-  AlertCircle,
   BookOpen,
   CalendarDays,
   Check,
@@ -14,9 +14,7 @@ import {
   Copy,
   Download,
   Eye,
-  Files,
   Hash,
-  History,
   Image as ImageIcon,
   ImagePlus,
   Laptop,
@@ -69,16 +67,14 @@ type ImportCalendarResponse = {
   message?: string;
 };
 
-type MobileTab = "start" | "design" | "export" | "saved";
-type SidebarPanel = "start" | "design" | "export" | "saved";
+type MobileTab = "start" | "design" | "export";
+type SidebarPanel = "start" | "design" | "export";
 type CalendarTone = "dark" | "light";
-type CalendarThemeMode = "normal" | "light" | "dark";
-type WallpaperStyle = "clean" | "compact" | "bold" | "glass";
+type WallpaperStyle = "clean" | "compact" | "bold" | "glass" | "glass_light" | "glass_dark";
 type GridPosition = "center" | "left" | "right" | "top" | "bottom";
 type ExportVariant = "full" | "transparent" | "background";
-type CalendarFont = "geist" | "poppins" | "comicSans" | "bangers" | "manrope" | "montserrat" | "nunito" | "rubik" | "outfit" | "lexend" | "spaceGrotesk" | "robotoMono" | "merriweather" | "system";
 type AppTheme = "dark" | "light";
-type BackgroundKind = "solid" | "image" | "gradient";
+type BackgroundKind = "solid" | "image" | "gradient" | "pattern" | "geometric";
 type OverlayKind = "none" | "pattern" | "geometric";
 type GradientType = "linear" | "radial";
 type PatternPreset = "grid" | "diagonal";
@@ -134,6 +130,8 @@ type SavedScheduleState = {
   showProfessor: boolean;
   showSection: boolean;
   showCourseTitle: boolean;
+  showCalendarTitle?: boolean;
+  showCalendarSubtitle?: boolean;
   autoHideEmptyDays: boolean;
   calendarTitle: string;
   calendarSubtitle: string;
@@ -141,19 +139,21 @@ type SavedScheduleState = {
   device: DeviceId;
   wallpaperStyle: WallpaperStyle;
   appTheme: AppTheme;
-  calendarThemeMode: CalendarThemeMode;
   gridPosition: GridPosition;
-  gridOffsetX: number;
-  gridOffsetY: number;
+  deviceSettings?: Record<DeviceId, DeviceGridSettings>; // New per-device settings
+  gridOffsetX: number; // Legacy, kept for migration
+  gridOffsetY: number; // Legacy
   backgroundKind: BackgroundKind;
   overlayKind?: OverlayKind;
+  emojiOverlayEnabled?: boolean;
+  lineOverlayEnabled?: boolean;
   background: string;
   backgroundImage: string;
   backgroundTone: CalendarTone;
   gradient: GradientConfig;
   pattern: PatternConfig;
   geometric?: GeometricConfig;
-  calendarSize: number;
+  calendarSize: number; // Legacy
   exportVariant: ExportVariant;
   calendarFont: CalendarFont;
   workflowStep?: SidebarPanel;
@@ -172,6 +172,8 @@ type SharedDesignState = {
   version: 1;
   backgroundKind: BackgroundKind;
   overlayKind: OverlayKind;
+  emojiOverlayEnabled: boolean;
+  lineOverlayEnabled: boolean;
   background: string;
   backgroundImage: string;
   backgroundTone: CalendarTone;
@@ -180,11 +182,12 @@ type SharedDesignState = {
   geometric?: GeometricConfig;
   wallpaperStyle: WallpaperStyle;
   appTheme: AppTheme;
-  calendarThemeMode: CalendarThemeMode;
   gridPosition: GridPosition;
   gridOffsetX: number;
   gridOffsetY: number;
   calendarFont: CalendarFont;
+  showCalendarTitle: boolean;
+  showCalendarSubtitle: boolean;
   calendarSize: number;
   device: DeviceId;
   exportVariant: ExportVariant;
@@ -197,6 +200,7 @@ interface StyleConfig {
   borderColor: string;
   headerFont: string;
   showLines: boolean;
+  forceTheme?: CalendarTone;
 }
 
 const STYLE_PRESETS: Record<WallpaperStyle, StyleConfig> = {
@@ -207,6 +211,24 @@ const STYLE_PRESETS: Record<WallpaperStyle, StyleConfig> = {
     cellStyle: "rounded-[4px] border border-black/10 shadow-none",
     borderColor: "border-white/[0.08]",
     showLines: true
+  },
+  glass_light: {
+    name: "Light",
+    headerFont: "font-sans",
+    gridOpacity: "bg-white/[0.82]",
+    cellStyle: "rounded-[4px] border border-black/[0.08] shadow-none",
+    borderColor: "border-black/[0.08]",
+    showLines: true,
+    forceTheme: "light"
+  },
+  glass_dark: {
+    name: "Dark",
+    headerFont: "font-sans",
+    gridOpacity: "bg-black/[0.36]",
+    cellStyle: "rounded-[4px] border border-white/[0.14] shadow-none",
+    borderColor: "border-white/[0.14]",
+    showLines: true,
+    forceTheme: "dark"
   },
   compact: {
     name: "Minimal",
@@ -236,6 +258,8 @@ const STYLE_PRESETS: Record<WallpaperStyle, StyleConfig> = {
 
 const STYLE_PRESET_DETAILS: Record<WallpaperStyle, string> = {
   clean: "Bordered grid with lines",
+  glass_light: "Light mode classic",
+  glass_dark: "Dark mode classic",
   compact: "Clean borderless look",
   bold: "Floating cards with depth",
   glass: "Frosted glass effect"
@@ -256,7 +280,7 @@ const DEVICES: Record<DeviceId, { label: string; aspect: string; ratio: number; 
   ipad_landscape: { label: "iPad",     aspect: "4 / 3",      ratio: 4 / 3,      icon: Tablet,          description: "4:3 Landscape"    },
   laptop:         { label: "Laptop",   aspect: "16 / 9",     ratio: 16 / 9,     icon: Laptop,          description: "16:9 Widescreen"  },
   macbook:        { label: "Laptop",   aspect: "1440 / 900",  ratio: 1440 / 900, icon: Monitor,         description: "16:10 Display"    },
-  share:          { label: "Square",   aspect: "1 / 1",      ratio: 1,          icon: ImageIcon,       description: "1:1 Square"       }
+  share:          { label: "Square",   aspect: "1 / 1",      ratio: 1,          icon: ImageIcon,       description: "1:1"              }
 };
 
 // Fixed canvas pixel sizes — preview will be CSS-scaled to fit, export captures these exact dimensions
@@ -270,6 +294,153 @@ const CANVAS_SIZES: Record<DeviceId, { width: number; height: number }> = {
 };
 const EXPORT_SCALE = 6; // High-res export (6× native) — increased from 4x for better readability in dense schedules.
 
+const GRID_SIZE_MIN = 0.2;
+const GRID_SIZE_MAX = 12;
+const PAD_SCALE_MAP: Record<number, number> = { 1: 0.45, 2: 0.75, 3: 1.0, 4: 1.3, 5: 1.6 };
+
+function clampValue(value: number, min: number, max: number) {
+  return Math.max(min, Math.min(max, value));
+}
+
+function interpolateScale(map: Record<number, number>, value: number) {
+  const keys = Object.keys(map).map(Number).sort((a, b) => a - b);
+  if (value <= keys[0]) return map[keys[0]];
+  if (value >= keys[keys.length - 1]) return map[keys[keys.length - 1]];
+  const lower = keys.filter((key) => key <= value).pop()!;
+  const upper = keys.filter((key) => key > value).shift()!;
+  const t = (value - lower) / (upper - lower);
+  return map[lower] + (map[upper] - map[lower]) * t;
+}
+
+function invertScale(map: Record<number, number>, targetScale: number) {
+  const keys = Object.keys(map).map(Number).sort((a, b) => a - b);
+  for (let i = 0; i < keys.length - 1; i += 1) {
+    const leftKey = keys[i];
+    const rightKey = keys[i + 1];
+    const leftScale = map[leftKey];
+    const rightScale = map[rightKey];
+    const minScale = Math.min(leftScale, rightScale);
+    const maxScale = Math.max(leftScale, rightScale);
+
+    if (targetScale >= minScale && targetScale <= maxScale) {
+      const t = (targetScale - leftScale) / (rightScale - leftScale);
+      return clampValue(leftKey + (rightKey - leftKey) * t, GRID_SIZE_MIN, GRID_SIZE_MAX);
+    }
+  }
+
+  const firstKey = keys[0];
+  const lastKey = keys[keys.length - 1];
+  const firstDistance = Math.abs(targetScale - map[firstKey]);
+  const lastDistance = Math.abs(targetScale - map[lastKey]);
+  return firstDistance < lastDistance ? firstKey : lastKey;
+}
+
+function getFrameWidthMap(device: DeviceId): Record<number, number> {
+  return device === "iphone"
+    ? { 0.2: 1.08, 3: 1.0, 12: 0.1 }
+    : { 0.2: 1.0, 3: 0.64, 12: 0.1 };
+}
+
+function getFrameHeightMap(device: DeviceId): Record<number, number> {
+  if (device === "share") return { 0.2: 1, 12: 1 };
+  return device === "iphone"
+    ? { 0.2: 1.2, 3: 0.90, 12: 0.1 }
+    : { 0.2: 1.1, 3: 0.84, 12: 0.1 };
+}
+
+function getFrameBounds(device: DeviceId) {
+  const canvas = CANVAS_SIZES[device];
+  const isSquare = device === "share";
+  const margin = isSquare ? 0 : (device === "iphone" ? 0 : (device.startsWith("ipad") ? 58 : 84));
+  return {
+    maxWidth: Math.max(1, canvas.width - margin * 2),
+    maxHeight: Math.max(1, canvas.height - margin * 2)
+  };
+}
+
+function getFrameSize(device: DeviceId, sx: number, sy: number) {
+  const canvas = CANVAS_SIZES[device];
+  const isSquare = device === "share";
+  const { maxWidth, maxHeight } = getFrameBounds(device);
+  const widthScale = interpolateScale(getFrameWidthMap(device), sx);
+  const heightScale = interpolateScale(getFrameHeightMap(device), sy);
+  const rawWidth = Math.round(maxWidth * (isSquare ? 1 : widthScale));
+  const width = device === "iphone" ? Math.min(maxWidth, rawWidth) : rawWidth;
+  const height = Math.round(maxHeight * heightScale);
+
+  return { width, height, canvas };
+}
+
+function getFrameLimits(device: DeviceId) {
+  const { maxWidth, maxHeight } = getFrameBounds(device);
+  const widthMap = getFrameWidthMap(device);
+  const heightMap = getFrameHeightMap(device);
+  const widthScales = Object.values(widthMap);
+  const heightScales = Object.values(heightMap);
+  return {
+    minWidth: maxWidth * Math.min(...widthScales),
+    maxWidth: maxWidth * Math.min(1, Math.max(...widthScales)),
+    minHeight: maxHeight * Math.min(...heightScales),
+    maxHeight: maxHeight * Math.max(...heightScales)
+  };
+}
+
+function getBaseFramePad(device: DeviceId) {
+  if (device === "laptop") return 64;
+  if (device === "macbook") return 72;
+  if (device === "share") return 0;
+  if (device === "ipad_landscape" || device === "ipad_portrait") return 56;
+  return 18;
+}
+
+function getFramePad(device: DeviceId, sx: number, densityFactor: number) {
+  const isSquare = device === "share";
+  return Math.round(
+    getBaseFramePad(device) *
+    interpolateScale(PAD_SCALE_MAP, sx) *
+    (isSquare ? 1 : Math.max(0.4, densityFactor * 0.9))
+  );
+}
+
+function getGridWidthForSize(device: DeviceId, sx: number, densityFactor: number) {
+  const { width } = getFrameSize(device, sx, 3);
+  return Math.max(1, width - getFramePad(device, sx, densityFactor) * 2);
+}
+
+function getGridWidthLimits(device: DeviceId, densityFactor: number) {
+  const minWidth = getGridWidthForSize(device, GRID_SIZE_MAX, densityFactor);
+  const maxWidth = getGridWidthForSize(device, GRID_SIZE_MIN, densityFactor);
+  return { minWidth, maxWidth };
+}
+
+function settingFromGridWidth(device: DeviceId, gridWidth: number, densityFactor: number) {
+  let low = GRID_SIZE_MIN;
+  let high = GRID_SIZE_MAX;
+
+  for (let i = 0; i < 28; i += 1) {
+    const mid = (low + high) / 2;
+    const width = getGridWidthForSize(device, mid, densityFactor);
+    if (width > gridWidth) low = mid;
+    else high = mid;
+  }
+
+  return clampValue((low + high) / 2, GRID_SIZE_MIN, GRID_SIZE_MAX);
+}
+
+function settingFromFrameHeight(device: DeviceId, height: number) {
+  const { maxHeight } = getFrameBounds(device);
+  return invertScale(getFrameHeightMap(device), height / maxHeight);
+}
+
+function getManipulationCursor(type: string) {
+  if (type === "move") return "grabbing";
+  const direction = type.replace("resize-", "");
+  if (direction === "nw" || direction === "se") return "nwse-resize";
+  if (direction === "ne" || direction === "sw") return "nesw-resize";
+  if (direction === "n" || direction === "s") return "ns-resize";
+  return "ew-resize";
+}
+
 const BLOCK_PALETTE_GROUPS = [
   {
     label: "Pink",
@@ -280,7 +451,8 @@ const BLOCK_PALETTE_GROUPS = [
       { name: "Hot Pink",   hex: "#FF4D9E" },
       { name: "Fuchsia",    hex: "#E040FB" },
       { name: "Magenta",    hex: "#F472B6" },
-      { name: "Bubblegum",  hex: "#FF9FD7" }
+      { name: "Bubblegum",  hex: "#FF9FD7" },
+      { name: "Ribbon",     hex: "#FF7AB8" }
     ]
   },
   {
@@ -292,7 +464,8 @@ const BLOCK_PALETTE_GROUPS = [
       { name: "Peach",      hex: "#FFCBA4" },
       { name: "Apricot",    hex: "#FFB36B" },
       { name: "Tangerine",  hex: "#FF8A3D" },
-      { name: "Honey",      hex: "#FFDA8A" }
+      { name: "Honey",      hex: "#FFDA8A" },
+      { name: "Flame",      hex: "#FF6A3D" }
     ]
   },
   {
@@ -304,7 +477,8 @@ const BLOCK_PALETTE_GROUPS = [
       { name: "Sage",       hex: "#A8C8A0" },
       { name: "Mint",       hex: "#A8EED5" },
       { name: "Teal",       hex: "#4DB6AC" },
-      { name: "Jade",       hex: "#57C785" }
+      { name: "Jade",       hex: "#57C785" },
+      { name: "Leaf",       hex: "#2FBF71" }
     ]
   },
   {
@@ -316,7 +490,8 @@ const BLOCK_PALETTE_GROUPS = [
       { name: "Periwinkle", hex: "#A0B8F0" },
       { name: "Slate",      hex: "#90A4B8" },
       { name: "Denim",      hex: "#4A6FA5" },
-      { name: "Navy",       hex: "#385A8C" }
+      { name: "Navy",       hex: "#385A8C" },
+      { name: "Azure",      hex: "#38A3FF" }
     ]
   },
   {
@@ -328,7 +503,8 @@ const BLOCK_PALETTE_GROUPS = [
       { name: "Taro",       hex: "#C4B0E8" },
       { name: "Mochi",      hex: "#F0D8F8" },
       { name: "Violet",     hex: "#9B7AE5" },
-      { name: "Grape",      hex: "#7B4FCB" }
+      { name: "Grape",      hex: "#7B4FCB" },
+      { name: "Amethyst",   hex: "#A855F7" }
     ]
   },
   {
@@ -340,12 +516,16 @@ const BLOCK_PALETTE_GROUPS = [
       { name: "Tan",        hex: "#C4A07A" },
       { name: "Stone",      hex: "#A8A29E" },
       { name: "Sienna",     hex: "#A0522D" },
-      { name: "Charcoal",   hex: "#455A64" }
+      { name: "Charcoal",   hex: "#455A64" },
+      { name: "Graphite",   hex: "#6B7280" }
     ]
   }
 ];
 
 const BLOCK_PALETTES = BLOCK_PALETTE_GROUPS.flatMap((group) => group.colors);
+const COURSE_COLOR_CHOICES = BLOCK_PALETTE_GROUPS.flatMap((group) =>
+  group.colors.map((palette) => ({ ...palette, group: group.label }))
+);
 
 const COURSE_THEMES: Array<{ name: string; colors: string[] }> = [
   { name: "Blossom",    colors: ["#FFB3C1","#FF85A1","#FFD6E7","#F5A0B8","#FFCCE0","#FFC4D6","#FF9BB5","#FFDDE8","#F7A7C0","#FFCAD4","#EFA7B8","#FFE6EE"] },
@@ -522,8 +702,7 @@ const PATTERN_PRESETS: Array<{ value: PatternPreset; label: string }> = [
   { value: "diagonal", label: "Diagonal" }
 ];
 
-const QUICK_EMOJI_PICKS = ["✨", "🏹", "💚", "🌿", "🌸", "💗", "🔥", "⚡", "📚", "💻", "☕", "🎧"];
-
+const QUICK_EMOJI_PICKS = ["✨", "🏹", "💚", "🌿", "🌸", "💗", "🔥", "⚡", "📚", "💻", "☕", "🎧", "🎓", "📝", "⭐", "🪩"];
 const EMOJI_PICKER_DARK_STYLE = {
   "--epr-bg-color": "#0B100D",
   "--epr-category-label-bg-color": "#0B100D",
@@ -550,13 +729,11 @@ const EMOJI_PICKER_LIGHT_STYLE = {
 
 const MOBILE_TABS: Array<{ id: MobileTab; label: string; icon: LucideIcon }> = [
   { id: "start",   label: "Courses", icon: CalendarDays },
-  { id: "saved",   label: "Stored",  icon: Files },
   { id: "design",  label: "Design",  icon: Palette },
   { id: "export",  label: "Export",  icon: Download },
 ];
 const SIDEBAR_PANELS: Array<{ id: SidebarPanel; label: string; icon: LucideIcon }> = [
   { id: "start",    label: "Courses", icon: CalendarDays },
-  { id: "saved",    label: "Stored",  icon: Files },
   { id: "design",   label: "Design",  icon: Palette },
 ];
 
@@ -568,11 +745,6 @@ const CALENDAR_SIZE_OPTIONS = [
   { value: 2, label: "L" },
   { value: 1, label: "XL" },
 ];
-const CALENDAR_THEME_OPTIONS: Array<{ value: CalendarThemeMode; label: string; icon: LucideIcon }> = [
-  { value: "normal", label: "Normal", icon: Sparkles },
-  { value: "light",  label: "Light",  icon: Sun },
-  { value: "dark",   label: "Dark",   icon: Moon },
-];
 
 const EXPORT_VARIANT_OPTIONS: Array<{ value: ExportVariant; label: string; description: string; icon: LucideIcon }> = [
   { value: "full", label: "Wallpaper", description: "Background and schedule", icon: ImageIcon },
@@ -580,114 +752,7 @@ const EXPORT_VARIANT_OPTIONS: Array<{ value: ExportVariant; label: string; descr
   { value: "background", label: "Backdrop", description: "Background only", icon: ImagePlus }
 ];
 
-const CALENDAR_FONT_OPTIONS: Array<{
-  value: CalendarFont;
-  label: string;
-  description: string;
-  bodyClass: string;
-  headingClass: string;
-}> = [
-  {
-    value: "geist",
-    label: "Geist",
-    description: "Clean modern sans",
-    bodyClass: "font-sans",
-    headingClass: "font-sans"
-  },
-  {
-    value: "poppins",
-    label: "Poppins",
-    description: "Rounded student feel",
-    bodyClass: "font-poppins",
-    headingClass: "font-poppins"
-  },
-  {
-    value: "comicSans",
-    label: "Comic Sans",
-    description: "Playful doodle style",
-    bodyClass: "font-comic-sans",
-    headingClass: "font-comic-sans"
-  },
-  {
-    value: "bangers",
-    label: "Bangers",
-    description: "Comic poster punch",
-    bodyClass: "font-bangers",
-    headingClass: "font-bangers"
-  },
-  {
-    value: "manrope",
-    label: "Manrope",
-    description: "Crisp geometric sans",
-    bodyClass: "font-manrope",
-    headingClass: "font-manrope"
-  },
-  {
-    value: "montserrat",
-    label: "Montserrat",
-    description: "Bold poster style",
-    bodyClass: "font-montserrat",
-    headingClass: "font-montserrat"
-  },
-  {
-    value: "nunito",
-    label: "Nunito",
-    description: "Soft rounded sans",
-    bodyClass: "font-nunito",
-    headingClass: "font-nunito"
-  },
-  {
-    value: "rubik",
-    label: "Rubik",
-    description: "Rounded blocky UI",
-    bodyClass: "font-rubik",
-    headingClass: "font-rubik"
-  },
-  {
-    value: "outfit",
-    label: "Outfit",
-    description: "Clean display sans",
-    bodyClass: "font-outfit",
-    headingClass: "font-outfit"
-  },
-  {
-    value: "lexend",
-    label: "Lexend",
-    description: "Wide readable spacing",
-    bodyClass: "font-lexend",
-    headingClass: "font-lexend"
-  },
-  {
-    value: "spaceGrotesk",
-    label: "Space Grotesk",
-    description: "Techy modern feel",
-    bodyClass: "font-space-grotesk",
-    headingClass: "font-space-grotesk"
-  },
-  {
-    value: "robotoMono",
-    label: "Roboto Mono",
-    description: "Structured mono",
-    bodyClass: "font-roboto-mono",
-    headingClass: "font-roboto-mono"
-  },
-  {
-    value: "merriweather",
-    label: "Merriweather",
-    description: "Classic serif",
-    bodyClass: "font-merriweather",
-    headingClass: "font-merriweather"
-  },
-  {
-    value: "system",
-    label: "System",
-    description: "Native UI font",
-    bodyClass: "font-[ui-sans-serif,system-ui,sans-serif]",
-    headingClass: "font-[ui-sans-serif,system-ui,sans-serif]"
-  }
-];
-
-const COMMON_EXPORT_DEVICES: DeviceId[] = ["iphone", "ipad_portrait", "ipad_landscape", "laptop", "macbook"];
+const COMMON_EXPORT_DEVICES: DeviceId[] = ["iphone", "ipad_portrait", "ipad_landscape", "laptop", "macbook", "share"];
 const EXPORT_DEVICE_LABELS: Record<DeviceId, string> = {
   iphone: "iPhone",
   ipad_portrait: "iPad Portrait",
@@ -696,8 +761,15 @@ const EXPORT_DEVICE_LABELS: Record<DeviceId, string> = {
   macbook: "MacBook 16:10",
   share: "Square"
 };
+const EXPORT_DEVICE_SLUGS: Record<DeviceId, string> = {
+  iphone: "iphone",
+  ipad_portrait: "ipad-portrait",
+  ipad_landscape: "ipad-landscape",
+  laptop: "laptop",
+  macbook: "macbook",
+  share: "square"
+};
 const DEVICE_VALUES = new Set<DeviceId>(Object.keys(DEVICES) as DeviceId[]);
-const CALENDAR_FONT_VALUES = new Set<CalendarFont>(CALENDAR_FONT_OPTIONS.map((option) => option.value));
 const WORKFLOW_STEPS = new Set<SidebarPanel>(["start", "design", "export"]);
 const ACTIVE_CREATION_KEY = "archers_calendar_active_creation_v1";
 const LEGACY_LAST_SCHEDULE_KEY = "archers_calendar_last_schedule_v2";
@@ -722,6 +794,7 @@ const DEFAULT_VISIBLE_DAYS: Record<DayKey, boolean> = {
 const DAY_PAIRS: DayKey[][] = [["Mon", "Thu"], ["Tue", "Fri"], ["Wed", "Sat"]];
 
 function normalizeCalendarFont(value: unknown): CalendarFont {
+  if (value === "bangers") return "archivoBlack";
   return typeof value === "string" && CALENDAR_FONT_VALUES.has(value as CalendarFont) ? (value as CalendarFont) : "geist";
 }
 
@@ -735,10 +808,6 @@ function normalizeWallpaperStyle(value: unknown): WallpaperStyle {
   if (value === "bold" || value === "swiss") return "bold";
   if (value === "glass") return "glass";
   return "clean";
-}
-
-function normalizeCalendarThemeMode(value: unknown): CalendarThemeMode {
-  return value === "light" || value === "dark" || value === "normal" ? value : "normal";
 }
 
 function normalizeGridPosition(value: unknown): GridPosition {
@@ -836,6 +905,152 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+function normalizeSavedTimestamp(value: unknown, fallback = Date.now()) {
+  return typeof value === "number" && Number.isFinite(value) && value > 0 ? value : fallback;
+}
+
+function normalizeSavedVisibleDays(value: unknown): Record<DayKey, boolean> {
+  const next = { ...DEFAULT_VISIBLE_DAYS };
+  if (!isRecord(value)) return next;
+  DAY_ORDER.forEach((day) => {
+    if (typeof value[day] === "boolean") next[day] = value[day];
+  });
+  return next;
+}
+
+function normalizeSavedPalette(value: unknown) {
+  const colors = Array.isArray(value)
+    ? value
+        .filter((color): color is string => typeof color === "string" && /^#[0-9A-F]{6}$/i.test(color))
+        .map((color) => color.toUpperCase())
+        .slice(0, 24)
+    : [];
+  return colors.length ? colors : BLOCK_PALETTES.map((palette) => palette.hex);
+}
+
+function normalizeDeviceSettings(value: unknown, legacyX: number, legacyY: number, legacySize: number): Record<DeviceId, DeviceGridSettings> {
+  const base = isRecord(value) ? value : {};
+  const settings: any = {};
+  (Object.keys(DEVICES) as DeviceId[]).forEach(id => {
+    const s = isRecord(base[id]) ? base[id] : {};
+    const legacyS = typeof s.size === "number" ? s.size : legacySize;
+    settings[id] = {
+      x: typeof s.x === "number" ? s.x : legacyX,
+      y: typeof s.y === "number" ? s.y : legacyY,
+      sx: typeof s.sx === "number" ? s.sx : legacyS,
+      sy: typeof s.sy === "number" ? s.sy : legacyS
+    };
+  });
+  return settings;
+}
+
+function normalizeSavedScheduleState(value: unknown): SavedScheduleState {
+  const record = isRecord(value) ? value : {};
+  const backgroundMigration = migrateBackgroundKind(record.backgroundKind);
+  const backgroundKind = backgroundMigration.base;
+  const rawBackground = typeof record.background === "string" && record.background.trim()
+    ? record.background.trim()
+    : DEFAULT_BACKGROUND;
+
+  const legacyX = normalizeGridOffset(record.gridOffsetX);
+  const legacyY = normalizeGridOffset(record.gridOffsetY);
+  const legacySize = normalizeCalendarSize(record.calendarSize);
+  const migratedOverlayKind = normalizeOverlayKind(record.overlayKind ?? backgroundMigration.overlay);
+  const emojiOverlayEnabled = typeof record.emojiOverlayEnabled === "boolean"
+    ? record.emojiOverlayEnabled
+    : migratedOverlayKind === "pattern";
+  const lineOverlayEnabled = typeof record.lineOverlayEnabled === "boolean"
+    ? record.lineOverlayEnabled
+    : migratedOverlayKind === "geometric";
+
+  return {
+    rawText: typeof record.rawText === "string" ? record.rawText : "",
+    entries: sanitizeScheduleEntries(record.entries),
+    visibleDays: normalizeSavedVisibleDays(record.visibleDays),
+    showRoom: typeof record.showRoom === "boolean" ? record.showRoom : true,
+    showProfessor: typeof record.showProfessor === "boolean" ? record.showProfessor : false,
+    showSection: typeof record.showSection === "boolean" ? record.showSection : true,
+    showCourseTitle: typeof record.showCourseTitle === "boolean" ? record.showCourseTitle : false,
+    showCalendarTitle: typeof record.showCalendarTitle === "boolean" ? record.showCalendarTitle : true,
+    showCalendarSubtitle: typeof record.showCalendarSubtitle === "boolean" ? record.showCalendarSubtitle : true,
+    autoHideEmptyDays: typeof record.autoHideEmptyDays === "boolean" ? record.autoHideEmptyDays : true,
+    calendarTitle: typeof record.calendarTitle === "string" && record.calendarTitle.trim() ? record.calendarTitle.trim() : "Name's Schedule",
+    calendarSubtitle: typeof record.calendarSubtitle === "string" ? record.calendarSubtitle : "Term 3",
+    activeCoursePalette: normalizeSavedPalette(record.activeCoursePalette),
+    device: normalizeDevice(record.device),
+    wallpaperStyle: normalizeWallpaperStyle(record.wallpaperStyle),
+    appTheme: normalizeAppTheme(record.appTheme),
+    gridPosition: normalizeGridPosition(record.gridPosition),
+    deviceSettings: normalizeDeviceSettings(record.deviceSettings, legacyX, legacyY, legacySize),
+    gridOffsetX: legacyX,
+    gridOffsetY: legacyY,
+    backgroundKind,
+    overlayKind: migratedOverlayKind,
+    emojiOverlayEnabled,
+    lineOverlayEnabled,
+    background: rawBackground,
+    backgroundImage: typeof record.backgroundImage === "string" ? record.backgroundImage : "",
+    backgroundTone: record.backgroundTone === "light" ? "light" : "dark",
+    gradient: normalizeGradientConfig(record.gradient),
+    pattern: normalizePatternConfig(record.pattern),
+    geometric: normalizeGeometricConfig(record.geometric),
+    calendarSize: legacySize,
+    exportVariant: normalizeExportVariant(record.exportVariant),
+    calendarFont: normalizeCalendarFont(record.calendarFont),
+    workflowStep: normalizeWorkflowStep(record.workflowStep)
+  };
+}
+
+function normalizeSavedScheduleSnapshot(value: unknown): SavedScheduleSnapshot | null {
+  if (!isRecord(value)) return null;
+  const now = Date.now();
+  const id = typeof value.id === "string" && value.id.trim() ? value.id.trim() : "";
+  if (!id) return null;
+
+  const updatedAt = normalizeSavedTimestamp(value.updatedAt, now);
+  const createdAt = normalizeSavedTimestamp(value.createdAt, updatedAt);
+  const state = normalizeSavedScheduleState(value.state);
+  const fallbackName = state.calendarTitle || "Untitled Schedule";
+  const name = typeof value.name === "string" && value.name.trim() ? value.name.trim() : fallbackName;
+  const rawState = isRecord(value.state) ? value.state : {};
+  const hasStateTitle = typeof rawState.calendarTitle === "string" && rawState.calendarTitle.trim().length > 0;
+
+  return {
+    id,
+    name,
+    createdAt,
+    updatedAt,
+    state: {
+      ...state,
+      calendarTitle: hasStateTitle ? state.calendarTitle : name
+    },
+    thumbnail: typeof value.thumbnail === "string" ? value.thumbnail : undefined
+  };
+}
+
+function formatSavedScheduleDate(timestamp: number) {
+  const date = new Date(timestamp);
+  if (!Number.isFinite(date.getTime())) return "Just now";
+
+  const now = new Date();
+  const today = now.toDateString();
+  const yesterday = new Date(now);
+  yesterday.setDate(now.getDate() - 1);
+
+  const time = date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  if (date.toDateString() === today) return `Today ${time}`;
+  if (date.toDateString() === yesterday.toDateString()) return `Yesterday ${time}`;
+  return date.toLocaleDateString([], { month: "short", day: "numeric" });
+}
+
+function getSavedScheduleSummary(snapshot: SavedScheduleSnapshot) {
+  const entries = sanitizeScheduleEntries(snapshot.state.entries);
+  const dayCount = new Set(entries.map((entry) => entry.day)).size;
+  const classLabel = `${entries.length} ${entries.length === 1 ? "class" : "classes"}`;
+  const dayLabel = dayCount ? `${dayCount} ${dayCount === 1 ? "day" : "days"}` : "No days";
+  return `${classLabel} · ${dayLabel} · ${formatSavedScheduleDate(snapshot.updatedAt)}`;
+}
+
 function bytesToBinary(bytes: Uint8Array) {
   let binary = "";
   const chunkSize = 0x8000;
@@ -863,9 +1078,9 @@ const DESIGN_SHARE_PREFIX_V3 = "ac3."; // ultra-short query string format
 
 // Key shortening map for smaller design codes
 const KEY_SHORT: Record<string, string> = {
-  backgroundKind: "bk", overlayKind: "ok", background: "bg", backgroundImage: "bi", backgroundTone: "bt",
+  backgroundKind: "bk", overlayKind: "ok", emojiOverlayEnabled: "eo", lineOverlayEnabled: "lo", background: "bg", backgroundImage: "bi", backgroundTone: "bt",
   wallpaperStyle: "ws", appTheme: "at", calendarThemeMode: "ct", gridPosition: "gp", gridOffsetX: "gx", gridOffsetY: "gy",
-  calendarFont: "cf", calendarSize: "cs", device: "dv", exportVariant: "ev",
+  calendarFont: "cf", showCalendarTitle: "st", showCalendarSubtitle: "ss", calendarSize: "cs", device: "dv", exportVariant: "ev",
   gradient: "gr", pattern: "pa", geometric: "ge", version: "v",
   type: "t", colors: "c", angle: "a", position: "p", preset: "pr",
   emoji: "em", size: "sz", spacing: "sp", opacity: "op", kind: "k", color: "co"
@@ -875,6 +1090,8 @@ const KEY_LONG: Record<string, string> = Object.fromEntries(Object.entries(KEY_S
 const DEFAULT_STATE: Partial<SharedDesignState> = {
   backgroundKind: "solid",
   overlayKind: "none",
+  emojiOverlayEnabled: false,
+  lineOverlayEnabled: false,
   background: "#0B100D",
   backgroundImage: "",
   backgroundTone: "dark",
@@ -883,14 +1100,11 @@ const DEFAULT_STATE: Partial<SharedDesignState> = {
   geometric: DEFAULT_GEOMETRIC,
   wallpaperStyle: "clean",
   appTheme: "dark",
-  calendarThemeMode: "normal",
   gridPosition: "center",
-  gridOffsetX: 0,
-  gridOffsetY: 0,
   calendarFont: "geist",
-  calendarSize: 3,
-};
-
+  showCalendarTitle: true,
+  showCalendarSubtitle: true,
+  };
 function getDiff(base: any, current: any) {
   const diff: any = {};
   for (const key in current) {
@@ -1042,7 +1256,9 @@ async function decodeDesignCodeAsync(code: string): Promise<Record<string, unkno
       const [k, v] = p.split('~');
       if (!k || v === undefined) continue;
       let val: any = v;
-      if (/^-?\d+(?:\.\d+)?$/.test(v) && !/^\d{6}$/.test(v)) {
+      if (v === "true" || v === "false") {
+        val = v === "true";
+      } else if (/^-?\d+(?:\.\d+)?$/.test(v) && !/^\d{6}$/.test(v)) {
         val = Number(v);
       } else if (v.includes('-')) {
         val = v.split('-').map(x => /^[0-9A-Fa-f]{6}$/.test(x) ? '#' + x : x);
@@ -1053,7 +1269,7 @@ async function decodeDesignCodeAsync(code: string): Promise<Record<string, unkno
     }
     const unflat = unflattenDiff(flat);
     const expanded = expandKeys(unflat);
-    
+
     const merge = (base: any, target: any) => {
       const res = { ...base };
       for (const key in target) {
@@ -1243,22 +1459,28 @@ async function readCreationsFromDb(): Promise<SavedScheduleSnapshot[]> {
     const tx = db.transaction(CREATION_STORE_NAME, "readonly");
     const request = tx.objectStore(CREATION_STORE_NAME).getAll();
     request.onsuccess = () => {
-      const records = Array.isArray(request.result) ? request.result as SavedScheduleSnapshot[] : [];
-      resolve(records.sort((a, b) => b.updatedAt - a.updatedAt));
+      const records = Array.isArray(request.result) ? request.result : [];
+      const normalized = records
+        .map(normalizeSavedScheduleSnapshot)
+        .filter((snapshot): snapshot is SavedScheduleSnapshot => Boolean(snapshot));
+      resolve(normalized.sort((a, b) => b.createdAt - a.createdAt));
     };
     request.onerror = () => reject(request.error);
     tx.oncomplete = () => db.close();
   });
 }
 
-async function saveCreationToDb(snapshot: SavedScheduleSnapshot) {
+async function saveCreationToDb(snapshot: SavedScheduleSnapshot): Promise<SavedScheduleSnapshot> {
+  const normalized = normalizeSavedScheduleSnapshot(snapshot);
+  if (!normalized) throw new Error("Invalid saved schedule.");
+
   const db = await openCreationsDb();
-  return new Promise<void>((resolve, reject) => {
+  return new Promise<SavedScheduleSnapshot>((resolve, reject) => {
     const tx = db.transaction(CREATION_STORE_NAME, "readwrite");
-    tx.objectStore(CREATION_STORE_NAME).put(snapshot);
+    tx.objectStore(CREATION_STORE_NAME).put(normalized);
     tx.oncomplete = () => {
       db.close();
-      resolve();
+      resolve(normalized);
     };
     tx.onerror = () => {
       db.close();
@@ -1286,7 +1508,7 @@ async function deleteCreationFromDb(id: string) {
 import PreviewCanvas from "@/components/PreviewCanvas";
 import MobileControls from "@/components/MobileControls";
 import ExportOverlay from "@/components/ExportOverlay";
-import { ScheduleProvider, useSchedule } from "@/lib/ScheduleContext";
+import { ScheduleProvider, useSchedule, DeviceGridSettings, DEFAULT_DEVICE_SETTINGS } from "@/lib/ScheduleContext";
 
 export default function Home() {
   return (
@@ -1309,14 +1531,14 @@ function MainApp() {
     showProfessor, setShowProfessor,
     showSection, setShowSection,
     showCourseTitle, setShowCourseTitle,
+    showCalendarTitle, setShowCalendarTitle,
+    showCalendarSubtitle, setShowCalendarSubtitle,
     autoHideEmptyDays, setAutoHideEmptyDays,
     device, setDevice,
     wallpaperStyle, setWallpaperStyle,
     appTheme, setAppTheme,
-    calendarThemeMode, setCalendarThemeMode,
     gridPosition, setGridPosition,
-    gridOffsetX, setGridOffsetX,
-    gridOffsetY, setGridOffsetY,
+    deviceSettings, setDeviceSettings,
     backgroundKind, setBackgroundKind,
     background, setBackground,
     backgroundImage, setBackgroundImage,
@@ -1325,11 +1547,14 @@ function MainApp() {
     pattern, setPattern,
     geometric, setGeometric,
     overlayKind, setOverlayKind,
+    emojiOverlayEnabled, setEmojiOverlayEnabled,
+    lineOverlayEnabled, setLineOverlayEnabled,
     mobileTab, setMobileTab,
     desktopPanel, setDesktopPanel,
     calendarTitle, setCalendarTitle,
     calendarSubtitle, setCalendarSubtitle,
     isExporting, setIsExporting,
+    exportProgress, setExportProgress,
     isParsing, setIsParsing,
     isMobileExpanded, setIsMobileExpanded,
     importError, setImportError,
@@ -1337,7 +1562,6 @@ function MainApp() {
     saveNotice, setSaveNotice,
     exportVariant, setExportVariant,
     calendarFont, setCalendarFont,
-    calendarSize, setCalendarSize,
     expandedCourses, setExpandedCourses,
     selectedExportDevices, setSelectedExportDevices,
   } = useSchedule();
@@ -1350,6 +1574,8 @@ function MainApp() {
   const [designShareNotice, setDesignShareNotice] = useState("");
   const [editingSavedId, setEditingSavedId] = useState("");
   const [editingSavedName, setEditingSavedName] = useState("");
+  const [pendingDeleteSaved, setPendingDeleteSaved] = useState<SavedScheduleSnapshot | null>(null);
+  const [isDeletingSaved, setIsDeletingSaved] = useState(false);
   const [savedCopies, setSavedCopies] = useState<SavedScheduleSnapshot[]>([]);
   const [hasLoadedLocalSchedule, setHasLoadedLocalSchedule] = useState(false);
   const [activeCreationId, setActiveCreationId] = useState("");
@@ -1362,13 +1588,29 @@ function MainApp() {
   const [showExportPopup, setShowExportPopup] = useState(false);
   const [parsingProgress, setParsingProgress] = useState(0);
   const [justAddedId, setJustAddedId] = useState<string | null>(null);
-  const [activeEmojiPickerCode, setActiveEmojiPickerCode] = useState<string | null>(null);
+
+  // Direct Grid Manipulation State
+  type ManipulationType = "move" | "resize-n" | "resize-s" | "resize-e" | "resize-w" | "resize-ne" | "resize-nw" | "resize-se" | "resize-sw";
+  type ManipulationDragStart = {
+    x: number;
+    y: number;
+    ox: number;
+    oy: number;
+    osx: number;
+    osy: number;
+    frameWidth: number;
+    frameHeight: number;
+    gridWidth: number;
+    gridHeight: number;
+  };
+  const [manipulation, setManipulation] = useState<{ type: ManipulationType } | null>(null);
+  const dragStartRef = useRef<ManipulationDragStart>({ x: 0, y: 0, ox: 0, oy: 0, osx: 3, osy: 3, frameWidth: 0, frameHeight: 0, gridWidth: 0, gridHeight: 0 });
+  const [showManipulationHint, setShowManipulationHint] = useState(false);
 
   // Synchronize the currently previewed device with the export selection.
   useEffect(() => {
     setSelectedExportDevices(new Set([device]));
   }, [device, setSelectedExportDevices]);
-
   useEffect(() => {
     const hasSeenBeta = sessionStorage.getItem("archers_calendar_beta_seen");
     if (!hasSeenBeta) {
@@ -1377,6 +1619,14 @@ function MainApp() {
       return () => window.clearTimeout(timer);
     }
   }, []);
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && !sessionStorage.getItem("archers_manipulation_hud_v2")) {
+      const timer = window.setTimeout(() => setShowManipulationHint(true), 0);
+      return () => window.clearTimeout(timer);
+    }
+  }, []);
+
   const canvasRef = useRef<HTMLDivElement>(null);
   const previewContainerRef = useRef<HTMLDivElement>(null);
   const desktopImportTextAreaRef = useRef<HTMLTextAreaElement>(null);
@@ -1493,10 +1743,10 @@ function MainApp() {
 
       localStorage.setItem(ACTIVE_CREATION_KEY, id);
       void saveCreationToDb(snapshot)
-        .then(() => {
+        .then((savedSnapshot) => {
           setSavedCopies((current) => {
-            const next = [snapshot, ...current.filter((creation) => creation.id !== snapshot.id)];
-            return next.sort((a, b) => b.updatedAt - a.updatedAt);
+            const next = [savedSnapshot, ...current.filter((creation) => creation.id !== savedSnapshot.id)];
+            return next.sort((a, b) => b.createdAt - a.createdAt);
           });
         })
         .catch(() => setSaveNotice("Local save failed."));
@@ -1515,6 +1765,8 @@ function MainApp() {
     showProfessor,
     showSection,
     showCourseTitle,
+    showCalendarTitle,
+    showCalendarSubtitle,
     autoHideEmptyDays,
     calendarTitle,
     calendarSubtitle,
@@ -1522,17 +1774,17 @@ function MainApp() {
     device,
     wallpaperStyle,
     appTheme,
-    calendarThemeMode,
     gridPosition,
-    gridOffsetX,
-    gridOffsetY,
+    deviceSettings,
     backgroundKind,
     background,
     backgroundImage,
     backgroundTone,
     gradient,
     pattern,
-    calendarSize,
+    geometric,
+    emojiOverlayEnabled,
+    lineOverlayEnabled,
     exportVariant,
     calendarFont,
     desktopPanel
@@ -1552,12 +1804,11 @@ function MainApp() {
 
   const activeDevice = DEVICES[device];
   const activeStyle = STYLE_PRESETS[wallpaperStyle];
-  const activeCalendarFont = CALENDAR_FONT_OPTIONS.find((option) => option.value === calendarFont) ?? CALENDAR_FONT_OPTIONS[0];
   const headerStyleClass = activeStyle.headerFont.replace(/\bfont-(?:sans|serif|mono)\b/g, "").trim();
   const canvasSize = CANVAS_SIZES[device];
   const isDarkBg = backgroundTone === "dark";
   const automaticCalendarTone: CalendarTone = isDarkBg ? "dark" : "light";
-  const resolvedCalendarTone: CalendarTone = calendarThemeMode === "normal" ? automaticCalendarTone : calendarThemeMode;
+  const resolvedCalendarTone: CalendarTone = activeStyle.forceTheme || automaticCalendarTone;
   const logoSrc = backgroundTone === "dark" ? "/logos/logo-mini-white.png" : "/logos/logo-mini-black.png";
 
   // Recompute preview scale whenever container resizes or device changes
@@ -1609,8 +1860,8 @@ function MainApp() {
     setLiveShareUrl("");
   }, [
     backgroundKind, overlayKind, background, backgroundImage, backgroundTone,
-    gradient, pattern, geometric, wallpaperStyle, appTheme,
-    calendarThemeMode, gridPosition, gridOffsetX, gridOffsetY, calendarFont, calendarSize,
+    gradient, pattern, geometric, emojiOverlayEnabled, lineOverlayEnabled, wallpaperStyle, appTheme,
+    gridPosition, deviceSettings, calendarFont,
     device, exportVariant
   ]);
 
@@ -1618,6 +1869,12 @@ function MainApp() {
     const slots = Array.from(new Set(visibleEntries.map((e) => e.timeSlot).filter(Boolean)));
     return slots.sort((a, b) => getStartMinutes(a) - getStartMinutes(b));
   }, [visibleEntries]);
+
+  const manipulationDensityFactor = useMemo(() => {
+    const slotImpact = Math.max(0, timeSlots.length - 6) * 0.035;
+    const entryImpact = Math.max(0, visibleEntries.length - 8) * 0.018;
+    return Math.max(0.45, Math.min(1.0, 1.0 - slotImpact - entryImpact));
+  }, [timeSlots.length, visibleEntries.length]);
 
   const entriesByCell = useMemo(() => {
     return visibleEntries.reduce<Record<string, ScheduleEntry[]>>((groups, entry) => {
@@ -1663,9 +1920,9 @@ function MainApp() {
     ? "bg-white/[0.82]"
     : "bg-black/[0.36]";
   const themeBorder = isCalendarLight ? "border-black/[0.08]" : "border-white/[0.14]";
-  const gridBg        = isBorderlessStyle ? activeStyle.gridOpacity : calendarThemeMode === "normal" ? activeStyle.gridOpacity : forcedGridBg;
-  const gridBorder    = isBorderlessStyle ? "border-transparent" : calendarThemeMode === "normal" ? activeStyle.borderColor : themeBorder;
-  const headerCellBg  = isBorderlessStyle ? "bg-transparent" : isCalendarLight ? "bg-black/[0.05]" : "bg-white/[0.08]";
+  const gridBg        = isBorderlessStyle ? activeStyle.gridOpacity : activeStyle.gridOpacity;
+  const gridBorder    = isBorderlessStyle ? "border-transparent" : activeStyle.borderColor;
+  const headerCellBg  = isBorderlessStyle ? "bg-transparent" : (isCalendarLight ? "bg-black/[0.05]" : "bg-white/[0.08]");
   const headerBorder  = isBorderlessStyle ? "border-transparent" : gridBorder;
   const headerText    = isCalendarLight ? "text-black/80" : "text-white";
   const timeRowStyle  = isBorderlessStyle ? "" : "border-b";
@@ -1714,13 +1971,25 @@ function MainApp() {
   // calendarSize 1=largest(less pad/bigger text) … 5=smallest(more pad/smaller text); share always 0 pad
   const PAD_SCALE:  Record<number, number> = { 1: 0.4, 2: 0.7, 3: 1.0, 4: 1.4, 5: 1.8 };
   const FONT_SCALE: Record<number, number> = { 1: 1.3, 2: 1.12, 3: 1.0, 4: 0.9, 5: 0.82 };
+
+  const lerpScale = (map: Record<number, number>, val: number) => {
+    const keys = Object.keys(map).map(Number).sort((a, b) => a - b);
+    if (val <= keys[0]) return map[keys[0]];
+    if (val >= keys[keys.length - 1]) return map[keys[keys.length - 1]];
+    const lower = keys.filter(k => k <= val).pop()!;
+    const upper = keys.filter(k => k > val).shift()!;
+    const t = (val - lower) / (upper - lower);
+    return map[lower] + (map[upper] - map[lower]) * t;
+  };
+
   const MIN_FONT_PX = device === "iphone" ? 5 : 0;
-  const fs = device === "share" ? 1 : FONT_SCALE[calendarSize];
+  const current = deviceSettings[device] || { x: 0, y: 0, sx: 3, sy: 3 };
+  const fs = device === "share" ? 1 : lerpScale(FONT_SCALE, current.sx);
   // Round to whole pixels — fractional values cause spacing glitches in image exports
   const scalePx  = (val: number) => `${Math.round(Math.max(MIN_FONT_PX, val * fs))}px`;
   const scalePad = (val: number) => `${Math.round(val * fs)}px`; // no font minimum — for spacing/padding only
   const sz = {
-    pad:        device === "share" ? "0px" : `${Math.round(szBase.pad * PAD_SCALE[calendarSize])}px`,
+    pad:        device === "share" ? "0px" : `${Math.round(szBase.pad * lerpScale(PAD_SCALE, current.sx))}px`,
     subtitle:   scalePx(szBase.subtitle),
     title:      scalePx(szBase.title),
     dayHeader:  scalePx(szBase.dayHeader),
@@ -1737,7 +2006,7 @@ function MainApp() {
     dayPy:      scalePad(szBase.dayPy)
   };
   const canvasRadius =
-    device === "share"    ? "0px" :
+    device === "share" ? "0px" :
     device === "iphone"   ? "1rem" :
     device.startsWith("ipad") ? "0.75rem" : "0.5rem";
 
@@ -1754,6 +2023,7 @@ function MainApp() {
   }
 
   function buildSavedScheduleState(): SavedScheduleState {
+    const current = deviceSettings[device] || { x: 0, y: 0, sx: 3, sy: 3 };
     return {
       rawText,
       entries,
@@ -1762,6 +2032,8 @@ function MainApp() {
       showProfessor,
       showSection,
       showCourseTitle,
+      showCalendarTitle,
+      showCalendarSubtitle,
       autoHideEmptyDays,
       calendarTitle,
       calendarSubtitle,
@@ -1769,18 +2041,21 @@ function MainApp() {
       device,
       wallpaperStyle,
       appTheme,
-      calendarThemeMode,
       gridPosition,
-      gridOffsetX,
-      gridOffsetY,
+      deviceSettings,
+      gridOffsetX: current.x,
+      gridOffsetY: current.y,
       backgroundKind,
+      overlayKind,
+      emojiOverlayEnabled,
+      lineOverlayEnabled,
       background,
       backgroundImage,
       backgroundTone,
       gradient,
       pattern,
       geometric,
-      calendarSize,
+      calendarSize: Math.round((current.sx + current.sy) / 2),
       exportVariant,
       calendarFont,
       workflowStep: desktopPanel
@@ -1788,10 +2063,13 @@ function MainApp() {
   }
 
   function buildSharedDesignState(): SharedDesignState {
+    const current = deviceSettings[device] || { x: 0, y: 0, sx: 3, sy: 3 };
     return {
       version: 1,
       backgroundKind,
       overlayKind,
+      emojiOverlayEnabled,
+      lineOverlayEnabled,
       background,
       backgroundImage,
       backgroundTone,
@@ -1800,12 +2078,13 @@ function MainApp() {
       geometric,
       wallpaperStyle,
       appTheme,
-      calendarThemeMode,
       gridPosition,
-      gridOffsetX,
-      gridOffsetY,
+      gridOffsetX: current.x,
+      gridOffsetY: current.y,
       calendarFont,
-      calendarSize,
+      showCalendarTitle,
+      showCalendarSubtitle,
+      calendarSize: Math.round((current.sx + current.sy) / 2),
       device,
       exportVariant
     };
@@ -1819,12 +2098,21 @@ function MainApp() {
     const migrated = hasBackgroundKind ? migrateBackgroundKind(state.backgroundKind) : { base: backgroundKind, overlay: overlayKind };
     const nextBackgroundKind = migrated.base;
     const nextOverlayKind = "overlayKind" in state ? normalizeOverlayKind(state.overlayKind) : migrated.overlay;
+    const nextDevice = "device" in state ? normalizeDevice(state.device) : device;
+    const nextEmojiOverlayEnabled = typeof state.emojiOverlayEnabled === "boolean"
+      ? state.emojiOverlayEnabled
+      : nextOverlayKind === "pattern";
+    const nextLineOverlayEnabled = typeof state.lineOverlayEnabled === "boolean"
+      ? state.lineOverlayEnabled
+      : nextOverlayKind === "geometric";
     const nextBackground = hasBackground && typeof state.background === "string" && /^#[0-9A-F]{6}$/i.test(state.background)
       ? state.background
       : background;
 
     if (hasBackgroundKind) setBackgroundKind(nextBackgroundKind);
     setOverlayKind(nextOverlayKind);
+    setEmojiOverlayEnabled(nextEmojiOverlayEnabled);
+    setLineOverlayEnabled(nextLineOverlayEnabled);
     if (hasBackground) setBackground(nextBackground);
     if ("backgroundImage" in state) setBackgroundImage(typeof state.backgroundImage === "string" ? state.backgroundImage : "");
     if (hasGradient) setGradient(nextGradient);
@@ -1832,13 +2120,21 @@ function MainApp() {
     if ("geometric" in state) setGeometric(normalizeGeometricConfig(state.geometric));
     if ("wallpaperStyle" in state) setWallpaperStyle(normalizeWallpaperStyle(state.wallpaperStyle));
     if ("appTheme" in state) setAppTheme(normalizeAppTheme(state.appTheme));
-    if ("calendarThemeMode" in state) setCalendarThemeMode(normalizeCalendarThemeMode(state.calendarThemeMode));
     if ("gridPosition" in state) setGridPosition(normalizeGridPosition(state.gridPosition));
-    if ("gridOffsetX" in state) setGridOffsetX(normalizeGridOffset(state.gridOffsetX));
-    if ("gridOffsetY" in state) setGridOffsetY(normalizeGridOffset(state.gridOffsetY));
+
+    const nextX = normalizeGridOffset(state.gridOffsetX);
+    const nextY = normalizeGridOffset(state.gridOffsetY);
+    const nextSize = normalizeCalendarSize(state.calendarSize);
+
+    setDeviceSettings(prev => ({
+      ...prev,
+      [nextDevice]: { x: nextX, y: nextY, sx: nextSize, sy: nextSize }
+    }));
+
     if ("calendarFont" in state) setCalendarFont(normalizeCalendarFont(state.calendarFont));
-    if ("calendarSize" in state) setCalendarSize(normalizeCalendarSize(state.calendarSize));
-    if ("device" in state) setDevice(normalizeDevice(state.device));
+    if ("showCalendarTitle" in state) setShowCalendarTitle(typeof state.showCalendarTitle === "boolean" ? state.showCalendarTitle : true);
+    if ("showCalendarSubtitle" in state) setShowCalendarSubtitle(typeof state.showCalendarSubtitle === "boolean" ? state.showCalendarSubtitle : true);
+    if ("device" in state) setDevice(nextDevice);
     if ("exportVariant" in state) setExportVariant(normalizeExportVariant(state.exportVariant));
 
     if (state.backgroundTone === "light" || state.backgroundTone === "dark") {
@@ -1860,6 +2156,12 @@ function MainApp() {
     const migrated = migrateBackgroundKind(rawBgKind);
     const nextBackgroundKind = migrated.base;
     const nextOverlayKind = state.overlayKind ? normalizeOverlayKind(state.overlayKind) : migrated.overlay;
+    const nextEmojiOverlayEnabled = typeof state.emojiOverlayEnabled === "boolean"
+      ? state.emojiOverlayEnabled
+      : nextOverlayKind === "pattern";
+    const nextLineOverlayEnabled = typeof state.lineOverlayEnabled === "boolean"
+      ? state.lineOverlayEnabled
+      : nextOverlayKind === "geometric";
     const nextBackground = typeof state.background === "string" && /^#[0-9A-F]{6}$/i.test(state.background)
       ? state.background
       : DEFAULT_BACKGROUND;
@@ -1877,6 +2179,8 @@ function MainApp() {
     setShowProfessor(state.showProfessor ?? false);
     setShowSection(state.showSection ?? true);
     setShowCourseTitle(state.showCourseTitle ?? false);
+    setShowCalendarTitle(state.showCalendarTitle ?? true);
+    setShowCalendarSubtitle(state.showCalendarSubtitle ?? true);
     setAutoHideEmptyDays(state.autoHideEmptyDays ?? true);
     setCalendarTitle(state.calendarTitle ?? "Name's Schedule");
     setCalendarSubtitle(state.calendarSubtitle ?? "Term 3");
@@ -1884,19 +2188,23 @@ function MainApp() {
     setDevice(state.device ?? "laptop");
     setWallpaperStyle(normalizeWallpaperStyle(state.wallpaperStyle));
     setAppTheme(normalizeAppTheme(state.appTheme));
-    setCalendarThemeMode(state.calendarThemeMode ?? "normal");
     setGridPosition(state.gridPosition ?? "center");
-    setGridOffsetX(normalizeGridOffset(state.gridOffsetX));
-    setGridOffsetY(normalizeGridOffset(state.gridOffsetY));
+
+    const legacyX = normalizeGridOffset(state.gridOffsetX);
+    const legacyY = normalizeGridOffset(state.gridOffsetY);
+    const legacySize = normalizeCalendarSize(state.calendarSize);
+    setDeviceSettings(state.deviceSettings ?? normalizeDeviceSettings({}, legacyX, legacyY, legacySize));
+
     setBackgroundKind(nextBackgroundKind);
     setOverlayKind(nextOverlayKind);
+    setEmojiOverlayEnabled(nextEmojiOverlayEnabled);
+    setLineOverlayEnabled(nextLineOverlayEnabled);
     setBackground(nextBackground);
     setBackgroundImage(state.backgroundImage ?? "");
     setBackgroundTone(nextBackgroundTone);
     setGradient(nextGradient);
     setPattern(nextPattern);
     if ("geometric" in state) setGeometric(normalizeGeometricConfig(state.geometric));
-    setCalendarSize(state.calendarSize ?? 3);
     setExportVariant(state.exportVariant ?? "full");
     setCalendarFont(normalizeCalendarFont(state.calendarFont));
     {
@@ -1948,13 +2256,15 @@ function MainApp() {
   async function migrateLegacyCreationsToDb() {
     const legacyLast = readLegacyLastScheduleSnapshot();
     const legacyCopies = readLegacySavedCopies();
-    const migrated = [legacyLast, ...legacyCopies].filter(Boolean) as SavedScheduleSnapshot[];
+    const migrated = [legacyLast, ...legacyCopies]
+      .map(normalizeSavedScheduleSnapshot)
+      .filter((snapshot): snapshot is SavedScheduleSnapshot => Boolean(snapshot));
 
     for (const snapshot of migrated) {
       await saveCreationToDb(snapshot);
     }
 
-    return migrated.sort((a, b) => b.updatedAt - a.updatedAt);
+    return migrated.sort((a, b) => b.createdAt - a.createdAt);
   }
 
   function applyCoursePalette(colors: string[]) {
@@ -1995,6 +2305,9 @@ function MainApp() {
   function updatePattern(next: Partial<PatternConfig>) {
     const updated = normalizePatternConfig({ ...pattern, ...next });
     setPattern(updated);
+    if (next.emoji !== undefined && !emojiOverlayEnabled) {
+      setEmojiOverlayEnabled(true);
+    }
   }
 
   function applyParsedEntries(parsed: ScheduleEntry[]) {
@@ -2047,8 +2360,8 @@ function MainApp() {
     };
 
     try {
-      await saveCreationToDb(snapshot);
-      setSavedCopies((current) => [snapshot, ...current.filter((creation) => creation.id !== snapshot.id)]);
+      const savedSnapshot = await saveCreationToDb(snapshot);
+      setSavedCopies((current) => [savedSnapshot, ...current.filter((creation) => creation.id !== savedSnapshot.id)]);
       setSaveNotice("Duplicated locally.");
     } catch {
       setSaveNotice("Duplicate could not be saved.");
@@ -2071,6 +2384,7 @@ function MainApp() {
 
   async function renameSavedCopy(snapshot: SavedScheduleSnapshot, nextName: string) {
     const name = nextName.trim() || "Untitled Schedule";
+    const now = Date.now();
     setEditingSavedId("");
     setEditingSavedName("");
 
@@ -2079,6 +2393,7 @@ function MainApp() {
     const updated: SavedScheduleSnapshot = {
       ...snapshot,
       name,
+      updatedAt: now,
       state: {
         ...snapshot.state,
         calendarTitle: name
@@ -2086,9 +2401,10 @@ function MainApp() {
     };
 
     try {
-      await saveCreationToDb(updated);
+      const savedSnapshot = await saveCreationToDb(updated);
       setSavedCopies((current) =>
-        current.map((saved) => saved.id === snapshot.id ? updated : saved)
+        current.map((saved) => saved.id === snapshot.id ? savedSnapshot : saved)
+          .sort((a, b) => b.createdAt - a.createdAt)
       );
       if (activeCreationId === snapshot.id) {
         setCalendarTitle(name);
@@ -2099,30 +2415,193 @@ function MainApp() {
     }
   }
 
-  async function deleteSavedCopy(id: string) {
+  function requestDeleteSavedCopy(snapshot: SavedScheduleSnapshot) {
+    setPendingDeleteSaved(snapshot);
+  }
+
+  async function confirmDeleteSavedCopy() {
+    if (!pendingDeleteSaved) return;
+
+    const snapshot = pendingDeleteSaved;
+    const remaining = savedCopies.filter((saved) => saved.id !== snapshot.id);
+    setIsDeletingSaved(true);
+
     try {
-      await deleteCreationFromDb(id);
-      setSavedCopies((current) => current.filter((snapshot) => snapshot.id !== id));
-      if (activeCreationId === id) {
+      await deleteCreationFromDb(snapshot.id);
+      setSavedCopies(remaining);
+      if (editingSavedId === snapshot.id) {
+        setEditingSavedId("");
+        setEditingSavedName("");
+      }
+      setPendingDeleteSaved(null);
+
+      if (activeCreationId === snapshot.id) {
         setActiveCreationId("");
         localStorage.removeItem(ACTIVE_CREATION_KEY);
+        const nextActive = remaining[0];
+        if (nextActive) {
+          loadSavedCopy(nextActive);
+        } else {
+          resetSchedule();
+        }
       }
-      setSaveNotice("Deleted local creation.");
+
+      setSaveNotice(`Deleted ${snapshot.name || "saved schedule"}.`);
     } catch {
-      setSaveNotice("Local creation could not be deleted.");
+      setSaveNotice("Could not delete schedule.");
+    } finally {
+      setIsDeletingSaved(false);
     }
   }
 
+  // --- Direct Grid Manipulation Handlers ---
+  const handleManipulationStart = (type: ManipulationType, e: React.MouseEvent) => {
+    if (device === "share" || (typeof window !== "undefined" && window.innerWidth < 1024)) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    const current = deviceSettings[device] || { x: 0, y: 0, sx: 3, sy: 3 };
+    const startFrame = getFrameSize(device, current.sx, current.sy);
+    const gridElement = (e.currentTarget as HTMLElement).closest('[data-calendar-grid="true"]');
+    const gridRect = gridElement?.getBoundingClientRect();
+    setManipulation({ type });
+    dragStartRef.current = {
+      x: e.clientX,
+      y: e.clientY,
+      ox: current.x,
+      oy: current.y,
+      osx: current.sx,
+      osy: current.sy,
+      frameWidth: startFrame.width,
+      frameHeight: startFrame.height,
+      gridWidth: gridRect ? gridRect.width / Math.max(previewScale, 0.001) : startFrame.width,
+      gridHeight: gridRect ? gridRect.height / Math.max(previewScale, 0.001) : startFrame.height
+    };
+
+    document.body.style.cursor = getManipulationCursor(type);
+    };
+
+    const handleManipulationMove = (e: React.MouseEvent) => {
+    if (!manipulation) return;
+
+    const dx = e.clientX - dragStartRef.current.x;
+    const dy = e.clientY - dragStartRef.current.y;
+    const activeCanvas = CANVAS_SIZES[device];
+    const { type } = manipulation;
+
+    setDeviceSettings((prev) => {
+      const current = prev[device] || { x: 0, y: 0, sx: 3, sy: 3 };
+      const next = { ...current };
+
+      if (type === "move") {
+        const pxToX = (dx / (activeCanvas.width * previewScale)) * 100;
+        const pxToY = (dy / (activeCanvas.height * previewScale)) * 100;
+
+        let nx = dragStartRef.current.ox + pxToX;
+        let ny = dragStartRef.current.oy + pxToY;
+
+        // Snapping logic: snap to center (0,0) within threshold
+        const snapThreshold = 2.0;
+        if (Math.abs(nx) < snapThreshold) nx = 0;
+        if (Math.abs(ny) < snapThreshold) ny = 0;
+
+        next.x = Math.max(-80, Math.min(80, nx));
+        next.y = Math.max(-80, Math.min(80, ny));
+      } else {
+        const canvasDx = dx / Math.max(previewScale, 0.001);
+        const canvasDy = dy / Math.max(previewScale, 0.001);
+        const resizeDirection = type.replace("resize-", "");
+        const hasEast = resizeDirection.includes("e");
+        const hasWest = resizeDirection.includes("w");
+        const hasNorth = resizeDirection.includes("n");
+        const hasSouth = resizeDirection.includes("s");
+        const limits = getFrameLimits(device);
+        const gridWidthLimits = getGridWidthLimits(device, manipulationDensityFactor);
+        const horizontalAnchor = gridPosition === "left" ? "start" : gridPosition === "right" ? "end" : "center";
+        const verticalAnchor = gridPosition === "top" ? "start" : gridPosition === "bottom" ? "end" : "center";
+
+        if (hasEast || hasWest) {
+          const requestedGridWidth = dragStartRef.current.gridWidth + (hasEast ? canvasDx : -canvasDx);
+          const targetGridWidth = clampValue(requestedGridWidth, gridWidthLimits.minWidth, gridWidthLimits.maxWidth);
+          const gridWidthDelta = targetGridWidth - dragStartRef.current.gridWidth;
+          const edgeDx = hasEast ? gridWidthDelta : -gridWidthDelta;
+          const anchorOffsetPx =
+            horizontalAnchor === "center" ? edgeDx / 2 :
+            horizontalAnchor === "start" ? (hasWest ? edgeDx : 0) :
+            hasEast ? edgeDx : 0;
+
+          next.sx = settingFromGridWidth(device, targetGridWidth, manipulationDensityFactor);
+          next.x = clampValue(dragStartRef.current.ox + (anchorOffsetPx / activeCanvas.width) * 100, -80, 80);
+        }
+
+        if (hasNorth || hasSouth) {
+          const requestedHeight = dragStartRef.current.frameHeight + (hasSouth ? canvasDy : -canvasDy);
+          const targetHeight = clampValue(requestedHeight, limits.minHeight, limits.maxHeight);
+          const heightDelta = targetHeight - dragStartRef.current.frameHeight;
+          const edgeDy = hasSouth ? heightDelta : -heightDelta;
+          const anchorOffsetPx =
+            verticalAnchor === "center" ? edgeDy / 2 :
+            verticalAnchor === "start" ? (hasNorth ? edgeDy : 0) :
+            hasSouth ? edgeDy : 0;
+
+          next.sy = settingFromFrameHeight(device, targetHeight);
+          next.y = clampValue(dragStartRef.current.oy + (anchorOffsetPx / activeCanvas.height) * 100, -80, 80);
+        }
+      }
+
+      return { ...prev, [device]: next };
+    });    };
+  const handleManipulationEnd = () => {
+    if (!manipulation) return;
+    setManipulation(null);
+    document.body.style.cursor = '';
+
+    // Save locally
+    if (!sessionStorage.getItem("archers_manipulation_hud_v2")) {
+      setShowManipulationHint(false);
+      sessionStorage.setItem("archers_manipulation_hud_v2", "true");
+    }
+  };
+  async function duplicateSavedCopy(snapshot: SavedScheduleSnapshot) {
+    const now = Date.now();
+    const newId = makeClientId("creation");
+    const newSnapshot: SavedScheduleSnapshot = {
+      ...snapshot,
+      id: newId,
+      name: `${snapshot.name} (Copy)`,
+      createdAt: now,
+      updatedAt: now,
+      state: {
+        ...snapshot.state,
+        entries: cloneEntriesForClient(snapshot.state.entries),
+        calendarTitle: `${snapshot.name} (Copy)`,
+        workflowStep: "start"
+      }
+    };
+    try {
+      const savedSnapshot = await saveCreationToDb(newSnapshot);
+      setSavedCopies((current) => [savedSnapshot, ...current].sort((a, b) => b.createdAt - a.createdAt));
+      setSaveNotice("Schedule duplicated.");
+    } catch {
+      setSaveNotice("Could not duplicate schedule.");
+    }
+  }
   function resetSchedule() {
+    setActiveCreationId("");
+    setActiveCreationCreatedAt(Date.now());
+    localStorage.removeItem(ACTIVE_CREATION_KEY);
+
     setRawText("");
     setEntries([]);
     setExpandedCourses(new Set());
     setCalendarTitle("Name's Schedule");
     setCalendarSubtitle("Term 3");
     setVisibleDays(DEFAULT_VISIBLE_DAYS);
+    setDeviceSettings(DEFAULT_DEVICE_SETTINGS);
     setImportError("");
     setImportSource("");
-    setSaveNotice("Schedule reset.");
+    setSaveNotice("Created new schedule.");
     setMobileTab("start");
     setDesktopPanel("start");
   }
@@ -2136,7 +2615,7 @@ function MainApp() {
     const progressInterval = setInterval(() => {
       setParsingProgress((prev) => {
         if (prev >= 99.7) return prev;
-        
+
         let increment = 0;
         if (prev < 70) {
           // Fast initial progress
@@ -2151,7 +2630,7 @@ function MainApp() {
           // Micro-crawl near the limit
           increment = 0.001;
         }
-        
+
         return Math.min(99.72, prev + increment);
       });
     }, 100);
@@ -2237,7 +2716,7 @@ function MainApp() {
   function addEntry() {
     const nextNum = (groupedCourses.filter(c => c.code.toLowerCase().includes("new class")).length) + 1;
     const code = `New Class ${nextNum}`;
-    
+
     // Find a non-overlapping slot
     const candidateSlots = [
       "07:30 AM - 09:00 AM",
@@ -2248,9 +2727,9 @@ function MainApp() {
       "04:15 PM - 05:45 PM",
       "06:00 PM - 07:30 PM"
     ];
-    
+
     const dayPairs: DayKey[][] = [["Mon", "Thu"], ["Tue", "Fri"], ["Wed", "Sat"]];
-    
+
     let selectedSlot = candidateSlots[0];
     let selectedDays: DayKey[] = ["Mon", "Thu"];
     let found = false;
@@ -2260,7 +2739,7 @@ function MainApp() {
       const parts = slot.split(" - ");
       const start = getStartMinutes(parts[0]);
       const end = getStartMinutes(parts[1]);
-      
+
       return entries.some(e => {
         if (!days.includes(e.day as DayKey)) return false;
         const eParts = e.timeSlot.split(" - ");
@@ -2315,7 +2794,7 @@ function MainApp() {
       }));
       return [...newEntries, ...current];
     });
-    
+
     setJustAddedId(newCourseKey);
     setTimeout(() => setJustAddedId(null), 2400);
 
@@ -2357,12 +2836,20 @@ function MainApp() {
         const ctx = canvas.getContext("2d");
         ctx?.drawImage(img, 0, 0, width, height);
         setBackgroundKind("image");
-        setBackgroundImage(canvas.toDataURL("image/jpeg", 0.85));
+        const isPng = file.type === "image/png" || /\.png$/i.test(file.name);
+        setBackgroundImage(isPng ? canvas.toDataURL("image/png") : canvas.toDataURL("image/jpeg", 0.85));
         setBackgroundTone(estimateImageTone(canvas));
       };
       img.src = e.target?.result as string;
     };
     reader.readAsDataURL(file);
+  }
+
+  function openBackgroundUpload(source: HTMLElement) {
+    const panel = source.closest('[data-controls-panel="true"]');
+    const input = (panel?.querySelector('[data-background-image-upload="true"]') ??
+      document.querySelector('[data-background-image-upload="true"]')) as HTMLInputElement | null;
+    input?.click();
   }
 
   async function waitForExportFrame() {
@@ -2381,20 +2868,29 @@ function MainApp() {
   }
 
   async function captureExportCanvas(target: HTMLElement, size: { width: number; height: number }, scale: number = 4) {
-    const wrapper = document.createElement("div");
-    const clone = target.cloneNode(true) as HTMLElement;
-    clone.querySelectorAll("[data-export-hidden='true']").forEach((node) => node.remove());
-
-    Object.assign(wrapper.style, {
+    // Create an invisible anchor container to prevent horizontal overflow on mobile
+    const anchor = document.createElement("div");
+    Object.assign(anchor.style, {
       position: "fixed",
       left: "0",
       top: "0",
-      width: `${size.width}px`,
-      height: `${size.height}px`,
+      width: "0",
+      height: "0",
       overflow: "hidden",
       pointerEvents: "none",
-      zIndex: "-1"
+      zIndex: "-9999",
+      opacity: "0"
     });
+
+    const wrapper = document.createElement("div");
+    Object.assign(wrapper.style, {
+      width: `${size.width}px`,
+      height: `${size.height}px`,
+      overflow: "hidden"
+    });
+
+    const clone = target.cloneNode(true) as HTMLElement;
+    clone.querySelectorAll("[data-export-hidden='true']").forEach((node) => node.remove());
 
     Object.assign(clone.style, {
       width: `${size.width}px`,
@@ -2406,10 +2902,11 @@ function MainApp() {
     });
 
     wrapper.appendChild(clone);
-    document.body.appendChild(wrapper);
+    anchor.appendChild(wrapper);
+    document.body.appendChild(anchor);
 
     try {
-      await waitForExportFrame();
+      await waitForCanvasSize(size);
       return await toCanvas(clone, {
         cacheBust: true,
         pixelRatio: scale,
@@ -2423,7 +2920,7 @@ function MainApp() {
         }
       });
     } finally {
-      wrapper.remove();
+      anchor.remove();
     }
   }
 
@@ -2444,27 +2941,52 @@ function MainApp() {
     const base = calendarTitle
       ? calendarTitle.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")
       : "archers-calendar";
-    return `${base}-${deviceId}${suffix}.png`;
+    const deviceSlug = DEVICE_VALUES.has(deviceId as DeviceId) ? EXPORT_DEVICE_SLUGS[deviceId as DeviceId] : deviceId;
+    return `${base}-${deviceSlug}${suffix}.png`;
+  }
+
+  function shouldUseNativeSaveSheet() {
+    if (typeof window === "undefined" || typeof navigator === "undefined") return false;
+    const ua = navigator.userAgent || "";
+    const isTouchMac = /Macintosh/i.test(ua) && navigator.maxTouchPoints > 1;
+    return (
+      window.matchMedia("(max-width: 767px)").matches ||
+      window.matchMedia("(pointer: coarse)").matches ||
+      /iPhone|iPad|iPod|Android|Mobile/i.test(ua) ||
+      isTouchMac
+    );
+  }
+
+  function isNativeShareCancel(error: unknown) {
+    return error instanceof DOMException && (error.name === "AbortError" || error.name === "NotAllowedError");
+  }
+
+  async function shareCanvasNatively(blob: Blob, filename: string) {
+    if (!shouldUseNativeSaveSheet() || typeof File === "undefined" || !navigator.share) return false;
+
+    const file = new File([blob], filename, { type: "image/png" });
+    const shareData: ShareData = {
+      files: [file],
+      title: "My Schedule",
+      text: "My class schedule for this term."
+    };
+
+    if (navigator.canShare && !navigator.canShare({ files: [file] })) return false;
+
+    try {
+      await navigator.share(shareData);
+      return true;
+    } catch (error) {
+      if (isNativeShareCancel(error)) return true;
+      console.error("Native save failed", error);
+      return false;
+    }
   }
 
   async function downloadCanvas(canvas: HTMLCanvasElement, filename: string) {
     const blob = await canvasToPngBlob(canvas);
-    
-    // On mobile, try to use Web Share API for direct "Save to Photos" experience
-    if (window.innerWidth < 768 && navigator.share && navigator.canShare && navigator.canShare({ files: [new File([blob], 'temp.png', { type: 'image/png' })] })) {
-      try {
-        const file = new File([blob], `${filename}.png`, { type: "image/png" });
-        await navigator.share({
-          files: [file],
-          title: "My Schedule",
-          text: "My class schedule for this term."
-        });
-        return;
-      } catch (err) {
-        console.error("Share failed", err);
-        // fall back to standard download if user cancels or it fails
-      }
-    }
+
+    if (await shareCanvasNatively(blob, filename)) return "native";
 
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -2475,6 +2997,7 @@ function MainApp() {
     link.click();
     document.body.removeChild(link);
     window.setTimeout(() => URL.revokeObjectURL(url), 5000);
+    return "download";
   }
 
   async function triggerShare() {
@@ -2497,44 +3020,55 @@ function MainApp() {
   async function handleExport() {
     if (!canvasRef.current) return;
     setIsExporting(true);
+    setExportProgress({ label: `Preparing ${EXPORT_DEVICE_LABELS[device]}`, current: 0, total: 1 });
     try {
       await waitForExportFrame();
       const exportedCanvas = await captureExportCanvas(canvasRef.current, canvasSize, EXPORT_SCALE);
-      await downloadCanvas(exportedCanvas, makeExportFilename(device, getExportVariantSuffix()));
-      setTimeout(triggerShare, 500);
+      setExportProgress({ label: `Saving ${EXPORT_DEVICE_LABELS[device]}`, current: 1, total: 1 });
+      const delivery = await downloadCanvas(exportedCanvas, makeExportFilename(device, getExportVariantSuffix()));
+      if (delivery !== "native" && !shouldUseNativeSaveSheet()) setTimeout(triggerShare, 500);
     } finally {
       setIsExporting(false);
+      window.setTimeout(() => setExportProgress(null), 650);
     }
   }
 
   async function exportDevices(deviceIds: DeviceId[]) {
     if (deviceIds.length === 0) return;
     setIsExporting(true);
+    setExportProgress({ label: "Preparing export", current: 0, total: deviceIds.length });
     const originalDevice = device;
-    
+
     try {
       if (deviceIds.length === 1) {
         const deviceId = deviceIds[0];
+        setExportProgress({ label: `Preparing ${EXPORT_DEVICE_LABELS[deviceId]}`, current: 0, total: 1 });
         setDevice(deviceId);
         await waitForCanvasSize(CANVAS_SIZES[deviceId]);
         if (canvasRef.current) {
           const exported = await captureExportCanvas(canvasRef.current, CANVAS_SIZES[deviceId], EXPORT_SCALE);
-          await downloadCanvas(exported, makeExportFilename(deviceId, getExportVariantSuffix()));
+          setExportProgress({ label: `Saving ${EXPORT_DEVICE_LABELS[deviceId]}`, current: 1, total: 1 });
+          const delivery = await downloadCanvas(exported, makeExportFilename(deviceId, getExportVariantSuffix()));
+          if (delivery !== "native" && !shouldUseNativeSaveSheet()) setTimeout(triggerShare, 500);
         }
       } else {
         const zip = new JSZip();
         const folder = zip.folder("archers-calendar");
-        
-        for (const deviceId of deviceIds) {
+
+        for (let index = 0; index < deviceIds.length; index += 1) {
+          const deviceId = deviceIds[index];
+          setExportProgress({ label: `Rendering ${EXPORT_DEVICE_LABELS[deviceId]}`, current: index, total: deviceIds.length });
           setDevice(deviceId);
           await waitForCanvasSize(CANVAS_SIZES[deviceId]);
           if (!canvasRef.current) continue;
-          
+
           const exported = await captureExportCanvas(canvasRef.current, CANVAS_SIZES[deviceId], EXPORT_SCALE);
           const pngBlob = await canvasToPngBlob(exported);
           folder?.file(makeExportFilename(deviceId, getExportVariantSuffix()), pngBlob);
+          setExportProgress({ label: `Added ${EXPORT_DEVICE_LABELS[deviceId]}`, current: index + 1, total: deviceIds.length });
         }
-        
+
+        setExportProgress({ label: "Building ZIP", current: deviceIds.length, total: deviceIds.length });
         const zipBlob = await zip.generateAsync({ type: "blob" });
         const link = document.createElement("a");
         link.href = URL.createObjectURL(zipBlob);
@@ -2542,10 +3076,11 @@ function MainApp() {
         link.click();
         window.setTimeout(() => URL.revokeObjectURL(link.href), 2000);
       }
-      setTimeout(triggerShare, 500);
+      if (deviceIds.length > 1) setTimeout(triggerShare, 500);
     } finally {
       setDevice(originalDevice);
       setIsExporting(false);
+      window.setTimeout(() => setExportProgress(null), 650);
     }
   }
 
@@ -2659,14 +3194,6 @@ function MainApp() {
     );
   }
 
-  function updateCourseEmoji(code: string, emoji: string) {
-    setEntries((current) =>
-      current.map((e) =>
-        courseKeyFromCourse(e.course) === courseKeyFromCode(code) ? { ...e, emoji } : e
-      )
-    );
-  }
-
   function applyColorTheme(colors: string[]) {
     setActiveCoursePalette(colors);
     applyCoursePalette(colors);
@@ -2712,15 +3239,15 @@ function MainApp() {
 
     setEntries((current) => {
       const codeKey = courseKeyFromCode(code);
-      
+
       const otherEntries = current.filter(
         (e) => !(courseKeyFromCourse(e.course) === codeKey && e.timeSlot === oldTimeSlot && oldDays.includes(e.day as DayKey))
       );
-      
+
       const existingEntry = current.find(
         (e) => courseKeyFromCourse(e.course) === codeKey && e.timeSlot === oldTimeSlot && oldDays.includes(e.day as DayKey)
       );
-      
+
       if (!existingEntry) return current;
 
       const newEntries = newDays.map((day) => ({
@@ -2755,16 +3282,151 @@ function MainApp() {
     });
   }
 
+  function renderExportDropdown() {
+    if (!showExportPopup) return null;
+    const progressTotal = Math.max(exportProgress?.total ?? 1, 1);
+    const progressCurrent = Math.min(exportProgress?.current ?? 0, progressTotal);
+    const progressPercent = Math.max(6, Math.min(100, Math.round((progressCurrent / progressTotal) * 100)));
+
+    return (
+      <>
+        <button
+          type="button"
+          data-export-hidden="true"
+          className="fixed inset-0 z-[190] cursor-default"
+          aria-label="Close save menu"
+          onClick={() => { if (!isExporting) setShowExportPopup(false); }}
+        />
+        <div
+          data-export-hidden="true"
+          className="liquid-glass-strong animate-popover-in absolute right-0 top-full z-[210] mt-2 w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-xl border border-white/[0.12] shadow-2xl shadow-black/45"
+        >
+          <div className="border-b border-white/[0.07] px-4 py-3">
+            <div className="flex items-center justify-between gap-3">
+              <h3 className="text-sm font-black text-white">Save</h3>
+              <p className="text-[10px] font-bold text-white/35">{selectedExportLabel}</p>
+            </div>
+            {isExporting && (
+              <div className="mt-3">
+                <div className="mb-1 flex justify-between text-[10px] font-bold text-white/45">
+                  <span>{exportProgress?.label || "Saving"}</span>
+                  <span>{progressPercent}%</span>
+                </div>
+                <div className="h-1.5 overflow-hidden rounded-full bg-white/10">
+                  <div className="h-full rounded-full bg-dlsu-vivid transition-all duration-300 ease-out" style={{ width: `${progressPercent}%` }} />
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="max-h-[min(70dvh,31rem)] space-y-4 overflow-y-auto p-4 scrollbar-thin">
+            <div>
+              <p className="mb-2 text-[10px] font-black uppercase tracking-wide text-white/40">Type</p>
+              <div className="grid grid-cols-3 gap-1 rounded-lg border border-white/[0.10] bg-white/[0.045] p-1">
+                {EXPORT_VARIANT_OPTIONS.map(({ value, label, icon: VariantIcon }) => (
+                  <button
+                    key={value}
+                    type="button"
+                    className={classNames(
+                      "flex min-h-9 items-center justify-center gap-1.5 rounded-md px-1.5 text-[10px] font-black transition-all active:scale-95",
+                      exportVariant === value
+                        ? "bg-dlsu-vivid text-white shadow-sm shadow-dlsu-vivid/20"
+                        : "text-white/55 hover:bg-white/[0.07] hover:text-white"
+                    )}
+                    onClick={() => setExportVariant(value)}
+                  >
+                    <VariantIcon size={13} />
+                    <span className="truncate">{label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <div className="mb-2 flex items-center justify-between gap-3">
+                <p className="text-[10px] font-black uppercase tracking-wide text-white/40">Sizes</p>
+                <button
+                  type="button"
+                  className="text-[10px] font-bold text-white/45 transition hover:text-white"
+                  onClick={() => setSelectedExportDevices(
+                    (prev) => prev.size === COMMON_EXPORT_DEVICES.length ? new Set() : new Set(COMMON_EXPORT_DEVICES)
+                  )}
+                >
+                  {selectedExportDevices.size === COMMON_EXPORT_DEVICES.length ? "Clear all" : "Select all"}
+                </button>
+              </div>
+              <div className="grid grid-cols-2 gap-1.5">
+                {COMMON_EXPORT_DEVICES.map((deviceId) => {
+                  const DeviceIcon = DEVICES[deviceId].icon;
+                  const checked = selectedExportDevices.has(deviceId);
+                  return (
+                    <label
+                      key={deviceId}
+                      className={classNames(
+                        "relative flex min-h-10 cursor-pointer items-center gap-2 rounded-lg border px-2.5 text-left transition active:scale-[0.98]",
+                        checked
+                          ? "border-dlsu-vivid/60 bg-dlsu-vivid/[0.12] text-white"
+                          : "border-white/[0.08] bg-white/[0.03] text-white/55 hover:border-white/20 hover:text-white/75"
+                      )}
+                    >
+                      <DeviceIcon size={14} className={checked ? "text-dlsu-vivid" : "text-white/35"} />
+                      <span className="min-w-0 flex-1 truncate text-[11px] font-bold leading-tight">{EXPORT_DEVICE_LABELS[deviceId]}</span>
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={(e) => {
+                          const next = new Set(selectedExportDevices);
+                          if (e.target.checked) next.add(deviceId); else next.delete(deviceId);
+                          setSelectedExportDevices(next);
+                        }}
+                        className="sr-only"
+                      />
+                      {checked && <Check size={12} className="shrink-0 text-dlsu-vivid" />}
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          <div className="sticky bottom-0 flex gap-2 border-t border-white/[0.07] bg-[#0B100D]/88 p-3 backdrop-blur-xl">
+            <button
+              type="button"
+              className="flex-1 rounded-lg border border-white/10 py-2.5 text-sm font-bold text-white/60 transition hover:bg-white/[0.06] hover:text-white disabled:pointer-events-none disabled:opacity-45"
+              onClick={() => setShowExportPopup(false)}
+              disabled={isExporting}
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-dlsu-vivid py-2.5 text-sm font-black text-white transition hover:bg-dlsu active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
+              disabled={isExporting}
+              onClick={() => {
+                setShowExportPopup(false);
+                if (selectedExportDevices.size > 0) void handleExportSelected();
+                else void handleExport();
+              }}
+            >
+              {isExporting ? <Loader2 size={15} className="animate-spin" /> : <Download size={15} />}
+              {selectedExportDevices.size > 0 ? `Save ${selectedExportDevices.size}` : "Save"}
+            </button>
+          </div>
+        </div>
+      </>
+    );
+  }
+
   const sidebarPanelTabs = (
-    <div className="shrink-0 border-b border-white/[0.06] px-4 py-3">
-      <div className="grid grid-cols-3 gap-1 rounded-lg border border-white/[0.06] bg-white/[0.03] p-1">
-        {SIDEBAR_PANELS.map(({ id, label }) => {
+    <div className="shrink-0 border-b border-white/[0.06] px-3 py-2.5 xl:px-4">
+      <div className="liquid-glass grid grid-cols-2 gap-1 rounded-xl border border-white/[0.08] p-1">
+        {SIDEBAR_PANELS.map(({ id, label, icon: TabIcon }) => {
           const active = desktopPanel === id;
           return (
             <button
               key={id}
               className={classNames(
-                "flex min-h-10 items-center justify-center rounded-lg px-2 text-[11px] font-bold transition-all",
+                "flex min-h-9 items-center justify-center gap-1.5 rounded-lg px-2 text-[11px] font-black transition-all duration-200",
                 active
                   ? "bg-dlsu-vivid text-white shadow-sm shadow-dlsu-vivid/20"
                   : "text-white/50 hover:bg-white/[0.05] hover:text-white/80"
@@ -2775,6 +3437,7 @@ function MainApp() {
                 setMobileTab(id);
               }}
             >
+              <TabIcon size={14} strokeWidth={active ? 2.6 : 2.2} />
               {label}
             </button>
           );
@@ -2784,133 +3447,155 @@ function MainApp() {
   );
 
   function renderSavedScheduleActions() {
-    const currentName = calendarTitle || "Untitled Schedule";
     return (
-      <>
-        {/* Current active schedule */}
-        <div className="flex items-center justify-between rounded-lg border border-white/[0.07] bg-white/[0.025] px-3 py-2.5">
-          <span className="min-w-0 truncate text-xs font-black text-white/75">{currentName}</span>
-          <span className="ml-2 shrink-0 text-[10px] font-bold text-white/30">current</span>
-        </div>
-
-        {/* Actions */}
-        <div className="grid grid-cols-3 gap-2">
-          <button
-            type="button"
-            className="flex min-h-10 flex-col items-center justify-center gap-1 rounded-lg border border-white/10 bg-white/[0.03] px-2 text-[10px] font-bold text-white/60 transition hover:border-white/25 hover:bg-white/[0.06] hover:text-white"
-            onClick={duplicateSchedule}
-            disabled={!entries.length}
-            title="Save a copy of the current schedule"
-          >
-            <Copy size={13} />
-            Duplicate
-          </button>
-          <button
-            type="button"
-            className="flex min-h-10 flex-col items-center justify-center gap-1 rounded-lg border border-white/10 bg-white/[0.03] px-2 text-[10px] font-bold text-white/60 transition hover:border-white/25 hover:bg-white/[0.06] hover:text-white"
-            onClick={resetSchedule}
-            title="Clear the current schedule"
-          >
-            <RotateCcw size={13} />
-            Reset
-          </button>
-          <button
-            type="button"
-            className="flex min-h-10 flex-col items-center justify-center gap-1 rounded-lg border border-white/10 bg-white/[0.03] px-2 text-[10px] font-bold text-white/60 transition hover:border-white/25 hover:bg-white/[0.06] hover:text-white"
-            onClick={() => {
-              setMobileTab("start");
-              setDesktopPanel("start");
-            }}
-            title="Go to Import"
-          >
-            <FileInput size={13} />
-            Import
-          </button>
-        </div>
-
-        {/* Saved list */}
-        {savedCopies.length > 0 && (
-          <div className="space-y-1.5">
-            <p className="text-[10px] font-bold uppercase text-white/30">Saved</p>
-            {savedCopies.slice(0, 8).map((snapshot) => {
-              const isEditing = editingSavedId === snapshot.id;
-              const isActive = activeCreationId === snapshot.id;
-              return (
-                <div
-                  key={snapshot.id}
-                  className={classNames(
-                    "flex min-h-11 w-full items-center gap-2 rounded-lg border px-2.5 transition",
-                    isActive
-                      ? "border-dlsu-vivid/40 bg-dlsu-vivid/10"
-                      : "border-white/[0.06] bg-black/[0.14] hover:border-white/20 hover:bg-white/[0.04]"
-                  )}
-                >
-                  {isEditing ? (
-                    <input
-                      autoFocus
-                      className="min-h-8 min-w-0 flex-1 rounded-md border border-dlsu-vivid/50 bg-white/[0.04] px-2.5 text-xs font-bold text-white outline-none transition placeholder:text-white/25 focus:border-dlsu-vivid"
-                      value={editingSavedName}
-                      onChange={(event) => setEditingSavedName(event.target.value)}
-                      onBlur={(event) => void renameSavedCopy(snapshot, event.currentTarget.value)}
-                      onKeyDown={(event) => {
-                        if (event.key === "Enter") event.currentTarget.blur();
-                        if (event.key === "Escape") { setEditingSavedId(""); setEditingSavedName(""); }
-                      }}
-                    />
-                  ) : (
-                    <div className="flex min-w-0 flex-1 flex-col">
-                      <button
-                        type="button"
-                        className="min-w-0 truncate text-left text-xs font-bold text-white/80 hover:text-white"
-                        onClick={() => startEditingSavedCopy(snapshot)}
-                        title="Click to rename"
-                      >
-                        {snapshot.name}
-                      </button>
-                      <span className="text-[10px] text-white/30">
-                        {new Date(snapshot.updatedAt).toLocaleDateString()}
-                      </span>
-                    </div>
-                  )}
-                  {!isEditing && (
-                    <>
-                      <button
-                        type="button"
-                        className={classNames(
-                          "shrink-0 rounded-md px-2 py-1 text-[10px] font-bold transition",
-                          isActive
-                            ? "text-dlsu-vivid/70"
-                            : "text-white/40 hover:bg-white/[0.08] hover:text-white"
-                        )}
-                        onClick={() => loadSavedCopy(snapshot)}
-                      >
-                        {isActive ? "Active" : "Load"}
-                      </button>
-                      <button
-                        type="button"
-                        className="grid h-7 w-7 shrink-0 place-items-center rounded-md text-white/25 transition hover:bg-white/[0.08] hover:text-white"
-                        onClick={() => void deleteSavedCopy(snapshot.id)}
-                        title="Delete"
-                      >
-                        <Trash2 size={12} />
-                      </button>
-                    </>
-                  )}
-                </div>
-              );
-            })}
+      <div className="space-y-2.5">
+        <button
+          type="button"
+          onClick={resetSchedule}
+          className="group/new flex w-full items-center gap-2.5 rounded-lg border border-dashed border-white/[0.16] bg-white/[0.018] px-3 py-2.5 text-left transition-all hover:border-dlsu-vivid/45 hover:bg-dlsu-vivid/[0.05]"
+        >
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-white/10 bg-white/[0.045] text-white/40 transition-colors group-hover/new:border-dlsu-vivid/35 group-hover/new:bg-dlsu-vivid/15 group-hover/new:text-dlsu-vivid">
+            <Plus size={15} strokeWidth={3} />
           </div>
-        )}
+          <div className="min-w-0">
+            <p className="truncate text-xs font-black text-white/70 transition-colors group-hover/new:text-white">New schedule</p>
+            <p className="mt-0.5 truncate text-[10px] font-bold text-white/25 transition-colors group-hover/new:text-white/40">Start with a fresh canvas</p>
+          </div>
+        </button>
 
-        {saveNotice && (
-          <p className="rounded-lg border border-white/[0.06] bg-white/[0.03] px-3 py-2 text-xs font-medium leading-5 text-white/55">
-            {saveNotice}
-          </p>
-        )}
-      </>
+        <div className="space-y-1.5">
+          {savedCopies.length > 0 ? (
+            <div className="max-h-[420px] space-y-1.5 overflow-y-auto pr-1 scrollbar-thin">
+              {savedCopies.map((snapshot) => {
+                const isEditing = editingSavedId === snapshot.id;
+                const isActive = activeCreationId === snapshot.id;
+                const summary = getSavedScheduleSummary(snapshot);
+
+                return (
+                  <div
+                    key={snapshot.id}
+                    className={classNames(
+                      "group grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 rounded-lg border px-3 py-2.5 transition-all duration-200",
+                      isActive
+                        ? "border-dlsu-vivid/50 bg-dlsu-vivid/[0.10] shadow-sm shadow-dlsu-vivid/10"
+                        : "border-white/[0.075] bg-white/[0.018] hover:border-white/[0.16] hover:bg-white/[0.04]"
+                    )}
+                  >
+                    <div className="flex min-w-0 items-center gap-2.5">
+                      <div
+                        className={classNames(
+                          "flex h-8 w-8 shrink-0 items-center justify-center rounded-md border",
+                          isActive
+                            ? "border-dlsu-vivid/30 bg-dlsu-vivid/15 text-dlsu-vivid"
+                            : "border-white/[0.08] bg-white/[0.04] text-white/35 group-hover:text-white/60"
+                        )}
+                      >
+                        <CalendarDays size={14} strokeWidth={2.5} />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        {isEditing ? (
+                          <input
+                            autoFocus
+                            className="h-7 w-full rounded-md border border-dlsu-vivid/50 bg-black/40 px-2 text-xs font-bold text-white outline-none ring-2 ring-dlsu-vivid/20"
+                            value={editingSavedName}
+                            onChange={(event) => setEditingSavedName(event.target.value)}
+                            onBlur={(event) => void renameSavedCopy(snapshot, event.currentTarget.value)}
+                            onKeyDown={(event) => {
+                              if (event.key === "Enter") event.currentTarget.blur();
+                              if (event.key === "Escape") { setEditingSavedId(""); setEditingSavedName(""); }
+                            }}
+                          />
+                        ) : (
+                          <button
+                            type="button"
+                            className="block max-w-full text-left"
+                            onClick={() => {
+                              if (isActive) {
+                                setMobileTab("start");
+                                setDesktopPanel("start");
+                              } else {
+                                loadSavedCopy(snapshot);
+                              }
+                            }}
+                          >
+                            <div className="flex min-w-0 items-center gap-1.5">
+                              <span className={classNames(
+                                "truncate text-xs font-black tracking-tight transition-colors",
+                                isActive ? "text-white" : "text-white/75 group-hover:text-white"
+                              )}>
+                                {snapshot.name}
+                              </span>
+                              {isActive && (
+                                <span className="shrink-0 rounded-full bg-dlsu-vivid px-1.5 py-0.5 text-[8px] font-black uppercase leading-none text-white">
+                                  Active
+                                </span>
+                              )}
+                            </div>
+                            <p className="mt-0.5 truncate text-[10px] font-bold text-white/35">
+                              {summary}
+                            </p>
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex shrink-0 items-center gap-1">
+                      {!isActive && (
+                        <button
+                          type="button"
+                          className="flex h-7 items-center gap-1.5 rounded-md bg-white/[0.055] px-2 text-[9px] font-black uppercase text-white/50 transition hover:bg-dlsu-vivid/85 hover:text-white"
+                          onClick={() => loadSavedCopy(snapshot)}
+                          title="Load project"
+                        >
+                          <Eye size={11} strokeWidth={2.6} />
+                          Load
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        className="flex h-7 w-7 items-center justify-center rounded-md bg-white/[0.045] text-white/40 transition hover:bg-white/[0.12] hover:text-white"
+                        onClick={() => startEditingSavedCopy(snapshot)}
+                        title="Rename"
+                      >
+                        <Pencil size={11} strokeWidth={2.5} />
+                      </button>
+                      <button
+                        type="button"
+                        className="flex h-7 w-7 items-center justify-center rounded-md bg-white/[0.045] text-white/40 transition hover:bg-white/[0.12] hover:text-white"
+                        onClick={() => void duplicateSavedCopy(snapshot)}
+                        title="Duplicate"
+                      >
+                        <Copy size={11} strokeWidth={2.5} />
+                      </button>
+                      <button
+                        type="button"
+                        className="flex h-7 w-7 items-center justify-center rounded-md bg-red-500/[0.08] text-red-300/45 transition hover:bg-red-500/20 hover:text-red-300"
+                        onClick={() => requestDeleteSavedCopy(snapshot)}
+                        title="Delete"
+                        aria-label={`Delete ${snapshot.name || "saved schedule"}`}
+                      >
+                        <Trash2 size={11} strokeWidth={2.5} />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <p className="rounded-lg border border-dashed border-white/[0.08] bg-black/[0.10] px-3 py-2 text-xs font-semibold text-white/[0.42]">
+              No stored schedules yet. Import or edit once and it will save here.
+            </p>
+          )}
+
+          {saveNotice && (
+            <p className="rounded-lg border border-white/[0.06] bg-white/[0.03] px-3 py-2 text-xs font-medium leading-5 text-white/55">
+              {saveNotice}
+            </p>
+          )}
+        </div>
+      </div>
     );
   }
-
   function renderCourseColorThemes() {
     return (
       <ControlGroup
@@ -2928,7 +3613,7 @@ function MainApp() {
           </button>
         }
       >
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-2 gap-2 xl:grid-cols-3">
           {COURSE_THEMES.map((theme) => {
             const isActive = JSON.stringify(theme.colors) === JSON.stringify(activeCoursePalette);
             return (
@@ -2967,8 +3652,8 @@ function MainApp() {
 
   function renderScheduleDetails() {
     const activeDays = (Object.keys(visibleDays) as DayKey[]).filter(d => visibleDays[d]);
-    const label = activeDays.length === 6 && !visibleDays.Sun 
-      ? "Mon – Sat" 
+    const label = activeDays.length === 6 && !visibleDays.Sun
+      ? "Mon – Sat"
       : activeDays.length === 0 ? "Select Days" : activeDays.join(", ");
 
     return (
@@ -2977,12 +3662,19 @@ function MainApp() {
           <Field label="Name" value={calendarTitle} onChange={setCalendarTitle} placeholder="e.g. Richard" />
           <Field label="Term" value={calendarSubtitle} onChange={setCalendarSubtitle} placeholder="e.g. Term 3" />
         </div>
+        <div>
+          <SectionLabel className="mb-2">Header</SectionLabel>
+          <div className="grid grid-cols-1 gap-2 min-[340px]:grid-cols-2">
+            <Toggle compact checked={showCalendarTitle} icon={UserRound} label="Name" onChange={() => setShowCalendarTitle(!showCalendarTitle)} />
+            <Toggle compact checked={showCalendarSubtitle} icon={Hash} label="Term" onChange={() => setShowCalendarSubtitle(!showCalendarSubtitle)} />
+          </div>
+        </div>
         <div className="space-y-4">
           <div>
             <SectionLabel className="mb-2">Visible Days</SectionLabel>
             <div className="grid grid-cols-1 gap-2 min-[340px]:grid-cols-2">
               <div className="relative">
-                <button 
+                <button
                   onClick={() => setOpenDaysDropdown(!openDaysDropdown)}
                   className="group flex min-h-11 w-full items-center justify-between gap-3 rounded-lg border border-white/[0.12] bg-white/[0.035] px-3 text-xs font-bold text-white shadow-sm outline-none transition-all hover:border-white/25 hover:bg-white/[0.055] focus:border-dlsu-vivid"
                 >
@@ -3027,7 +3719,7 @@ function MainApp() {
 
   // ── Controls (sidebar on desktop, panels on mobile) ──────────────────────
   const controls = (
-   <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-4 pb-6 pt-4 scrollbar-thin md:px-5 md:pb-5">
+   <div data-controls-panel="true" className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-3 pb-6 pt-3 scrollbar-thin md:px-4 md:pb-5 xl:px-4">
       {/* ── Paste Schedule ─────────────────────── */}
       <section
         className={classNames(
@@ -3075,7 +3767,7 @@ function MainApp() {
                 <span>{parsingProgress.toFixed(2)}%</span>
               </div>
               <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/5 shadow-inner">
-                <div 
+                <div
                   className="h-full bg-dlsu-vivid transition-all duration-300 ease-out shadow-[0_0_8px_rgba(0,140,77,0.4)]"
                   style={{ width: `${parsingProgress}%` }}
                 />
@@ -3090,6 +3782,12 @@ function MainApp() {
           )}
         </ControlGroup>
 
+        <ControlGroup
+          title="Stored Collection"
+        >
+          {renderSavedScheduleActions()}
+        </ControlGroup>
+
         <ControlGroup title="Schedule">
           {renderScheduleDetails()}
         </ControlGroup>
@@ -3098,7 +3796,7 @@ function MainApp() {
       {/* ── Courses (grouped, editable) ── */}
       <section
         className={classNames(
-          "flex-col gap-5",
+          "flex-col gap-4",
           mobileTab === "start" ? "flex" : "hidden",
           desktopPanel === "start" ? "md:flex" : "md:hidden"
         )}
@@ -3118,90 +3816,95 @@ function MainApp() {
           }
         >
         {groupedCourses.length ? (
-          <div className="space-y-2.5">
+          <div className="space-y-1.5">
             {groupedCourses.map((course) => {
               const courseKey = courseKeyFromCode(course.code);
               const isExpanded = expandedCourses.has(courseKey);
               const isJustAdded = justAddedId === courseKey;
               const displayCode = course.code || "Untitled";
-              const conflict = course.slots.some(s => 
-                s.days.some(d => hasConflict({ id: course.id, day: d, timeSlot: s.timeSlot } as ScheduleEntry, entries))
+              const normalizedCourseColor = normalizeHexColor(course.color);
+              const selectedPaletteColor = BLOCK_PALETTES.find(
+                (palette) => normalizeHexColor(palette.hex) === normalizedCourseColor
               );
+              const selectedColorLabel = selectedPaletteColor?.name ?? "Custom";
 
               return (
-                <div 
+                <div
                   id={`course-editor-${courseKey}`}
-                  key={course.id} 
+                  key={course.id}
                   className={classNames(
-                    "overflow-hidden rounded-lg border transition-all duration-300",
-                    isExpanded ? "border-white/20 bg-[#111713]" : "border-white/10 bg-[#0C100E] hover:border-white/20 hover:bg-[#101612]",
+                    "liquid-glass rounded-lg border transition-all duration-200",
+                    isExpanded ? "overflow-visible" : "overflow-hidden",
+                    isExpanded ? "border-white/[0.18] bg-white/[0.045] shadow-sm shadow-black/20" : "border-white/[0.08] bg-white/[0.025] hover:border-white/[0.16] hover:bg-white/[0.045]",
                     isJustAdded ? "animate-added-row ring-1 ring-dlsu-vivid/40" : ""
                   )}
                 >
-                  <div className="flex items-start gap-1.5 p-2.5">
+                  <div className="flex items-center gap-1.5 border-white/[0.06] p-1.5">
                     <button
                       type="button"
-                      className="group flex min-w-0 flex-1 items-start gap-2.5 rounded-md p-1 text-left transition-colors duration-150 hover:bg-white/[0.04]"
+                      className="group flex min-w-0 flex-1 items-center gap-2 rounded-lg px-2 py-1 text-left transition-colors duration-150 hover:bg-white/[0.045]"
                       onClick={() => toggleCourseExpand(course.code)}
                     >
-                      <div className="relative mt-0.5 shrink-0">
+                      <div className="relative shrink-0">
                         <span
-                          className="block h-9 w-1.5 rounded-full border border-black/20"
+                          className="block h-8 w-1.5 rounded-full border border-black/20 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.16)]"
                           style={{ backgroundColor: course.color }}
                         />
-                        {course.emoji && (
-                          <span className="absolute -left-1.5 -top-1.5 grid h-4.5 w-4.5 place-items-center rounded-full bg-[#111713] text-[11px] ring-2 ring-black/40">
-                            {course.emoji}
-                          </span>
-                        )}
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex min-w-0 items-center gap-2">
-                          <p className="truncate text-sm font-black text-white">{displayCode}</p>
-                          {conflict && (
-                            <AlertCircle size={12} className="shrink-0 animate-pulse text-red-500" />
+                          <p className="truncate text-[13px] font-black leading-tight text-white">{displayCode}</p>
+                          {course.emoji && (
+                            <span className="shrink-0 text-[13px] leading-none" aria-hidden="true">
+                              {course.emoji}
+                            </span>
                           )}
                         </div>
                         {course.title && (
-                          <p className="mt-0.5 line-clamp-1 text-[11px] leading-snug text-white/50">{course.title}</p>
+                          <p className="mt-0.5 line-clamp-1 text-[10px] font-semibold leading-snug text-white/45">{course.title}</p>
                         )}
                       </div>
                       <ChevronDown
-                        size={16}
+                        size={15}
                         className={classNames(
-                          "mt-1 shrink-0 text-white/30 transition-all duration-200 group-hover:text-white/60",
+                          "shrink-0 text-white/35 transition-all duration-200 group-hover:text-white/[0.65]",
                           isExpanded ? "rotate-180 text-white/60" : ""
                         )}
                       />
                     </button>
                     <button
-                      className="grid h-8 w-8 shrink-0 place-items-center rounded-md text-white/30 transition-all duration-150 hover:bg-white/10 hover:text-white active:scale-90"
+                      className="grid h-7 w-7 shrink-0 place-items-center rounded-md border border-transparent text-white/35 transition-all duration-150 hover:border-red-400/20 hover:bg-red-500/10 hover:text-red-300 active:scale-90"
                       type="button"
                       aria-label="Remove course"
                       onClick={() => removeCourse(course.code)}
                     >
-                      <Trash2 size={14} />
+                      <Trash2 size={12} />
                     </button>
                   </div>
 
                   {isExpanded && (
-                    <div className="space-y-3 border-t border-white/[0.06] px-3 pb-3 pt-3">
-                      <div className="space-y-1.5">
+                    <div className="space-y-2 border-t border-white/[0.06] p-2">
+                      <div className="rounded-lg border border-white/[0.07] bg-black/[0.10] p-2">
+                        <div className="mb-1.5 flex items-center justify-between gap-3">
+                          <p className="text-[10px] font-black uppercase tracking-[0.14em] text-white/35">Schedule</p>
+                          <p className="truncate text-[10px] font-bold text-white/[0.28]">{course.slots.length} {course.slots.length === 1 ? "meeting" : "meetings"}</p>
+                        </div>
+                        <div className="space-y-1.5">
                         {course.slots.map((slot) => {
                           const slotId = `${course.code}-${slot.timeSlot}-${slot.days.join("")}`;
                           const isDropdownOpen = openSlotDropdownId === slotId;
-                          
-                          return (
-                            <div
-                              key={slotId}
-                              className="grid grid-cols-1 gap-2 rounded-md border border-white/[0.06] bg-black/[0.16] p-2"
-                            >
+
+	                          return (
+	                            <div
+	                              key={slotId}
+	                              className="grid grid-cols-1 gap-2 rounded-lg border border-white/[0.08] bg-white/[0.025] p-2"
+	                            >
                               <div className="space-y-1">
-                                <span className="block text-[10px] font-bold text-white/40">Days</span>
+                                <span className="block text-[10px] font-black uppercase tracking-[0.08em] text-white/[0.38]">Days</span>
                                 <div className="relative">
-                                  <button 
+                                  <button
                                     onClick={() => setOpenSlotDropdownId(isDropdownOpen ? null : slotId)}
-                                    className="flex min-h-9 w-full items-center justify-between rounded-md border border-white/10 bg-white/[0.03] px-2.5 text-xs text-white outline-none transition hover:border-white/20"
+                                    className="flex min-h-9 w-full items-center justify-between rounded-lg border border-white/[0.11] bg-white/[0.04] px-2.5 text-xs font-medium text-white outline-none transition hover:border-white/[0.22] hover:bg-white/[0.06]"
                                   >
                                     <span className="truncate">{formatMeetingDays(slot.days)}</span>
                                     <ChevronDown size={12} className={classNames("opacity-40 transition-transform", isDropdownOpen ? "rotate-180" : "")} />
@@ -3237,88 +3940,59 @@ function MainApp() {
                             </div>
                           );
                         })}
+                        </div>
                       </div>
 
-                      <div className="grid grid-cols-2 gap-2">
-                        <CourseField
-                          label="Code"
-                          value={course.code}
+	                      <div className="grid grid-cols-2 gap-2 rounded-lg border border-white/[0.07] bg-black/[0.10] p-2 xl:grid-cols-3">
+	                        <p className="col-span-2 text-[10px] font-black uppercase tracking-[0.14em] text-white/35 xl:col-span-3">Details</p>
+	                        <CourseField
+	                          label="Code"
+	                          value={course.code}
                           onBlur={(v) => updateCourseCode(course.code, v)}
                         />
                         <CourseField
                           label="Room"
-                          value={course.slots[0]?.room ?? ""}
-                          onBlur={(v) => updateCourseMeta(course.code, "room", v)}
-                        />
-                        <CourseField
-                          className="col-span-2"
-                          label="Title"
-                          value={course.title}
-                          onBlur={(v) => updateCourseTitle(course.code, v)}
+	                          value={course.slots[0]?.room ?? ""}
+	                          onBlur={(v) => updateCourseMeta(course.code, "room", v)}
+	                        />
+	                        <CourseField
+	                          label="Section"
+	                          value={course.slots[0]?.section ?? ""}
+	                          onBlur={(v) => updateCourseMeta(course.code, "section", v)}
+	                        />
+	                        <CourseField
+	                          className="col-span-2"
+	                          label="Title"
+	                          value={course.title}
+	                          onBlur={(v) => updateCourseTitle(course.code, v)}
                         />
                         <CourseField
                           label="Teacher"
-                          value={course.slots[0]?.teacher ?? ""}
-                          onBlur={(v) => updateCourseMeta(course.code, "teacher", v)}
-                        />
-                        <CourseField
-                          label="Section"
-                          value={course.slots[0]?.section ?? ""}
-                          onBlur={(v) => updateCourseMeta(course.code, "section", v)}
-                        />
-                      </div>
+	                          value={course.slots[0]?.teacher ?? ""}
+	                          onBlur={(v) => updateCourseMeta(course.code, "teacher", v)}
+	                        />
+	                      </div>
 
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between gap-3">
-                          <p className="text-[10px] font-black uppercase tracking-[0.14em] text-white/38">Emoji</p>
-                          <div className="relative">
-                            <button
-                              type="button"
-                              className={classNames(
-                                "flex h-8 items-center gap-2 rounded-md border px-2.5 text-[11px] font-bold shadow-sm transition active:scale-[0.98]",
-                                activeEmojiPickerCode === course.code
-                                  ? "border-dlsu-vivid bg-dlsu-vivid/10 text-white"
-                                  : "border-white/12 bg-white/[0.045] text-white/62 hover:border-white/25 hover:bg-white/[0.075]"
-                              )}
-                              onClick={() => setActiveEmojiPickerCode(activeEmojiPickerCode === course.code ? null : course.code)}
-                            >
-                              <Sparkles size={12} className="opacity-70" />
-                              <span>{course.emoji || "Add Icon"}</span>
-                            </button>
-                            {activeEmojiPickerCode === course.code && (
-                              <div className="absolute right-0 top-full z-[70] mt-2">
-                                <div className="fixed inset-0" onClick={() => setActiveEmojiPickerCode(null)} />
-                                <div className="relative shadow-2xl">
-                                  <EmojiPicker
-                                    theme={appTheme === "dark" ? "dark" as any : "light" as any}
-                                    style={appTheme === "light" ? EMOJI_PICKER_LIGHT_STYLE : EMOJI_PICKER_DARK_STYLE}
-                                    onEmojiClick={(emojiData) => {
-                                      updateCourseEmoji(course.code, emojiData.emoji);
-                                      setActiveEmojiPickerCode(null);
-                                    }}
-                                  />
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-
-                        <div className="flex items-center justify-between gap-3">
-                          <p className="text-[10px] font-black uppercase tracking-[0.14em] text-white/38">Color</p>
+                      <div className="space-y-2 rounded-lg border border-white/[0.07] bg-black/[0.10] p-2">
+                        <p className="text-[10px] font-black uppercase tracking-[0.14em] text-white/35">Appearance</p>
+                        <div className="space-y-2">
+                          <p className="text-[10px] font-black uppercase tracking-[0.1em] text-white/[0.38]">Color</p>
                           <label
                             className={classNames(
-                              "relative flex h-8 shrink-0 cursor-pointer items-center gap-2 rounded-md border px-2.5 text-[11px] font-bold shadow-sm transition active:scale-[0.98]",
-                              !BLOCK_PALETTES.some(p => p.hex === course.color)
-                                ? "border-white/45 bg-white/[0.10] text-white"
-                                : "border-white/12 bg-white/[0.045] text-white/62 hover:border-white/25 hover:bg-white/[0.075] hover:text-white/82"
+                              "relative grid min-h-10 cursor-pointer grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 rounded-lg border px-2.5 text-left transition active:scale-[0.98]",
+                              selectedPaletteColor
+                                ? "border-white/10 bg-white/[0.04] text-white/70 hover:border-white/20 hover:bg-white/[0.08] hover:text-white"
+                                : "border-dlsu-vivid/75 bg-dlsu-vivid/15 text-white shadow-sm shadow-dlsu-vivid/10 ring-1 ring-dlsu-vivid/20 hover:border-dlsu-vivid hover:bg-dlsu-vivid/20"
                             )}
                             title="Custom color"
-                            aria-label="Custom color"
                           >
-                            <Palette size={12} className="pointer-events-none opacity-70" />
-                            <span>Custom</span>
+                            <Palette size={12} className="shrink-0 opacity-45" />
+                            <span className="min-w-0">
+                              <span className="block truncate text-[11px] font-black">{selectedPaletteColor ? selectedColorLabel : "Custom"}</span>
+                              <span className="block font-mono text-[9px] font-bold uppercase leading-none text-white/40">{normalizedCourseColor}</span>
+                            </span>
                             <span
-                              className="pointer-events-none h-5 w-5 rounded-full border border-white/60 shadow-sm"
+                              className="h-5 w-5 shrink-0 rounded-full border border-black/25 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.18),0_0_0_2px_rgba(255,255,255,0.08)]"
                               style={{ backgroundColor: course.color }}
                             />
                             <input
@@ -3329,32 +4003,45 @@ function MainApp() {
                             />
                           </label>
                         </div>
-                        {BLOCK_PALETTE_GROUPS.map((group) => (
-                          <div key={group.label}>
-                            <p className="mb-1.5 text-[10px] font-black uppercase tracking-[0.1em] text-white/34">{group.label}</p>
-                            <div
-                              className="grid gap-2"
-                              style={{ gridTemplateColumns: "repeat(7, 32px)" }}
-                            >
-                              {group.colors.map((palette) => (
-                                <button
-                                  key={`${group.label}-${palette.name}`}
-                                  className={classNames(
-                                    "grid h-8 w-8 place-items-center rounded-md border border-white/10 transition hover:-translate-y-px hover:border-white/40 hover:brightness-110 active:translate-y-0 active:scale-95",
-                                    course.color === palette.hex ? "ring-2 ring-white/85 ring-offset-1 ring-offset-[#111713]" : ""
-                                  )}
-                                  type="button"
-                                  aria-label={palette.name}
-                                  title={palette.name}
-                                  style={{ backgroundColor: palette.hex, color: getTextColor(palette.hex) }}
-                                  onClick={() => updateCourseColor(course.code, palette.hex)}
-                                >
-                                  {course.color === palette.hex ? <Check size={11} strokeWidth={3} /> : null}
-                                </button>
-                              ))}
+
+                        <div className="space-y-2 rounded-lg border border-white/[0.08] bg-white/[0.025] p-2">
+                          <div className="flex items-center justify-between gap-3">
+                            <div className="min-w-0">
+                              <p className="text-[10px] font-black uppercase tracking-[0.14em] text-white/[0.38]">Preset colors</p>
+                              <p className="mt-0.5 truncate font-mono text-[9px] font-bold uppercase text-white/[0.32]">{selectedColorLabel} · {normalizedCourseColor}</p>
+                            </div>
+                            <span
+                              className="h-6 w-6 shrink-0 rounded-full border border-black/25 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.18),0_0_0_3px_rgba(255,255,255,0.08)]"
+                              style={{ backgroundColor: course.color }}
+                            />
+                          </div>
+
+	                          <div className="max-h-24 overflow-y-auto pr-1 scrollbar-thin">
+	                            <div className="grid grid-cols-8 gap-1.5 xl:grid-cols-10">
+                              {COURSE_COLOR_CHOICES.map((palette) => {
+                                const isSelected = normalizedCourseColor === normalizeHexColor(palette.hex);
+                                return (
+                                  <button
+                                    key={`${palette.group}-${palette.name}`}
+                                    className={classNames(
+                                      "grid h-6 min-w-0 place-items-center rounded-md border transition hover:-translate-y-px hover:brightness-110 active:translate-y-0 active:scale-95",
+                                      isSelected
+                                        ? "border-white/90 ring-2 ring-dlsu-vivid ring-offset-1 ring-offset-[#0E1210]"
+                                        : "border-white/[0.12] hover:border-white/45"
+                                    )}
+                                    type="button"
+                                    aria-label={`Set ${palette.name}`}
+                                    title={`${palette.group}: ${palette.name}`}
+                                    style={{ backgroundColor: palette.hex, color: getTextColor(palette.hex) }}
+                                    onClick={() => updateCourseColor(course.code, palette.hex)}
+                                  >
+                                    {isSelected ? <Check size={11} strokeWidth={3} /> : null}
+                                  </button>
+                                );
+                              })}
                             </div>
                           </div>
-                        ))}
+                        </div>
                       </div>
                     </div>
                   )}
@@ -3374,21 +4061,6 @@ function MainApp() {
         </div>
       </section>
 
-      {/* ── Stored (Tabs/Schedules) ────────────── */}
-      <section
-        className={classNames(
-          "flex-col gap-5",
-          mobileTab === "saved" ? "flex" : "hidden",
-          desktopPanel === "saved" ? "md:flex" : "md:hidden"
-        )}
-      >
-        <ControlGroup title="Stored">
-          <div className="space-y-4">
-            {renderSavedScheduleActions()}
-          </div>
-        </ControlGroup>
-      </section>
-
       {/* ── Design ─────────────────────────────── */}
       <section
         className={classNames(
@@ -3399,7 +4071,7 @@ function MainApp() {
       >
 
         <div className="order-1">
-          <ControlGroup title="Share">
+          <ControlGroup title="Share Design Template">
             <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2">
               <div className="relative min-w-0">
                 <Link2 size={13} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-white/25" />
@@ -3494,17 +4166,19 @@ function MainApp() {
         </div>
 
         {/* Style */}
-        <div className="order-2">
+        <div className="order-4">
           <ControlGroup title="Style">
             {(() => {
               const hints: Record<WallpaperStyle, string> = {
-                clean:   "Subtle borders",
-                compact: "Flat & minimal",
-                bold:    "Soft shadows",
-                glass:   "Frosted look",
+                clean:       "Subtle borders",
+                glass_light: "Light mode",
+                glass_dark:  "Dark mode",
+                compact:     "Flat & minimal",
+                bold:        "Soft shadows",
+                glass:       "Frosted look",
               };
               return (
-                <div className="grid grid-cols-2 gap-1.5">
+	                <div className="grid grid-cols-2 gap-1.5 xl:grid-cols-3">
                   {(Object.keys(STYLE_PRESETS) as WallpaperStyle[]).map((style) => {
                     const active = wallpaperStyle === style;
                     const label = STYLE_PRESETS[style].name;
@@ -3526,14 +4200,14 @@ function MainApp() {
                           "grid h-7 w-7 shrink-0 grid-cols-2 gap-0.5 rounded-md border p-1",
                           active ? "border-dlsu-vivid/35 bg-dlsu-vivid/15" : "border-white/[0.08] bg-white/[0.04]"
                         )}>
-                          <span className={classNames("rounded-[2px]", style === "clean" ? "border border-white/30 bg-white/10" : "bg-white/15")} />
+                          <span className={classNames("rounded-[2px]", style === "clean" || style.startsWith("glass") ? "border border-white/30 bg-white/10" : "bg-white/15")} />
                           <span className={classNames("rounded-[2px]", style === "bold" ? "shadow-[0_3px_8px_rgba(0,0,0,0.48)]" : "", style === "glass" ? "border border-white/35 bg-white/20" : "bg-white/10")} />
                           <span className={classNames("rounded-[2px]", style === "compact" ? "bg-white/25" : "bg-white/10")} />
                           <span className={classNames("rounded-[2px]", style === "glass" ? "border border-white/30 bg-white/20" : "bg-white/10")} />
                         </div>
                         <span className="min-w-0">
                           <span className="block truncate text-[11px] font-black">{label}</span>
-                          <span className={classNames("block truncate text-[9px] font-semibold leading-tight", active ? "text-white/48" : "text-white/34 group-hover:text-white/45")}>
+                          <span className={classNames("block truncate text-[9px] font-semibold leading-tight", active ? "text-white/[0.48]" : "text-white/[0.34] group-hover:text-white/[0.45]")}>
                             {hints[style]}
                           </span>
                         </span>
@@ -3545,135 +4219,146 @@ function MainApp() {
               );
             })()}
             <SectionLabel className="pt-1">Font</SectionLabel>
-            <div className="grid grid-cols-2 gap-1.5">
-              {CALENDAR_FONT_OPTIONS.map((option) => (
-                <button
-                  key={option.value}
-                  type="button"
-                  aria-pressed={calendarFont === option.value}
-                  aria-label={`${option.label}, ${option.description}`}
-                  title={`${option.label}: ${option.description}`}
-                  className={classNames(
-                    "grid h-10 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-1.5 rounded-lg border px-2 text-left transition-all duration-150 active:scale-[0.98]",
-                    option.bodyClass,
-                    calendarFont === option.value
-                      ? "border-dlsu-vivid/80 bg-[#102017] text-white shadow-sm shadow-dlsu-vivid/20"
-                      : "border-white/15 bg-white/[0.04] text-white/72 hover:border-white/30 hover:bg-white/[0.07] hover:text-white"
-                  )}
-                  onClick={() => setCalendarFont(option.value)}
-                >
-                  <span className="grid h-6 w-6 shrink-0 place-items-center rounded-md border border-white/15 bg-white/[0.07] text-[10px] font-black">Aa</span>
-                  <span className="min-w-0 truncate text-[11px] font-black leading-none">{option.label}</span>
-                  {calendarFont === option.value && <Check size={12} className="shrink-0 text-dlsu-vivid" />}
-                </button>
-              ))}
-            </div>
+            <CalendarFontDropdown
+                value={calendarFont}
+                onChange={setCalendarFont}
+              />
           </ControlGroup>
         </div>
 
-        <div className="order-3">
+        <div className="order-5">
           {renderCourseColorThemes()}
         </div>
 
-        <div className="order-4">
+        <div className="order-2 lg:hidden">
           <ControlGroup title="Layout">
-            <SectionLabel>Size</SectionLabel>
-            <div className="grid grid-cols-5 gap-1 rounded-lg border border-white/[0.10] bg-white/[0.045] p-1">
-              {CALENDAR_SIZE_OPTIONS.map(({ value, label }) => (
-                <button
-                  key={value}
-                  type="button"
-                  className={classNames(
-                    "rounded-md py-2 text-[11px] font-bold transition-all",
-                    calendarSize === value
-                      ? "bg-dlsu-vivid text-white shadow-sm shadow-dlsu-vivid/20"
-                      : "bg-white/[0.04] text-white/65 hover:bg-white/[0.08] hover:text-white"
-                  )}
-                  onClick={() => setCalendarSize(value)}
-                >
-                  {label}
-                </button>
-              ))}
+            <div className="lg:hidden">
+              <SectionLabel>Size</SectionLabel>
+              <div className="grid grid-cols-5 gap-1 rounded-lg border border-white/[0.10] bg-white/[0.045] p-1">
+                {CALENDAR_SIZE_OPTIONS.map(({ value, label }) => {
+                  const currentS = deviceSettings[device] || { x:0, y:0, sx:3, sy:3 };
+                  const active = Math.round((currentS.sx + currentS.sy) / 2) === value;
+                  return (
+                    <button
+                      key={value}
+                      type="button"
+                      className={classNames(
+                        "rounded-md py-2 text-[11px] font-bold transition-all",
+                        active
+                          ? "bg-dlsu-vivid text-white shadow-sm shadow-dlsu-vivid/20"
+                          : "bg-white/[0.04] text-white/65 hover:bg-white/[0.08] hover:text-white"
+                      )}
+                      onClick={() => {
+                        setDeviceSettings(prev => ({
+                          ...prev,
+                          [device]: { ...prev[device], sx: value, sy: value }
+                        }));
+                      }}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-            <SectionLabel className="pt-1">Mode</SectionLabel>
-            <div className="grid grid-cols-3 gap-1 rounded-lg border border-white/[0.10] bg-white/[0.045] p-1">
-              {CALENDAR_THEME_OPTIONS.map(({ value, label }) => (
-                <button
-                  key={value}
-                  className={classNames(
-                    "rounded-md py-2 text-[11px] font-bold transition-all",
-                    calendarThemeMode === value
-                      ? "bg-dlsu-vivid text-white shadow-sm shadow-dlsu-vivid/20"
-                      : "bg-white/[0.04] text-white/65 hover:bg-white/[0.08] hover:text-white"
-                  )}
-                  type="button"
-                  onClick={() => setCalendarThemeMode(value)}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-            <SectionLabel className="pt-1">Position</SectionLabel>
-            <div className="grid grid-cols-5 gap-1 rounded-lg border border-white/[0.10] bg-white/[0.045] p-1">
-              {(["left", "center", "right", "top", "bottom"] as GridPosition[]).map((pos) => (
-                <button
-                  key={pos}
-                  className={classNames(
-                    "rounded-md py-2 text-[10px] font-bold capitalize transition-all",
-                    gridPosition === pos
-                      ? "bg-dlsu-vivid text-white shadow-sm shadow-dlsu-vivid/20"
-                      : "bg-white/[0.04] text-white/65 hover:bg-white/[0.08] hover:text-white"
-                  )}
-                  type="button"
-                  onClick={() => {
-                    setGridPosition(pos);
-                    setGridOffsetX(0);
-                    setGridOffsetY(0);
-                  }}
-                >
-                  {pos}
-                </button>
-              ))}
-            </div>
-            <div className="grid grid-cols-2 gap-4 pt-1">
-              <label className="block">
-                <span className="mb-1.5 flex justify-between text-[10px] font-bold text-white/40">
-                  <span>X</span>
-                  <span>{gridOffsetX === 0 ? "0" : gridOffsetX > 0 ? `+${gridOffsetX}` : gridOffsetX}</span>
-                </span>
-                <input
-                  type="range"
-                  min="-30"
-                  max="30"
-                  step="1"
-                  value={gridOffsetX}
-                  onChange={(e) => setGridOffsetX(normalizeGridOffset(Number(e.target.value)))}
-                  className="archers-range w-full"
-                  style={{ "--range-progress": rangeProgress(gridOffsetX, -30, 30) } as CSSProperties}
-                />
-              </label>
-              <label className="block">
-                <span className="mb-1.5 flex justify-between text-[10px] font-bold text-white/40">
-                  <span>Y</span>
-                  <span>{gridOffsetY === 0 ? "0" : gridOffsetY > 0 ? `+${gridOffsetY}` : gridOffsetY}</span>
-                </span>
-                <input
-                  type="range"
-                  min="-30"
-                  max="30"
-                  step="1"
-                  value={gridOffsetY}
-                  onChange={(e) => setGridOffsetY(normalizeGridOffset(Number(e.target.value)))}
-                  className="archers-range w-full"
-                  style={{ "--range-progress": rangeProgress(gridOffsetY, -30, 30) } as CSSProperties}
-                />
-              </label>
+            <div className="lg:hidden">
+              <SectionLabel className="pt-1">Position</SectionLabel>
+              <div className="grid grid-cols-5 gap-1 rounded-lg border border-white/[0.10] bg-white/[0.045] p-1">
+                {(["left", "center", "right", "top", "bottom"] as GridPosition[]).map((pos) => (
+                  <button
+                    key={pos}
+                    className={classNames(
+                      "rounded-md py-2 text-[10px] font-bold capitalize transition-all",
+                      gridPosition === pos
+                        ? "bg-dlsu-vivid text-white shadow-sm shadow-dlsu-vivid/20"
+                        : "bg-white/[0.04] text-white/65 hover:bg-white/[0.08] hover:text-white"
+                    )}
+                    type="button"
+                    onClick={() => {
+                      setGridPosition(pos);
+                      setDeviceSettings(prev => ({
+                        ...prev,
+                        [device]: { ...prev[device], x: 0, y: 0 }
+                      }));
+                    }}
+                  >
+                    {pos}
+                  </button>
+                ))}
+              </div>
+              <div className="grid grid-cols-2 gap-4 pt-1">
+                <label className="block">
+                  <span className="mb-1.5 flex justify-between text-[10px] font-bold text-white/40">
+                    <span>X</span>
+                    <span>{(deviceSettings[device]?.x || 0) === 0 ? "0" : (deviceSettings[device]?.x || 0) > 0 ? `+${(deviceSettings[device]?.x || 0)}` : (deviceSettings[device]?.x || 0)}</span>
+                  </span>
+                  <input
+                    type="range"
+                    min="-30"
+                    max="30"
+                    step="1"
+                    value={deviceSettings[device]?.x || 0}
+                    onChange={(e) => {
+                      const val = normalizeGridOffset(Number(e.target.value));
+                      setDeviceSettings(prev => ({ ...prev, [device]: { ...prev[device], x: val } }));
+                    }}
+                    className="archers-range w-full"
+                    style={{ "--range-progress": rangeProgress(deviceSettings[device]?.x || 0, -30, 30) } as CSSProperties}
+                  />
+                </label>
+                <label className="block">
+                  <span className="mb-1.5 flex justify-between text-[10px] font-bold text-white/40">
+                    <span>Y</span>
+                    <span>{(deviceSettings[device]?.y || 0) === 0 ? "0" : (deviceSettings[device]?.y || 0) > 0 ? `+${(deviceSettings[device]?.y || 0)}` : (deviceSettings[device]?.y || 0)}</span>
+                  </span>
+                  <input
+                    type="range"
+                    min="-30"
+                    max="30"
+                    step="1"
+                    value={deviceSettings[device]?.y || 0}
+                    onChange={(e) => {
+                      const val = normalizeGridOffset(Number(e.target.value));
+                      setDeviceSettings(prev => ({ ...prev, [device]: { ...prev[device], y: val } }));
+                    }}
+                    className="archers-range w-full"
+                    style={{ "--range-progress": rangeProgress(deviceSettings[device]?.y || 0, -30, 30) } as CSSProperties}
+                  />
+                </label>
+              </div>
             </div>
           </ControlGroup>
         </div>
 
+        <div className="order-3 lg:hidden">
+          <SectionLabel>Device Frame</SectionLabel>
+          <div className="flex items-center rounded-lg border border-white/10 bg-black/40 p-1 shadow-inner">
+            {(Object.keys(DEVICES) as DeviceId[]).map((deviceId) => {
+              const DeviceIcon = DEVICES[deviceId].icon;
+              const active = device === deviceId;
+              return (
+                <button
+                  key={deviceId}
+                  className={classNames(
+                    "flex flex-1 h-8 place-items-center justify-center rounded-md transition-all duration-200",
+                    active
+                      ? "bg-dlsu-vivid text-white shadow-sm shadow-dlsu-vivid/20"
+                      : "text-white/40 hover:bg-white/[0.06] hover:text-white/80"
+                  )}
+                  type="button"
+                  title={DEVICES[deviceId].label}
+                  aria-label={DEVICES[deviceId].label}
+                  onClick={() => setDevice(deviceId)}
+                >
+                  <DeviceIcon size={15} strokeWidth={active ? 2.5 : 2} />
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
         {/* Background */}
-        <div className="order-5">
+        <div className="order-6">
           <ControlGroup title="Background">
 
             {/* ── Base background tabs: Color / Gradient / Photo ── */}
@@ -3692,10 +4377,16 @@ function MainApp() {
                       ? "bg-dlsu-vivid text-white shadow-sm shadow-dlsu-vivid/20"
                       : "bg-white/[0.04] text-white/65 hover:bg-white/[0.08] hover:text-white"
                   )}
-                  onClick={() => {
+                  onClick={(event) => {
                     if (kind === "solid") handleSolidBackgroundChange(background);
                     else if (kind === "gradient") applyGradientPreset(gradient);
-                    else setBackgroundKind("image");
+                    else {
+                      if (!backgroundImage) {
+                        openBackgroundUpload(event.currentTarget);
+                      } else {
+                        setBackgroundKind("image");
+                      }
+                    }
                   }}
                 >
                   <KindIcon size={13} />
@@ -3703,6 +4394,7 @@ function MainApp() {
                 </button>
               ))}
             </div>
+            <input data-background-image-upload="true" className="sr-only" type="file" accept="image/*" onChange={handleBackgroundUpload} />
 
             {/* ── Solid ── */}
             {backgroundKind === "solid" && (
@@ -3717,8 +4409,8 @@ function MainApp() {
                   {BACKGROUND_CATEGORIES.map((cat) => (
                     <div key={cat.label}>
                       <p className="mb-1 text-[9px] font-black uppercase tracking-wider text-white/25">{cat.label}</p>
-                      <div className="grid grid-cols-6 gap-1.5">
-                        {cat.colors.map((preset) => (
+	                      <div className="grid grid-cols-6 gap-1.5 xl:grid-cols-8">
+                        {cat.colors.slice(0, -2).map((preset) => (
                           <button
                             key={`${preset.name}-${preset.value}`}
                             type="button"
@@ -3773,7 +4465,7 @@ function MainApp() {
                     <input type="range" min="0" max="360" value={gradient.angle} onChange={(e) => updateGradient({ angle: Number(e.target.value) })} className="w-full accent-dlsu-vivid" />
                   </label>
                 )}
-                <div className="grid grid-cols-2 gap-1.5">
+	                <div className="grid grid-cols-2 gap-1.5 xl:grid-cols-3">
                   {GRADIENT_PRESETS.map((preset) => (
                     <button key={preset.name} type="button"
                       className="min-h-9 rounded-lg border border-white/15 px-2 text-[10px] font-black text-white shadow-[inset_0_0_0_999px_rgba(0,0,0,0.16)] transition hover:border-white/35 active:scale-95"
@@ -3787,75 +4479,32 @@ function MainApp() {
 
             {/* ── Image ── */}
             {backgroundKind === "image" && (
-              <label className="flex min-h-20 cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-white/25 bg-white/[0.055] text-white/65 transition hover:border-white/45 hover:bg-white/[0.08] hover:text-white">
+              <button type="button" onClick={(event) => openBackgroundUpload(event.currentTarget)} className="flex min-h-20 cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-white/25 bg-white/[0.055] text-white/65 transition hover:border-white/45 hover:bg-white/[0.08] hover:text-white">
                 <ImagePlus size={20} />
                 <span className="text-[11px] font-bold">{backgroundImage ? "Replace photo" : "Upload a photo"}</span>
-                <input className="sr-only" type="file" accept="image/*" onChange={handleBackgroundUpload} />
-              </label>
+              </button>
             )}
 
 
 
-            {/* ── Overlay section: None / Emoji / Lines ── */}
-            <div className="border-t border-white/[0.06] pt-3">
-              <SectionLabel className="mb-2">Overlay</SectionLabel>
-              <div className="grid grid-cols-3 gap-1 rounded-lg border border-white/[0.10] bg-white/[0.045] p-1">
-                {([
-                  { kind: "none",      label: "Off",   icon: X       },
-                  { kind: "pattern",   label: "Emoji", icon: Sparkles },
-                  { kind: "geometric", label: "Lines", icon: Layers   },
-                ] as { kind: OverlayKind; label: string; icon: LucideIcon }[]).map(({ kind, label, icon: OverlayIcon }) => (
-                  <button
-                    key={kind}
-                    type="button"
-                    className={classNames(
-                      "flex min-h-9 items-center justify-center gap-1.5 rounded-md px-2 text-[10px] font-bold transition-all",
-                      overlayKind === kind
-                        ? "bg-dlsu-vivid text-white shadow-sm shadow-dlsu-vivid/20"
-                        : "bg-white/[0.04] text-white/65 hover:bg-white/[0.08] hover:text-white"
-                    )}
-                    onClick={() => setOverlayKind(kind)}
-                  >
-                    <OverlayIcon size={13} />
-                    {label}
-                  </button>
-                ))}
+            <div className="space-y-3 border-t border-white/[0.06] pt-3">
+              <div className="flex items-center justify-between gap-3">
+                <SectionLabel>Emoji</SectionLabel>
+                <GlassSwitch checked={emojiOverlayEnabled} icon={Sparkles} label={emojiOverlayEnabled ? "On" : "Off"} onChange={() => setEmojiOverlayEnabled(!emojiOverlayEnabled)} />
               </div>
-            </div>
 
-            {/* ── Overlay: Emoji Pattern ── */}
-            {overlayKind !== "geometric" && (
-              <div className="space-y-3 rounded-lg border border-white/[0.10] bg-white/[0.04] p-3">
+              <div className={classNames("liquid-glass space-y-3 rounded-xl border p-3 transition-all duration-200", emojiOverlayEnabled ? "border-dlsu-vivid/30 bg-dlsu-vivid/[0.055]" : "border-white/[0.08] bg-white/[0.025] opacity-80")}>
                 <div className="flex items-start gap-3">
-                  <div className="flex shrink-0 flex-col items-center gap-1.5">
-                    <button
-                      type="button"
-                      className={classNames(
-                        "grid h-14 w-14 place-items-center rounded-xl border text-3xl shadow-inner transition hover:border-white/30",
-                        overlayKind === "pattern"
-                          ? "border-dlsu-vivid/60 bg-dlsu-vivid/15"
-                          : "border-white/15 bg-black/25"
-                      )}
-                      onClick={() => setOverlayKind(overlayKind === "pattern" ? "none" : "pattern")}
-                      aria-label={overlayKind === "pattern" ? "Turn emoji overlay off" : "Turn emoji overlay on"}
-                    >
-                      {pattern.emoji}
-                    </button>
-                    <button
-                      type="button"
-                      className={classNames(
-                        "rounded-full border px-2 py-0.5 text-[9px] font-black uppercase tracking-wide transition",
-                        overlayKind === "pattern"
-                          ? "border-dlsu-vivid/50 bg-dlsu-vivid/15 text-dlsu-vivid"
-                          : "border-white/15 bg-white/[0.04] text-white/55 hover:border-white/30 hover:text-white"
-                      )}
-                      onClick={() => setOverlayKind(overlayKind === "pattern" ? "none" : "pattern")}
-                    >
-                      {overlayKind === "pattern" ? "On" : "Off"}
-                    </button>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setEmojiOverlayEnabled(true)}
+                    className="grid h-14 w-14 shrink-0 place-items-center rounded-xl border border-dlsu-vivid/50 bg-dlsu-vivid/15 text-3xl shadow-inner transition active:scale-95"
+                    aria-label="Enable emoji overlay"
+                  >
+                    {pattern.emoji}
+                  </button>
                   <div className="min-w-0 flex-1">
-                    <p className="mb-2 text-[10px] font-black uppercase tracking-wide text-white/45">Layout</p>
+                    <p className="mb-2 text-[10px] font-black uppercase tracking-wide text-white/45">Pattern Layout</p>
                     <div className="grid grid-cols-2 gap-1.5">
                       {PATTERN_PRESETS.map((preset) => (
                         <button
@@ -3867,7 +4516,7 @@ function MainApp() {
                               ? "border-dlsu-vivid bg-dlsu-vivid text-white"
                               : "border-white/15 bg-white/[0.055] text-white/65 hover:border-white/30 hover:bg-white/[0.08] hover:text-white"
                           )}
-                          onClick={() => applyPatternPreset(preset.value)}
+                          onClick={() => { setEmojiOverlayEnabled(true); applyPatternPreset(preset.value); }}
                         >
                           {preset.label}
                         </button>
@@ -3876,13 +4525,13 @@ function MainApp() {
                   </div>
                 </div>
 
-                <div className="flex flex-wrap gap-1.5">
+                <div className="grid grid-cols-6 gap-1.5 xl:grid-cols-8">
                   {QUICK_EMOJI_PICKS.map((emoji) => (
                     <button
                       key={emoji}
                       type="button"
                       className={classNames(
-                        "grid h-11 w-11 place-items-center rounded-xl border text-2xl transition hover:border-white/25 hover:bg-white/[0.07] active:scale-95",
+                        "grid h-10 min-w-0 place-items-center rounded-lg border text-xl transition hover:border-white/25 hover:bg-white/[0.07] active:scale-95",
                         pattern.emoji === emoji
                           ? "border-dlsu-vivid bg-dlsu-vivid/20 shadow-sm shadow-dlsu-vivid/20"
                           : "border-white/15 bg-white/[0.055] hover:border-white/30 hover:bg-white/[0.08]"
@@ -3895,7 +4544,7 @@ function MainApp() {
                   ))}
                 </div>
 
-                {overlayKind === "pattern" && (
+                {emojiOverlayEnabled && (
                   <div className="overflow-hidden rounded-lg border border-white/[0.08] bg-[#0B100D]">
                     <EmojiPicker
                       width="100%"
@@ -3914,80 +4563,64 @@ function MainApp() {
                   </div>
                 )}
 
-                <div className="space-y-3">
-                  <div className="grid grid-cols-2 gap-4">
-                    <label className="block">
-                      <span className="mb-1.5 flex justify-between text-[10px] font-bold text-white/40">
-                        <span>Size</span><span>{pattern.size}px</span>
-                      </span>
-                      <input type="range" min="12" max="240" value={pattern.size} onChange={(e) => updatePattern({ size: Number(e.target.value) })} className="archers-range w-full" style={{ "--range-progress": rangeProgress(pattern.size, 12, 240) } as CSSProperties} />
-                    </label>
-                    <label className="block">
-                      <span className="mb-1.5 flex justify-between text-[10px] font-bold text-white/40">
-                        <span>Spacing</span><span>{pattern.spacing}px</span>
-                      </span>
-                      <input type="range" min="36" max="360" value={pattern.spacing} onChange={(e) => updatePattern({ spacing: Number(e.target.value) })} className="archers-range w-full" style={{ "--range-progress": rangeProgress(pattern.spacing, 36, 360) } as CSSProperties} />
-                    </label>
-                  </div>
+                <div className="grid grid-cols-1 gap-3 xl:grid-cols-3">
                   <label className="block">
-                    <span className="mb-1.5 flex justify-between text-[10px] font-bold text-white/40">
-                      <span>Opacity</span><span>{Math.round(pattern.opacity * 100)}%</span>
-                    </span>
+                    <span className="mb-1.5 flex justify-between text-[10px] font-bold text-white/40"><span>Size</span><span>{pattern.size}px</span></span>
+                    <input type="range" min="12" max="240" value={pattern.size} onChange={(e) => updatePattern({ size: Number(e.target.value) })} className="archers-range w-full" style={{ "--range-progress": rangeProgress(pattern.size, 12, 240) } as CSSProperties} />
+                  </label>
+                  <label className="block">
+                    <span className="mb-1.5 flex justify-between text-[10px] font-bold text-white/40"><span>Spacing</span><span>{pattern.spacing}px</span></span>
+                    <input type="range" min="36" max="360" value={pattern.spacing} onChange={(e) => updatePattern({ spacing: Number(e.target.value) })} className="archers-range w-full" style={{ "--range-progress": rangeProgress(pattern.spacing, 36, 360) } as CSSProperties} />
+                  </label>
+                  <label className="block">
+                    <span className="mb-1.5 flex justify-between text-[10px] font-bold text-white/40"><span>Opacity</span><span>{Math.round(pattern.opacity * 100)}%</span></span>
                     <input type="range" min="0.04" max="1" step="0.01" value={pattern.opacity} onChange={(e) => updatePattern({ opacity: Number(e.target.value) })} className="archers-range w-full" style={{ "--range-progress": rangeProgress(pattern.opacity, 0.04, 1) } as CSSProperties} />
                   </label>
                 </div>
               </div>
-            )}
 
-            {/* ── Overlay: Geometric Lines ── */}
-            {overlayKind === "geometric" && (
-              <div className="space-y-3">
+              <div className="flex items-center justify-between gap-3 pt-1">
+                <SectionLabel>Lines</SectionLabel>
+                <GlassSwitch checked={lineOverlayEnabled} icon={Layers} label={lineOverlayEnabled ? "On" : "Off"} onChange={() => setLineOverlayEnabled(!lineOverlayEnabled)} />
+              </div>
+
+              <div className={classNames("liquid-glass space-y-3 rounded-xl border p-3 transition-all duration-200", lineOverlayEnabled ? "border-dlsu-vivid/30 bg-dlsu-vivid/[0.055]" : "border-white/[0.08] bg-white/[0.025] opacity-80")}>
                 <div className="flex items-center gap-3">
-                  <div className="grid flex-1 grid-cols-5 gap-1 rounded-lg border border-white/[0.10] bg-white/[0.045] p-1">
+                  <div className="grid flex-1 grid-cols-3 gap-1 rounded-lg border border-white/[0.10] bg-white/[0.045] p-1 xl:grid-cols-5">
                     {GEOMETRIC_KIND_OPTIONS.map((opt) => (
                       <button key={opt.value} type="button"
                         className={classNames("rounded-md py-1.5 text-[10px] font-bold transition-all",
                           geometric.kind === opt.value ? "bg-dlsu-vivid text-white shadow-sm shadow-dlsu-vivid/20" : "bg-white/[0.04] text-white/65 hover:bg-white/[0.08] hover:text-white"
                         )}
-                        onClick={() => setGeometric(prev => ({ ...prev, kind: opt.value }))}
+                        onClick={() => { setLineOverlayEnabled(true); setGeometric(prev => ({ ...prev, kind: opt.value })); }}
                       >{opt.label}</button>
                     ))}
                   </div>
                   <label className="relative flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-full border border-white/20 bg-white/[0.07] transition hover:border-white/35">
-                    <input type="color" value={geometric.color} onChange={(e) => setGeometric(prev => ({ ...prev, color: e.target.value }))} className="absolute inset-0 cursor-pointer opacity-0" />
+                    <input type="color" value={geometric.color} onChange={(e) => { setLineOverlayEnabled(true); setGeometric(prev => ({ ...prev, color: e.target.value })); }} className="absolute inset-0 cursor-pointer opacity-0" />
                     <div className="h-5 w-5 rounded-full border border-white/20" style={{ backgroundColor: geometric.color }} />
                   </label>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
                   <label className="block">
-                    <span className="mb-1.5 flex justify-between text-[10px] font-bold text-white/40">
-                      <span>Thickness</span><span>{geometric.size < 5 ? "Thin" : geometric.size > 12 ? "Thick" : "Medium"}</span>
-                    </span>
-                    <input type="range" min="1" max="20" step="1" value={geometric.size} onChange={(e) => setGeometric(prev => ({ ...prev, size: Number(e.target.value) }))} className="archers-range w-full" style={{ "--range-progress": rangeProgress(geometric.size, 1, 20) } as CSSProperties} />
+                    <span className="mb-1.5 flex justify-between text-[10px] font-bold text-white/40"><span>Thickness</span><span>{geometric.size < 5 ? "Thin" : geometric.size > 12 ? "Thick" : "Medium"}</span></span>
+                    <input type="range" min="1" max="20" step="1" value={geometric.size} onChange={(e) => { setLineOverlayEnabled(true); setGeometric(prev => ({ ...prev, size: Number(e.target.value) })); }} className="archers-range w-full" style={{ "--range-progress": rangeProgress(geometric.size, 1, 20) } as CSSProperties} />
                   </label>
                   <label className="block">
-                    <span className="mb-1.5 flex justify-between text-[10px] font-bold text-white/40">
-                      <span>Density</span><span>{geometric.spacing < 30 ? "Dense" : geometric.spacing > 80 ? "Spaced" : "Normal"}</span>
-                    </span>
-                    <input type="range" min="16" max="128" step="4" value={geometric.spacing} onChange={(e) => setGeometric(prev => ({ ...prev, spacing: Number(e.target.value) }))} className="archers-range w-full" style={{ "--range-progress": rangeProgress(geometric.spacing, 16, 128) } as CSSProperties} />
-                  </label>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <label className="block">
-                    <span className="mb-1.5 flex justify-between text-[10px] font-bold text-white/40">
-                      <span>Opacity</span><span>{Math.round(geometric.opacity * 100)}%</span>
-                    </span>
-                    <input type="range" min="0.05" max="1" step="0.05" value={geometric.opacity} onChange={(e) => setGeometric(prev => ({ ...prev, opacity: Number(e.target.value) }))} className="archers-range w-full" style={{ "--range-progress": rangeProgress(geometric.opacity, 0.05, 1) } as CSSProperties} />
+                    <span className="mb-1.5 flex justify-between text-[10px] font-bold text-white/40"><span>Density</span><span>{geometric.spacing < 30 ? "Dense" : geometric.spacing > 80 ? "Spaced" : "Normal"}</span></span>
+                    <input type="range" min="16" max="128" step="4" value={geometric.spacing} onChange={(e) => { setLineOverlayEnabled(true); setGeometric(prev => ({ ...prev, spacing: Number(e.target.value) })); }} className="archers-range w-full" style={{ "--range-progress": rangeProgress(geometric.spacing, 16, 128) } as CSSProperties} />
                   </label>
                   <label className="block">
-                    <span className="mb-1.5 flex justify-between text-[10px] font-bold text-white/40">
-                      <span>Broken</span><span>{geometric.dash > 0 ? `${geometric.dash}px` : "Solid"}</span>
-                    </span>
-                    <input type="range" min="0" max="32" step="1" value={geometric.dash} onChange={(e) => setGeometric(prev => ({ ...prev, dash: Number(e.target.value) }))} className="archers-range w-full" style={{ "--range-progress": rangeProgress(geometric.dash, 0, 32) } as CSSProperties} />
+                    <span className="mb-1.5 flex justify-between text-[10px] font-bold text-white/40"><span>Opacity</span><span>{Math.round(geometric.opacity * 100)}%</span></span>
+                    <input type="range" min="0.05" max="1" step="0.05" value={geometric.opacity} onChange={(e) => { setLineOverlayEnabled(true); setGeometric(prev => ({ ...prev, opacity: Number(e.target.value) })); }} className="archers-range w-full" style={{ "--range-progress": rangeProgress(geometric.opacity, 0.05, 1) } as CSSProperties} />
+                  </label>
+                  <label className="block">
+                    <span className="mb-1.5 flex justify-between text-[10px] font-bold text-white/40"><span>Broken</span><span>{geometric.dash > 0 ? `${geometric.dash}px` : "Solid"}</span></span>
+                    <input type="range" min="0" max="32" step="1" value={geometric.dash} onChange={(e) => { setLineOverlayEnabled(true); setGeometric(prev => ({ ...prev, dash: Number(e.target.value) })); }} className="archers-range w-full" style={{ "--range-progress": rangeProgress(geometric.dash, 0, 32) } as CSSProperties} />
                   </label>
                 </div>
               </div>
-            )}
+            </div>
 
           </ControlGroup>
         </div>
@@ -3996,81 +4629,50 @@ function MainApp() {
       {/* ── Export ─────────────────────────────── */}
       <section
         className={classNames(
-          "space-y-5",
+          "space-y-3",
           mobileTab === "export" ? "block" : "hidden",
           desktopPanel === "export" ? "md:block" : "md:hidden"
         )}
       >
-        <div className="md:hidden">
-          <ControlGroup title="Preview Device">
-            <div className="flex items-center gap-1 rounded-xl border border-white/10 bg-black/40 p-1.5 shadow-inner">
-              {(Object.keys(DEVICES) as DeviceId[]).map((deviceId) => {
-                const DeviceIcon = DEVICES[deviceId].icon;
-                const active = device === deviceId;
-                return (
-                  <button
-                    key={deviceId}
-                    className={classNames(
-                      "flex flex-1 h-10 place-items-center justify-center rounded-lg transition-all duration-200",
-                      active 
-                        ? "bg-dlsu-vivid text-white shadow-lg shadow-dlsu-vivid/20" 
-                        : "text-white/40 hover:bg-white/[0.06] hover:text-white/80"
-                    )}
-                    type="button"
-                    title={DEVICES[deviceId].label}
-                    aria-label={DEVICES[deviceId].label}
-                    onClick={() => setDevice(deviceId)}
-                  >
-                    <DeviceIcon size={18} strokeWidth={active ? 2.5 : 2} />
-                  </button>
-                );
-              })}
-            </div>
-          </ControlGroup>
+        <SectionLabel>Export Format</SectionLabel>
+        <div className="flex rounded-lg border border-white/10 bg-black/40 p-1 shadow-inner">
+          {EXPORT_VARIANT_OPTIONS.map(({ value, label, description, icon: VariantIcon }) => (
+            <button
+              key={value}
+              type="button"
+              title={description}
+              className={classNames(
+                "flex flex-1 items-center justify-center gap-1.5 rounded-md h-9 transition-all active:scale-95",
+                exportVariant === value
+                  ? "bg-dlsu-vivid text-white shadow-sm shadow-dlsu-vivid/20"
+                  : "text-white/55 hover:bg-white/[0.06] hover:text-white/80"
+              )}
+              onClick={() => setExportVariant(value)}
+            >
+              <VariantIcon size={13} />
+              <span className="text-[10px] font-black uppercase tracking-wider">{label}</span>
+            </button>
+          ))}
         </div>
 
-        <ControlGroup title="Save As">
-          <div className="grid grid-cols-3 gap-1.5">
-            {EXPORT_VARIANT_OPTIONS.map(({ value, label, description, icon: VariantIcon }) => (
-              <button
-                key={value}
-                type="button"
-                title={description}
-                className={classNames(
-                  "flex flex-col items-center gap-1.5 rounded-lg border py-2.5 px-1 text-center transition-all active:scale-95",
-                  exportVariant === value
-                    ? "border-dlsu-vivid bg-dlsu-vivid/20 text-white shadow-md shadow-dlsu-vivid/20"
-                    : "border-white/10 bg-white/[0.03] text-white/55 hover:border-white/25 hover:bg-white/[0.06] hover:text-white/80"
-                )}
-                onClick={() => setExportVariant(value)}
-              >
-                <VariantIcon size={15} />
-                <span className="text-[10px] font-black">{label}</span>
-              </button>
-            ))}
-          </div>
-        </ControlGroup>
-
-        <ControlGroup title="Save">
-          <button
-            type="button"
-            className="group flex min-h-12 w-full items-center justify-center gap-2.5 rounded-xl bg-dlsu-vivid px-4 text-white shadow-lg shadow-dlsu-vivid/25 transition-all duration-200 hover:bg-dlsu active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-60"
-            onClick={() => {
-              if (window.innerWidth < 768) {
-                // On mobile, bypass the multi-device popup and just download directly
-                handleExport();
-              } else {
-                setShowExportPopup(true);
-              }
-            }}
-            disabled={isExporting}
-          >
-            {isExporting
-              ? <Loader2 size={18} className="animate-spin" />
-              : <Download size={18} className="transition-transform group-hover:-translate-y-0.5" />}
-            <span className="text-sm font-black">{isExporting ? "Saving..." : "Save to Photos"}</span>
-          </button>
-        </ControlGroup>
+        <button
+          type="button"
+          className="group flex min-h-12 w-full items-center justify-center gap-2.5 rounded-xl bg-dlsu-vivid px-4 text-white shadow-lg shadow-dlsu-vivid/25 transition-all duration-200 hover:bg-dlsu active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-60"
+          onClick={() => {
+            if (typeof window !== "undefined" && window.innerWidth < 1024) {
+              // On mobile, bypass the multi-device popup and just download directly
+              void handleExport();
+            } else {
+              setShowExportPopup(true);
+            }
+          }}
+          disabled={isExporting}
+        >
+          {isExporting
+            ? <Loader2 size={18} className="animate-spin" />
+            : <Download size={18} className="transition-transform group-hover:-translate-y-0.5" />}
+          <span className="text-sm font-black">{isExporting ? "Saving..." : "Save to Photos"}</span>
+        </button>
       </section>
 
 
@@ -4082,102 +4684,45 @@ function MainApp() {
     <main data-app-theme={appTheme} className="h-dvh w-full overflow-hidden bg-[#080B09] text-white">
       <ExportOverlay />
 
-      {/* Export device picker popup */}
-      {showExportPopup && (
+      {pendingDeleteSaved && (
         <div
-          className="fixed inset-0 z-[200] flex items-end justify-center bg-black/70 backdrop-blur-sm sm:items-center px-4 pb-safe"
-          onClick={(e) => { if (e.target === e.currentTarget) setShowExportPopup(false); }}
+          className="fixed inset-0 z-[220] flex items-center justify-center bg-black/70 px-4 backdrop-blur-sm"
+          onClick={(event) => {
+            if (!isDeletingSaved && event.target === event.currentTarget) {
+              setPendingDeleteSaved(null);
+            }
+          }}
         >
-          <div className="w-full max-w-sm rounded-2xl border border-white/10 bg-[#0E1410] p-5 shadow-2xl">
-            <h3 className="mb-4 text-base font-black text-white">Save</h3>
-
-            {/* Output variant */}
-            <p className="mb-2 text-[10px] font-black uppercase tracking-wide text-white/40">Type</p>
-            <div className="mb-4 grid grid-cols-3 gap-1.5">
-              {EXPORT_VARIANT_OPTIONS.map(({ value, label, icon: VariantIcon }) => (
-                <button
-                  key={value}
-                  type="button"
-                  className={classNames(
-                    "flex flex-col items-center gap-1.5 rounded-lg border py-2.5 px-1 text-center transition-all active:scale-95",
-                    exportVariant === value
-                      ? "border-dlsu-vivid bg-dlsu-vivid/20 text-white"
-                      : "border-white/10 bg-white/[0.03] text-white/55 hover:border-white/25 hover:text-white/80"
-                  )}
-                  onClick={() => setExportVariant(value)}
-                >
-                  <VariantIcon size={15} />
-                  <span className="text-[10px] font-black">{label}</span>
-                </button>
-              ))}
-            </div>
-
-            {/* Device selection */}
-            <div className="mb-1 flex items-center justify-between">
-              <p className="text-[10px] font-black uppercase tracking-wide text-white/40">Sizes</p>
-              <button
-                type="button"
-                className="text-[10px] font-bold text-white/40 transition hover:text-white"
-                onClick={() => setSelectedExportDevices(
-                  (prev) => prev.size === COMMON_EXPORT_DEVICES.length ? new Set() : new Set(COMMON_EXPORT_DEVICES)
-                )}
-              >
-                {selectedExportDevices.size === COMMON_EXPORT_DEVICES.length ? "Clear all" : "Select all"}
-              </button>
-            </div>
-            <div className="mb-5 grid grid-cols-3 gap-1.5">
-              {(Object.keys(DEVICES) as DeviceId[]).map((deviceId) => {
-                const DeviceIcon = DEVICES[deviceId].icon;
-                const checked = selectedExportDevices.has(deviceId);
-                return (
-                  <label
-                    key={deviceId}
-                    className={classNames(
-                      "relative flex cursor-pointer flex-col items-center gap-1.5 rounded-lg border px-2 py-2.5 text-center transition active:scale-[0.97]",
-                      checked
-                        ? "border-dlsu-vivid/60 bg-dlsu-vivid/10 text-white"
-                        : "border-white/[0.07] bg-white/[0.025] text-white/50 hover:border-white/20 hover:text-white/70"
-                    )}
-                  >
-                    <DeviceIcon size={16} className={checked ? "text-dlsu-vivid" : ""} />
-                    <span className="text-[10px] font-bold leading-tight">{EXPORT_DEVICE_LABELS[deviceId]}</span>
-                    <input
-                      type="checkbox"
-                      checked={checked}
-                      onChange={(e) => {
-                        const next = new Set(selectedExportDevices);
-                        if (e.target.checked) next.add(deviceId); else next.delete(deviceId);
-                        setSelectedExportDevices(next);
-                      }}
-                      className="sr-only"
-                    />
-                  </label>
-                );
-              })}
+          <div className="w-full max-w-sm rounded-2xl border border-white/10 bg-[#0E1410] p-5 shadow-2xl shadow-black/60">
+            <div className="mb-4 flex items-start gap-3">
+              <div className="grid h-10 w-10 shrink-0 place-items-center rounded-lg border border-red-400/20 bg-red-500/10 text-red-300">
+                <Trash2 size={17} strokeWidth={2.6} />
+              </div>
+              <div className="min-w-0">
+                <h3 className="text-base font-black text-white">Delete saved schedule?</h3>
+                <p className="mt-1 text-sm leading-5 text-white/50">
+                  Are you sure you want to delete <span className="font-bold text-white/80">{pendingDeleteSaved.name || "this schedule"}</span>? This cannot be undone.
+                </p>
+              </div>
             </div>
 
             <div className="flex gap-2">
               <button
                 type="button"
-                className="flex-1 rounded-lg border border-white/10 py-2.5 text-sm font-bold text-white/60 transition hover:bg-white/[0.06] hover:text-white"
-                onClick={() => setShowExportPopup(false)}
+                className="flex-1 rounded-lg border border-white/10 py-2.5 text-sm font-bold text-white/60 transition hover:bg-white/[0.06] hover:text-white disabled:pointer-events-none disabled:opacity-45"
+                onClick={() => setPendingDeleteSaved(null)}
+                disabled={isDeletingSaved}
               >
                 Cancel
               </button>
               <button
                 type="button"
-                className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-dlsu-vivid py-2.5 text-sm font-bold text-white transition hover:bg-dlsu active:scale-95 disabled:opacity-60"
-                disabled={isExporting}
-                onClick={() => {
-                  setShowExportPopup(false);
-                  if (selectedExportDevices.size > 0) handleExportSelected();
-                  else handleExport();
-                }}
+                className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-red-500 py-2.5 text-sm font-black text-white transition hover:bg-red-400 active:scale-95 disabled:pointer-events-none disabled:opacity-60"
+                onClick={() => void confirmDeleteSavedCopy()}
+                disabled={isDeletingSaved}
               >
-                {isExporting ? <Loader2 size={15} className="animate-spin" /> : <Download size={15} />}
-                {selectedExportDevices.size > 0
-                  ? `Save ${selectedExportDevices.size}`
-                  : "Save"}
+                {isDeletingSaved ? <Loader2 size={15} className="animate-spin" /> : <Trash2 size={15} />}
+                Delete
               </button>
             </div>
           </div>
@@ -4215,11 +4760,11 @@ function MainApp() {
           </div>
         </div>
       )}
-      <div className="flex h-full w-full min-w-0 flex-col lg:grid lg:grid-cols-[320px_minmax(0,1fr)] xl:grid-cols-[360px_minmax(0,1fr)]">
+      <div className="flex h-full w-full min-w-0 flex-col lg:grid lg:grid-cols-[340px_minmax(0,1fr)] xl:grid-cols-[360px_minmax(0,1fr)] 2xl:grid-cols-[380px_minmax(0,1fr)]">
 
         {/* Desktop sidebar */}
         <aside className="hidden min-h-0 border-r border-white/5 bg-[#070A08] lg:flex lg:flex-col">
-          <div className="flex min-h-20 shrink-0 items-center justify-between border-b border-white/5 bg-[#090D0B]/50 px-6 backdrop-blur-md">
+          <div className="liquid-glass flex min-h-20 shrink-0 items-center justify-between border-b border-white/5 px-6">
             <img src="/logos/logo-full-green.png" alt="Archers Calendar" className="h-10 w-auto object-contain object-left" />
             <button
               type="button"
@@ -4237,61 +4782,16 @@ function MainApp() {
         {/* Right: preview area */}
         <section className="flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden">
 
-          {/* Desktop header */}
-          <header className="hidden min-h-20 shrink-0 items-center justify-between border-b border-white/5 bg-[#090D0B]/80 px-8 backdrop-blur-md lg:flex">
-            <div>
-              <p className="text-[10px] font-bold text-white/40">Live preview</p>
-              <h2 className="mt-0.5 text-xl font-black text-white">
-                {activeDevice.label} <span className="font-medium text-white/40">{activeDevice.description}</span>
-              </h2>
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-1 rounded-xl border border-white/10 bg-black/40 p-1.5 shadow-inner">
-                {(Object.keys(DEVICES) as DeviceId[]).map((deviceId) => {
-                  const DeviceIcon = DEVICES[deviceId].icon;
-                  const active = device === deviceId;
-                  return (
-                    <button
-                      key={deviceId}
-                      className={classNames(
-                        "grid h-10 w-11 place-items-center rounded-lg transition-all duration-200",
-                        active 
-                          ? "bg-dlsu-vivid text-white shadow-lg shadow-dlsu-vivid/20" 
-                          : "text-white/40 hover:bg-white/[0.06] hover:text-white/80"
-                      )}
-                      type="button"
-                      title={DEVICES[deviceId].label}
-                      aria-label={DEVICES[deviceId].label}
-                      onClick={() => setDevice(deviceId)}
-                    >
-                      <DeviceIcon size={18} strokeWidth={active ? 2.5 : 2} />
-                    </button>
-                  );
-                })}
-              </div>
-              <div className="relative ml-1">
-                <button
-                  className="group flex h-12 items-center gap-2.5 rounded-xl bg-dlsu-vivid px-6 text-sm font-black text-white shadow-lg shadow-dlsu-vivid/25 transition-all duration-200 hover:bg-dlsu active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed"
-                  type="button"
-                  onClick={() => setShowExportPopup(true)}
-                  disabled={isExporting}
-                >
-                  {isExporting
-                    ? <Loader2 size={18} className="animate-spin" />
-                    : <Download size={18} className="transition-transform group-hover:-translate-y-0.5" />}
-                  {isExporting ? "Saving..." : "Save"}
-                </button>
-              </div>
-            </div>
-          </header>
-
           {/* Preview — always visible */}
           {/* The canvas is rendered at its real fixed pixel size; a wrapper div
               sized to `canvasSize * previewScale` contains it at `scale(previewScale)`
               so the preview is pixel-perfect with the export output */}
           <div
             ref={previewContainerRef}
-            className="relative flex min-h-0 flex-1 items-center justify-center overflow-hidden p-4 md:p-6 lg:p-8"
+            className={classNames(
+              "relative flex min-h-0 flex-1 items-center justify-center overflow-hidden p-4 md:p-6 lg:p-8",
+              device !== "share" ? "lg:cursor-grab" : ""
+            )}
             onClick={() => { if (isMobileExpanded) setIsMobileExpanded(false); }}
             onTouchStart={(e) => {
               const touch = e.targetTouches[0];
@@ -4302,22 +4802,78 @@ function MainApp() {
               const endY = e.changedTouches[0].clientY;
               if (startY && endY - startY > 40 && isMobileExpanded) {
                 setIsMobileExpanded(false);
+              } else if (startY && startY - endY > 40 && !isMobileExpanded) {
+                setIsMobileExpanded(true);
               }
             }}
           >
+            <div data-export-hidden="true" className="pointer-events-none absolute left-5 right-5 top-5 z-30 hidden items-start justify-between gap-3 lg:flex">
+              <div className="liquid-glass-strong pointer-events-auto rounded-2xl border border-white/10 px-4 py-3 shadow-xl shadow-black/30">
+                <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-white/[0.38]">Live preview</p>
+                <h2 className="mt-0.5 text-base font-black leading-none text-white">
+                  {activeDevice.label} <span className="font-medium text-white/40">{activeDevice.description}</span>
+                </h2>
+              </div>
+
+              <div className="liquid-glass-strong pointer-events-auto flex items-center gap-2 rounded-2xl border border-white/10 p-1.5 shadow-xl shadow-black/30">
+                {(Object.keys(DEVICES) as DeviceId[]).map((deviceId) => {
+                  const DeviceIcon = DEVICES[deviceId].icon;
+                  const active = device === deviceId;
+                  return (
+                    <button
+                      key={deviceId}
+                      className={classNames(
+                        "grid h-9 w-10 place-items-center rounded-xl transition-all duration-150",
+                        active
+                          ? "bg-dlsu-vivid text-white shadow-lg shadow-dlsu-vivid/20"
+                          : "text-white/[0.42] hover:bg-white/[0.07] hover:text-white/[0.85]"
+                      )}
+                      type="button"
+                      title={`${DEVICES[deviceId].label} ${DEVICES[deviceId].description}`}
+                      aria-label={`${DEVICES[deviceId].label} ${DEVICES[deviceId].description}`}
+                      onClick={() => setDevice(deviceId)}
+                    >
+                      <DeviceIcon size={17} strokeWidth={active ? 2.5 : 2} />
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="pointer-events-auto relative">
+                <button
+                  className="group flex h-11 items-center gap-2.5 rounded-2xl bg-dlsu-vivid px-5 text-sm font-black text-white shadow-lg shadow-dlsu-vivid/25 transition-all duration-200 hover:bg-dlsu active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
+                  type="button"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    setShowExportPopup((open) => !open);
+                  }}
+                  disabled={isExporting}
+                >
+                  {isExporting
+                    ? <Loader2 size={17} className="animate-spin" />
+                    : <Download size={17} className="transition-transform group-hover:-translate-y-0.5" />}
+                  {isExporting ? "Saving..." : "Save"}
+                  <ChevronDown size={14} className={classNames("transition-transform", showExportPopup ? "rotate-180" : "")} />
+                </button>
+                {renderExportDropdown()}
+              </div>
+            </div>
+
             {/* Mobile floating header (logo & theme toggle) — visible when sidebar is hidden */}
             <div className="absolute left-4 right-4 top-4 z-10 flex items-center justify-between lg:hidden">
               <img src="/logos/logo-mini-green.png" alt="Archers Calendar" className="h-8 w-auto object-contain drop-shadow-md" />
               <button
                 type="button"
-                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/20 bg-black/40 text-white shadow-md backdrop-blur-md transition hover:bg-black/60"
+                className="liquid-glass flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/20 text-white shadow-md transition hover:bg-white/[0.08]"
                 onClick={(e) => { e.stopPropagation(); setAppTheme(appTheme === "dark" ? "light" : "dark"); }}
                 title="Toggle App Theme"
               >
                 {appTheme === "dark" ? <Sun size={14} /> : <Moon size={14} />}
               </button>
             </div>
+
             <div
+              key={device}
               style={{
                 width: canvasSize.width,
                 height: canvasSize.height,
@@ -4325,17 +4881,67 @@ function MainApp() {
                 transformOrigin: "center center",
                 flexShrink: 0
               }}
-              className="flex items-center justify-center"
+              className="animate-device-switch flex items-center justify-center"
             >
-              <PreviewCanvas canvasRef={canvasRef} previewScale={previewScale} />
-            </div>
+              <PreviewCanvas
+                canvasRef={canvasRef}
+                previewScale={previewScale}
+                onManipulationStart={handleManipulationStart}
+                isManipulating={!!manipulation}
+              />
+
+              {/* Professional Brutalist Manipulation Hint (Desktop Only) */}
+              {device !== "share" && showManipulationHint && (
+                <div className="absolute bottom-12 z-[100] hidden animate-in fade-in slide-in-from-bottom-4 duration-500 lg:block">
+                  <div className="flex items-stretch overflow-hidden border-[3px] border-white bg-black text-white shadow-[10px_10px_0px_rgba(0,0,0,0.5)]">
+                    <div className="flex flex-col justify-center px-7 py-5">
+                      <div className="flex items-center gap-2">
+                        <span className="bg-yellow-400 px-1.5 py-0.5 text-[9px] font-black uppercase text-black">New</span>
+                        <p className="text-[10px] font-black uppercase tracking-[0.25em] text-white/50">System Update</p>
+                      </div>
+                      <h3 className="mt-1 text-xl font-black leading-none tracking-tighter uppercase">Move & Resize Grid</h3>
+                      <div className="mt-5 space-y-2">
+                        <p className="flex items-center gap-2.5 text-[11px] font-bold text-white/80 uppercase">
+                          <span className="h-2 w-2 border border-white" />
+                          Drag edges to scale
+                        </p>
+                        <p className="flex items-center gap-2.5 text-[11px] font-bold text-white/80 uppercase">
+                          <span className="h-2 w-2 border border-white" />
+                          Drag center to move
+                        </p>
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        sessionStorage.setItem("archers_manipulation_hud_v2", "true");
+                        setShowManipulationHint(false);
+                      }}
+                      className="flex w-20 items-center justify-center border-l-[3px] border-white bg-white text-black transition-colors hover:bg-dlsu-vivid hover:text-white"
+                      title="Dismiss"
+                    >
+                      <Check size={32} strokeWidth={5} />
+                    </button>
+                  </div>
+                </div>
+              )}            </div>
+
+            {/* Global Manipulation Event Layer (Desktop Only) */}
+            {manipulation && (
+              <div
+                className="fixed inset-0 z-[9999]"
+                style={{ cursor: getManipulationCursor(manipulation.type) }}
+                onMouseMove={handleManipulationMove}
+                onMouseUp={handleManipulationEnd}
+              />
+            )}
           </div>
-          
+
           <div className="lg:hidden">
             <MobileControls>{controls}</MobileControls>
           </div>
-</section>
-
+        </section>
       </div>
 
       {/* Welcome Popup Modal */}
@@ -4420,12 +5026,12 @@ function SectionLabel({ children, className }: { children: React.ReactNode; clas
 
 function ControlGroup({ title, action, children, className }: { title: string; action?: React.ReactNode; children: React.ReactNode; className?: string }) {
   return (
-    <div className={classNames("border-b border-white/[0.07] pb-5 last:border-b-0", className)}>
+    <div className={classNames("liquid-glass rounded-xl border border-white/[0.075] p-3 shadow-sm transition-all duration-200", className)}>
       <div className="flex min-h-9 items-center justify-between gap-3">
         <SectionLabel>{title}</SectionLabel>
         {action}
       </div>
-      <div className="mt-3 space-y-3">
+      <div className="mt-2.5 space-y-3">
         {children}
       </div>
     </div>
@@ -4450,14 +5056,92 @@ function Field({ label, value, onChange, className, placeholder }: { label: stri
 function CourseField({ label, value, onBlur, className }: { label: string; value: string; onBlur: (v: string) => void; className?: string }) {
   return (
     <label className={classNames("block", className)}>
-      <span className="mb-1 block text-[10px] font-bold text-white/40">{label}</span>
+      <span className="mb-1.5 block text-[10px] font-black uppercase tracking-[0.08em] text-white/[0.38]">{label}</span>
       <input
         key={`${label}-${value}`}
-        className="min-h-9 w-full rounded-md border border-white/10 bg-white/[0.03] px-2.5 text-xs text-white outline-none transition placeholder:text-white/25 hover:border-white/20 focus:border-dlsu-vivid"
+        className="min-h-9 w-full rounded-lg border border-white/[0.11] bg-white/[0.04] px-2.5 text-xs font-medium text-white outline-none transition placeholder:text-white/25 hover:border-white/[0.22] hover:bg-white/[0.06] focus:border-dlsu-vivid focus:bg-white/[0.055] focus:ring-1 focus:ring-dlsu-vivid/35"
         defaultValue={value}
         onBlur={(e) => onBlur(e.currentTarget.value)}
       />
     </label>
+  );
+}
+
+function CalendarFontDropdown({ value, onChange }: { value: CalendarFont; onChange: (font: CalendarFont) => void }) {
+  const [open, setOpen] = useState(false);
+  const active = getCalendarFontOption(value);
+
+  return (
+    <div className="relative">
+      {open && (
+        <button
+          type="button"
+          className="fixed inset-0 z-40 cursor-default"
+          aria-label="Close font menu"
+          onClick={() => setOpen(false)}
+        />
+      )}
+      <button
+        type="button"
+        className={classNames(
+          "liquid-glass group flex min-h-11 w-full items-center justify-between gap-3 rounded-lg border border-white/[0.14] px-3 text-left text-white outline-none transition-all hover:-translate-y-px hover:border-white/30 hover:bg-white/[0.08] focus:border-dlsu-vivid focus:ring-1 focus:ring-dlsu-vivid/35",
+          active.bodyClass
+        )}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        onClick={() => setOpen((current) => !current)}
+      >
+        <span className="flex min-w-0 items-center gap-2.5">
+          <span className={classNames("grid h-7 w-8 shrink-0 place-items-center rounded-md border border-white/[0.10] bg-white/[0.07] text-[13px] font-black text-white shadow-inner", active.headingClass)}>
+            Aa
+          </span>
+          <span className="min-w-0">
+            <span className="block truncate text-sm font-black leading-tight">{active.label}</span>
+          </span>
+        </span>
+        <ChevronDown size={16} className={classNames("shrink-0 text-white/45 transition-transform duration-150", open ? "rotate-180" : "")} />
+      </button>
+
+      {open && (
+        <div
+          role="listbox"
+          className="liquid-glass-strong animate-popover-in absolute left-0 right-0 top-full z-50 mt-2 max-h-72 overflow-y-auto rounded-xl border border-white/[0.14] p-1.5 shadow-2xl shadow-black/45 scrollbar-thin"
+        >
+          {CALENDAR_FONT_OPTIONS.map((option) => {
+            const selected = option.value === value;
+            return (
+              <button
+                key={option.value}
+                type="button"
+                role="option"
+                aria-selected={selected}
+                className={classNames(
+                  "group/option flex min-h-11 w-full items-center justify-between gap-3 rounded-lg px-2.5 text-left transition-all duration-150 hover:bg-white/[0.08] active:scale-[0.99]",
+                  selected ? "bg-dlsu-vivid/18 text-white" : "text-white/72 hover:text-white",
+                  option.bodyClass
+                )}
+                onClick={() => {
+                  onChange(option.value);
+                  setOpen(false);
+                }}
+              >
+                <span className="min-w-0 truncate text-sm font-black">{option.label}</span>
+                <span className={classNames(
+                  "flex shrink-0 items-center gap-2 rounded-md border px-2 py-1 text-[12px] font-black transition-colors",
+                  selected
+                    ? "border-dlsu-vivid/55 bg-dlsu-vivid/25 text-white"
+                    : "border-white/[0.10] bg-white/[0.045] text-white/55 group-hover/option:text-white/85",
+                  option.headingClass
+                )}>
+                  Aa
+                  {selected && <Check size={12} strokeWidth={3} className="text-dlsu-vivid" />}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -4496,12 +5180,12 @@ function TimeFieldInputs({ parsed, onBlur }: { parsed: { start: string; end: str
     if (s && e) onBlur(`${format24hToAmPm(s)} - ${format24hToAmPm(e)}`);
   };
 
-  const inputCls = "min-h-9 min-w-0 w-full rounded-md border border-white/10 bg-white/[0.03] px-2 text-center text-xs text-white outline-none transition [color-scheme:dark] hover:border-white/20 focus:border-dlsu-vivid";
+  const inputCls = "min-h-9 min-w-0 w-full rounded-lg border border-white/[0.11] bg-white/[0.04] px-2 text-center text-xs font-medium text-white outline-none transition [color-scheme:dark] hover:border-white/[0.22] hover:bg-white/[0.06] focus:border-dlsu-vivid focus:bg-white/[0.055] focus:ring-1 focus:ring-dlsu-vivid/35";
 
   return (
     <div className="min-w-0">
-      <span className="mb-1 block text-[10px] font-bold text-white/40">Time</span>
-      <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-1.5">
+      <span className="mb-1.5 block text-[10px] font-black uppercase tracking-[0.08em] text-white/[0.38]">Time</span>
+      <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2">
         <input
           type="time"
           value={start}
@@ -4509,7 +5193,7 @@ function TimeFieldInputs({ parsed, onBlur }: { parsed: { start: string; end: str
           onBlur={() => emit(start, end)}
           className={inputCls}
         />
-        <span className="shrink-0 text-[10px] font-bold text-white/25">–</span>
+        <span className="shrink-0 text-[10px] font-bold text-white/[0.28]">–</span>
         <input
           type="time"
           value={end}
@@ -4519,6 +5203,34 @@ function TimeFieldInputs({ parsed, onBlur }: { parsed: { start: string; end: str
         />
       </div>
     </div>
+  );
+}
+
+function GlassSwitch({ checked, label, icon: Icon, onChange }: { checked: boolean; label: string; icon: LucideIcon; onChange: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onChange}
+      aria-pressed={checked}
+      className={classNames(
+        "liquid-glass group inline-flex h-9 shrink-0 items-center gap-2 rounded-full border px-2.5 text-[11px] font-black text-white transition-all duration-200 hover:-translate-y-px active:scale-[0.98]",
+        checked
+          ? "border-dlsu-vivid/45 bg-dlsu-vivid/18 shadow-sm shadow-dlsu-vivid/15"
+          : "border-white/[0.12] bg-white/[0.035] text-white/58 hover:border-white/25 hover:text-white/80"
+      )}
+    >
+      <Icon size={13} className={classNames("transition-colors", checked ? "text-dlsu-vivid" : "text-white/45 group-hover:text-white/70")} />
+      <span className="min-w-7 text-left">{label}</span>
+      <span className={classNames(
+        "relative flex h-5 w-9 items-center rounded-full p-0.5 transition-colors duration-200",
+        checked ? "bg-dlsu-vivid" : "bg-white/[0.16]"
+      )}>
+        <span className={classNames(
+          "h-4 w-4 rounded-full bg-white shadow-sm transition-transform duration-200",
+          checked ? "translate-x-4" : "translate-x-0"
+        )} />
+      </span>
+    </button>
   );
 }
 
