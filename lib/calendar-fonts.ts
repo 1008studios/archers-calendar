@@ -8,7 +8,6 @@ export const CALENDAR_FONT_OPTIONS = [
   { value: "raleway", label: "Raleway", bodyClass: "font-raleway", headingClass: "font-raleway" },
   { value: "josefinSans", label: "Josefin Sans", bodyClass: "font-josefin-sans", headingClass: "font-josefin-sans" },
   { value: "workSans", label: "Work Sans", bodyClass: "font-work-sans", headingClass: "font-work-sans" },
-  { value: "bebasNeue", label: "Bebas Neue", bodyClass: "font-bebas-neue", headingClass: "font-bebas-neue" },
   { value: "playfairDisplay", label: "Playfair Display", bodyClass: "font-playfair-display", headingClass: "font-playfair-display" },
   { value: "cormorantGaramond", label: "Cormorant Garamond", bodyClass: "font-cormorant-garamond", headingClass: "font-cormorant-garamond" },
   { value: "comicSans", label: "Comic Sans", bodyClass: "font-comic-sans", headingClass: "font-comic-sans" },

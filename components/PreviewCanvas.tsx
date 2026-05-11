@@ -547,7 +547,7 @@ export default React.memo(function PreviewCanvas({
         <div
           data-calendar-grid="true"
           className={classNames(
-            "relative grid min-h-0 w-full",
+            "relative grid min-h-0 w-full transition-colors duration-300 ease-out",
             wallpaperStyle === "clean" && !isSquareDevice ? "overflow-hidden rounded-[6px] border" : "overflow-visible rounded-none border-l border-t",
             isBorderlessStyle ? "shadow-none" : "shadow-lg",
             gridBg,
@@ -670,11 +670,11 @@ export default React.memo(function PreviewCanvas({
                           key={entry.id}
                           onClick={handleBlockClick}
                           className={classNames(
-                            "group/block relative flex flex-1 flex-col justify-center overflow-hidden transition-all",
+                            "group/block relative flex flex-1 flex-col justify-center overflow-hidden transition-colors duration-300 ease-out",
                             activeStyle.cellStyle,
                             !isSquareDevice ? "cursor-pointer hover:brightness-110 active:scale-[0.98]" : ""
                           )}
-                          style={{ ...courseBlockStyle, padding: sz.blockPad, lineHeight: courseLineHeight }}
+                          style={{ ...courseBlockStyle, padding: sz.blockPad, lineHeight: courseLineHeight, transitionProperty: "background-color, color" }}
                         >
                       <div className="flex min-w-0 items-center gap-1">
                         <p

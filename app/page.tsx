@@ -4876,7 +4876,7 @@ function MainApp() {
             </button>
           </div>
           {sidebarPanelTabs}
-          <div className="flex-1 overscroll-contain overflow-y-auto scrollbar-thin">
+          <div className="flex-1 overscroll-y-contain overflow-y-auto scrollbar-thin" style={{ touchAction: 'pan-y', overscrollBehaviorY: 'contain' }}>
             {controls}
           </div>
         </aside>
@@ -5211,7 +5211,7 @@ function CalendarFontDropdown({ value, onChange }: { value: CalendarFont; onChan
         ref={triggerRef}
         type="button"
         className={classNames(
-          "liquid-glass group flex min-h-11 w-full items-center justify-between gap-3 rounded-lg border border-white/[0.14] px-3 text-left text-white outline-none transition-all hover:-translate-y-px hover:border-white/30 hover:bg-white/[0.08] focus:border-dlsu-vivid focus:ring-1 focus:ring-dlsu-vivid/35",
+          "liquid-glass group flex min-h-11 w-full items-center justify-between gap-3 rounded-lg border border-white/[0.14] px-3 text-left text-white outline-none transition-all hover:border-white/30 hover:bg-white/[0.08] focus:border-dlsu-vivid focus:ring-1 focus:ring-dlsu-vivid/35",
           active.bodyClass
         )}
         aria-haspopup="listbox"
@@ -5240,7 +5240,7 @@ function CalendarFontDropdown({ value, onChange }: { value: CalendarFont; onChan
             width: "max-content",
             maxWidth: "calc(100vw - 2rem)"
           }}
-          className="liquid-glass-strong animate-popover-in z-[2000] max-h-[min(60dvh,420px)] overflow-y-auto rounded-xl border border-white/[0.14] p-1.5 shadow-2xl shadow-black/45 scrollbar-thin"
+          className="liquid-glass-strong animate-popover-in z-[2000] max-h-[min(60dvh,420px)] overflow-y-auto rounded-xl border border-white/[0.14] bg-black/60 backdrop-blur-xl p-1.5 shadow-2xl shadow-black/45 scrollbar-thin"
         >
           {CALENDAR_FONT_OPTIONS.map((option) => {
             const selected = option.value === value;
