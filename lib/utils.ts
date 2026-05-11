@@ -115,7 +115,26 @@ export function buildGeometricBackground(config: GeometricConfig) {
   return `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
 }
 
-export function estimateImageTone(canvas: HTMLCanvasElement) {
+export async function estimateImageTone(source: HTMLCanvasElement | string): Promise<CalendarTone> {
+  let canvas: HTMLCanvasElement;
+  
+  if (typeof source === "string") {
+    const img = new Image();
+    img.src = source;
+    await new Promise((resolve, reject) => {
+      img.onload = resolve;
+      img.onerror = () => reject(new Error("Failed to load image for tone estimation"));
+    });
+    canvas = document.createElement("canvas");
+    canvas.width = img.width;
+    canvas.height = img.height;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return "dark";
+    ctx.drawImage(img, 0, 0);
+  } else {
+    canvas = source;
+  }
+
   const ctx = canvas.getContext("2d");
   if (!ctx) return "dark" as CalendarTone;
   const sampleSize = 24;

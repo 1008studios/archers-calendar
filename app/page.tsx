@@ -122,7 +122,7 @@ const GEOMETRIC_KIND_OPTIONS: Array<{ value: GeometricKind; label: string }> = [
   { value: "blueprint", label: "Blueprint" },
 ];
 
-const GEOMETRIC_PRESETS = [
+const GEOMETRIC_PRESETS: Array<{ name: string; config: Partial<GeometricConfig> }> = [
   { name: "Grid", config: { kind: "grid", size: 1, spacing: 32, opacity: 0.15, dash: 0 } },
   { name: "Dots", config: { kind: "dots", size: 2.5, spacing: 24, opacity: 0.2, dash: 0 } },
   { name: "Blueprint", config: { kind: "blueprint", size: 1.5, spacing: 64, opacity: 0.12, dash: 0 } },
@@ -2855,7 +2855,7 @@ function MainApp() {
         setBackgroundKind("image");
         const isPng = file.type === "image/png" || /\.png$/i.test(file.name);
         setBackgroundImage(isPng ? canvas.toDataURL("image/png") : canvas.toDataURL("image/jpeg", 0.85));
-        setBackgroundTone(estimateImageTone(canvas));
+        void estimateImageTone(canvas).then(setBackgroundTone);
       };
       img.src = e.target?.result as string;
     };
