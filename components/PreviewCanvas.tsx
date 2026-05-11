@@ -485,7 +485,8 @@ export default React.memo(function PreviewCanvas({
         height: canvasSize.height,
         color: "#ffffff",
         borderRadius: canvasRadius,
-        boxShadow: isSquareDevice || isTransparentExport || isBackgroundOnlyExport ? "none" : "0 18px 48px rgba(0,0,0,0.38)"
+        boxShadow: isSquareDevice || isTransparentExport || isBackgroundOnlyExport ? "none" : "0 18px 48px rgba(0,0,0,0.38)",
+        transition: "background-color 300ms ease-out, background-image 300ms ease-out"
       }}
     >
       {!isTransparentExport && <div className="absolute inset-0 bg-black/5" />}
