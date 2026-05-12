@@ -3838,7 +3838,7 @@ function MainApp() {
           </button>
         }
       >
-        <div className="grid grid-cols-2 gap-2 xl:grid-cols-3">
+        <div className="grid grid-cols-3 gap-2 xl:grid-cols-3">
           {COURSE_THEMES.map((theme) => {
             const isActive = JSON.stringify(theme.colors) === JSON.stringify(activeCoursePalette);
             return (
@@ -5107,6 +5107,34 @@ function MainApp() {
 
         {/* Right: preview area */}
         <section className="flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden">
+          {/* Mobile device switcher (Visible at top on mobile) */}
+          <div className={classNames(
+            "liquid-glass-strong pointer-events-auto absolute left-4 right-4 top-4 z-[100] flex items-center justify-between rounded-2xl border border-white/10 p-1.5 shadow-xl shadow-black/30 transition-all duration-300 lg:hidden",
+            isMobileExpanded ? "pointer-events-none opacity-0" : "opacity-100"
+          )}>
+            <div className="flex items-center gap-1.5">
+              {(Object.keys(DEVICES) as DeviceId[]).map((deviceId) => {
+                const DeviceIcon = DEVICES[deviceId].icon;
+                const active = device === deviceId;
+                return (
+                  <button
+                    key={deviceId}
+                    className={classNames(
+                      "grid h-8 w-8 place-items-center rounded-xl transition-all duration-150",
+                      active
+                        ? "bg-dlsu-vivid text-white shadow-lg shadow-dlsu-vivid/20"
+                        : "text-white/[0.42] hover:bg-white/[0.07] hover:text-white/[0.85]"
+                    )}
+                    type="button"
+                    onClick={() => selectDevice(deviceId)}
+                  >
+                    <DeviceIcon size={16} />
+                  </button>
+                );
+              })}
+            </div>
+            <div className="mr-2 text-xs font-black text-white">{activeDevice.label}</div>
+          </div>
 
           {/* Preview — always visible */}
           {/* The canvas is rendered at its real fixed pixel size; a wrapper div
