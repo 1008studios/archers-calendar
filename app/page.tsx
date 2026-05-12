@@ -8,6 +8,7 @@ import dynamic from "next/dynamic";
 import {
   AlignLeft,
   BookOpen,
+  Bug,
   CalendarDays,
   Check,
   ChevronDown,
@@ -23,6 +24,7 @@ import {
   MapPin,
   Monitor,
   Moon,
+  Move,
   Palette,
   Pencil,
   Plus,
@@ -35,8 +37,7 @@ import {
   UserRound,
   Wand2,
   FileInput,
-  Link2,
-  X
+  Link2
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { EmojiClickData, PickerProps } from "emoji-picker-react";
@@ -284,11 +285,11 @@ Time Slot	Mon 04/05	Tue 05/05	Wed 06/05	Thu 07/05	Fri 08/05	Sat 09/05	Sun 10/05
 type DeviceId = "iphone" | "ipad_portrait" | "ipad_landscape" | "laptop" | "macbook" | "share";
 
 const DEVICES: Record<DeviceId, { label: string; aspect: string; ratio: number; icon: LucideIcon; description: string }> = {
-  iphone:         { label: "iPhone",   aspect: "9 / 19.5",   ratio: 9 / 19.5,   icon: Smartphone,      description: "9:19.5 Portrait"  },
-  ipad_portrait:  { label: "iPad",     aspect: "3 / 4",      ratio: 3 / 4,      icon: Tablet,          description: "3:4 Portrait"     },
-  ipad_landscape: { label: "iPad",     aspect: "4 / 3",      ratio: 4 / 3,      icon: Tablet,          description: "4:3 Landscape"    },
-  laptop:         { label: "Laptop",   aspect: "16 / 9",     ratio: 16 / 9,     icon: Laptop,          description: "16:9 Widescreen"  },
-  macbook:        { label: "Laptop",   aspect: "1440 / 900",  ratio: 1440 / 900, icon: Monitor,         description: "16:10 Display"    },
+  iphone:         { label: "iPhone", aspect: "9 / 19.5",   ratio: 9 / 19.5,   icon: Smartphone,      description: "Portrait"         },
+  ipad_portrait:  { label: "iPad Portrait", aspect: "3 / 4",      ratio: 3 / 4,      icon: Tablet,          description: "3:4"              },
+  ipad_landscape: { label: "iPad Landscape", aspect: "4 / 3",     ratio: 4 / 3,      icon: Tablet,          description: "4:3"              },
+  laptop:         { label: "Laptop 16:9",   aspect: "16 / 9",     ratio: 16 / 9,     icon: Laptop,          description: "Widescreen"       },
+  macbook:        { label: "MacBook 16:10", aspect: "1440 / 900",  ratio: 1440 / 900, icon: Monitor,         description: "Display"          },
   share:          { label: "Square",   aspect: "1 / 1",      ratio: 1,          icon: ImageIcon,       description: "1:1"              }
 };
 
@@ -564,6 +565,8 @@ const COURSE_THEMES: Array<{ name: string; colors: string[] }> = [
   { name: "Neon",       colors: ["#00FF88","#00D4FF","#FF6B6B","#FFD700","#FF00CC","#7C3AFF","#00E5FF","#FF8C00","#39FF14","#FF2079","#F5FF00","#00FFC6"] },
   { name: "Aurora",     colors: ["#C084FC","#60A5FA","#34D399","#F472B6","#A78BFA","#22D3EE","#86EFAC","#F0ABFC","#818CF8","#2DD4BF","#E879F9","#7DD3FC"] },
   { name: "Sorbet",     colors: ["#FECACA","#FED7AA","#FEF3C7","#D9F99D","#BBF7D0","#BAE6FD","#DDD6FE","#FBCFE8","#FDBA74","#F9A8D4","#C4B5FD","#A7F3D0"] },
+  { name: "Gelato",     colors: ["#FFE4E6","#FED7AA","#FEF9C3","#DCFCE7","#CCFBF1","#DBEAFE","#EDE9FE","#FAE8FF","#FBCFE8","#BFDBFE","#C7D2FE","#BBF7D0"] },
+  { name: "Macaron",    colors: ["#FDE2E4","#FAD2E1","#E2ECE9","#BEE1E6","#D8E2DC","#CDEAC0","#FFF1BD","#FFD6A5","#CDB4DB","#BDE0FE","#A2D2FF","#FFC8DD"] },
   { name: "Retro",      colors: ["#F4A261","#E76F51","#2A9D8F","#E9C46A","#264653","#DDA15E","#BC6C25","#606C38","#283618","#A3B18A","#588157","#E5989B"] },
   { name: "Cafe",       colors: ["#F5E0C3","#E6CCB2","#DDB892","#B08968","#7F5539","#9C6644","#C2A383","#A98467","#6F4E37","#D6AD8B","#8B5E34","#FFF1D6"] },
   { name: "Jewel",      colors: ["#0F766E","#047857","#1D4ED8","#4338CA","#7E22CE","#BE185D","#B91C1C","#B45309","#065F46","#1E40AF","#6D28D9","#9D174D"] },
@@ -712,6 +715,15 @@ const GRADIENT_PRESETS: Array<{ name: string; gradient: GradientConfig }> = [
   { name: "Black", gradient: { type: "radial", colors: ["#333333", "#000000"], angle: 0, position: "center", preset: "Black" } }
 ];
 
+const AUTO_BACKGROUND_EMOJIS = ["✨", "💚", "🌿", "🏹", "📚", "⭐", "🎧", "🪩", "☁️", "🌸"];
+const AUTO_LINE_PRESETS: GeometricConfig[] = [
+  { kind: "dots", color: "#FFFFFF", size: 2, spacing: 28, opacity: 0.18, dash: 0 },
+  { kind: "grid", color: "#A7F3D0", size: 1, spacing: 38, opacity: 0.14, dash: 0 },
+  { kind: "lines", color: "#FFFFFF", size: 1.2, spacing: 34, opacity: 0.12, dash: 8 },
+  { kind: "plus", color: "#008C4D", size: 1.6, spacing: 44, opacity: 0.2, dash: 0 },
+  { kind: "blueprint", color: "#67E8F9", size: 1, spacing: 62, opacity: 0.14, dash: 0 }
+];
+
 const PATTERN_PRESETS: Array<{ value: PatternPreset; label: string }> = [
   { value: "grid", label: "Grid" },
   { value: "diagonal", label: "Diagonal" }
@@ -804,6 +816,32 @@ const DEFAULT_VISIBLE_DAYS: Record<DayKey, boolean> = {
   Mon: true, Tue: true, Wed: true, Thu: true, Fri: true, Sat: true, Sun: false
 };
 // Sunday is never shown — DLSU schedules don't use it
+
+type AnalyticsProps = Record<string, string | number | boolean | undefined>;
+
+function trackAppEvent(event: string, props: AnalyticsProps = {}) {
+  if (typeof window === "undefined") return;
+
+  const body = JSON.stringify({ event, props });
+  const url = "/api/analytics";
+
+  try {
+    if (navigator.sendBeacon) {
+      const blob = new Blob([body], { type: "application/json" });
+      navigator.sendBeacon(url, blob);
+      return;
+    }
+  } catch {
+    // Fall back to fetch below.
+  }
+
+  fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body,
+    keepalive: true
+  }).catch(() => undefined);
+}
 
 // Canonical day pairs — courses that share the same code across these pairs are treated as one subject
 const DAY_PAIRS: DayKey[][] = [["Mon", "Thu"], ["Tue", "Fri"], ["Wed", "Sat"]];
@@ -1595,7 +1633,6 @@ function MainApp() {
   const [hasLoadedLocalSchedule, setHasLoadedLocalSchedule] = useState(false);
   const [activeCreationId, setActiveCreationId] = useState("");
   const [activeCreationCreatedAt, setActiveCreationCreatedAt] = useState(() => Date.now());
-  const [showBetaPopup, setShowBetaPopup] = useState(false);
   const [openDaysDropdown, setOpenDaysDropdown] = useState(false);
   const [openSlotDropdownId, setOpenSlotDropdownId] = useState<string | null>(null);
   const [previewScale, setPreviewScale] = useState(1);
@@ -1622,18 +1659,12 @@ function MainApp() {
   const [manipulation, setManipulation] = useState<{ type: ManipulationType } | null>(null);
   const dragStartRef = useRef<ManipulationDragStart>({ x: 0, y: 0, ox: 0, oy: 0, osx: 3, osy: 3, frameWidth: 0, frameHeight: 0, gridWidth: 0, gridHeight: 0 });
   const [showManipulationHint, setShowManipulationHint] = useState(false);
+  const sessionStartedAtRef = useRef(Date.now());
+  const trackedSettingsRef = useRef({ device: "", font: "", background: "", courseTheme: "" });
 
   useEffect(() => {
-    setSelectedExportDevices(new Set([device]));
-  }, [device, setSelectedExportDevices]);
-  useEffect(() => {
-    const hasSeenBeta = sessionStorage.getItem("archers_calendar_beta_seen");
-    if (!hasSeenBeta) {
-      sessionStorage.setItem("archers_calendar_beta_seen", "true");
-      const timer = window.setTimeout(() => setShowBetaPopup(true), 0);
-      return () => window.clearTimeout(timer);
-    }
-  }, []);
+    if (!isExporting) setSelectedExportDevices(new Set([device]));
+  }, [device, isExporting, setSelectedExportDevices]);
 
   useEffect(() => {
     if (typeof window !== "undefined" && !sessionStorage.getItem("archers_manipulation_hud_v2")) {
@@ -1817,6 +1848,85 @@ function MainApp() {
     return () => window.clearTimeout(timer);
   }, [designShareNotice]);
 
+  useEffect(() => {
+    if (!hasLoadedLocalSchedule) return;
+
+    trackAppEvent("app_open", {
+      device,
+      font: calendarFont,
+      backgroundKind,
+      backgroundTone,
+      appTheme
+    });
+
+    const sendDuration = () => {
+      const seconds = Math.max(0, Math.round((Date.now() - sessionStartedAtRef.current) / 1000));
+      trackAppEvent("session_duration", { seconds });
+    };
+
+    window.addEventListener("pagehide", sendDuration);
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "hidden") sendDuration();
+    }, { once: true });
+
+    return () => {
+      window.removeEventListener("pagehide", sendDuration);
+    };
+  }, [hasLoadedLocalSchedule]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (!hasLoadedLocalSchedule) return;
+
+    const backgroundKey = [
+      backgroundKind,
+      backgroundTone,
+      backgroundKind === "gradient" ? `${gradient.type}:${gradient.preset || gradient.colors.join("/")}` : "",
+      backgroundKind === "solid" ? background : "",
+      emojiOverlayEnabled ? `emoji:${pattern.emoji}:${pattern.preset}` : "",
+      lineOverlayEnabled ? `line:${geometric.kind}` : ""
+    ].join("|");
+    const courseTheme = COURSE_THEMES.find((theme) => JSON.stringify(theme.colors) === JSON.stringify(activeCoursePalette))?.name || "Custom";
+
+    if (trackedSettingsRef.current.device && trackedSettingsRef.current.device !== device) {
+      trackAppEvent("device_selected", { device });
+    }
+    if (trackedSettingsRef.current.font && trackedSettingsRef.current.font !== calendarFont) {
+      trackAppEvent("font_selected", { font: calendarFont });
+    }
+    if (trackedSettingsRef.current.background && trackedSettingsRef.current.background !== backgroundKey) {
+      trackAppEvent("background_selected", {
+        backgroundKind,
+        backgroundTone,
+        gradientPreset: gradient.preset || "",
+        lineKind: lineOverlayEnabled ? geometric.kind : "",
+        emoji: emojiOverlayEnabled ? pattern.emoji : ""
+      });
+    }
+    if (trackedSettingsRef.current.courseTheme && trackedSettingsRef.current.courseTheme !== courseTheme) {
+      trackAppEvent("course_theme_selected", { courseTheme });
+    }
+
+    trackedSettingsRef.current = {
+      device,
+      font: calendarFont,
+      background: backgroundKey,
+      courseTheme
+    };
+  }, [
+    hasLoadedLocalSchedule,
+    device,
+    calendarFont,
+    backgroundKind,
+    backgroundTone,
+    background,
+    gradient,
+    geometric,
+    pattern,
+    emojiOverlayEnabled,
+    lineOverlayEnabled,
+    activeCoursePalette
+  ]);
+
   const activeDevice = DEVICES[device];
   const activeStyle = STYLE_PRESETS[wallpaperStyle];
   const headerStyleClass = activeStyle.headerFont.replace(/\bfont-(?:sans|serif|mono)\b/g, "").trim();
@@ -1839,9 +1949,9 @@ function MainApp() {
       const verticalPadding = parseFloat(styles.paddingTop) + parseFloat(styles.paddingBottom);
       const availableWidth = Math.max(0, rect.width - horizontalPadding);
       const availableHeight = Math.max(0, rect.height - verticalPadding);
-      const gap = 48;
+      const gap = rect.width < 900 || rect.height < 640 ? 12 : 32;
       const scale = Math.min((availableWidth - gap) / fw, (availableHeight - gap) / fh);
-      setPreviewScale(Math.max(0.08, scale));
+      setPreviewScale(Math.max(0.045, scale));
     };
     compute();
     const ro = new ResizeObserver(compute);
@@ -1886,9 +1996,9 @@ function MainApp() {
   }, [visibleEntries]);
 
   const manipulationDensityFactor = useMemo(() => {
-    const slotImpact = Math.max(0, timeSlots.length - 6) * 0.035;
-    const entryImpact = Math.max(0, visibleEntries.length - 8) * 0.018;
-    return Math.max(0.45, Math.min(1.0, 1.0 - slotImpact - entryImpact));
+    const slotImpact = Math.max(0, timeSlots.length - 5) * 0.052;
+    const entryImpact = Math.max(0, visibleEntries.length - 8) * 0.026;
+    return Math.max(0.34, Math.min(1.0, 1.0 - slotImpact - entryImpact));
   }, [timeSlots.length, visibleEntries.length]);
 
   const entriesByCell = useMemo(() => {
@@ -1955,7 +2065,7 @@ function MainApp() {
   const selectedExportLabel = selectedExportCount === COMMON_EXPORT_DEVICES.length
     ? "All formats selected"
     : selectedExportCount === 1
-    ? "1 format selected"
+    ? EXPORT_DEVICE_LABELS[Array.from(selectedExportDevices)[0]]
     : `${selectedExportCount} formats selected`;
   const ActiveExportIcon = activeExportVariant.icon;
   const ActiveDeviceIcon = activeDevice.icon;
@@ -2313,6 +2423,99 @@ function MainApp() {
     updateGradient({ colors });
   }
 
+  function selectDevice(nextDevice: DeviceId) {
+    setDevice(nextDevice);
+    setSelectedExportDevices(new Set([nextDevice]));
+    trackAppEvent("device_selected", { device: nextDevice });
+  }
+
+  function getCourseThemeByName(name: string) {
+    return COURSE_THEMES.find((theme) => theme.name === name) ?? COURSE_THEMES[0];
+  }
+
+  function getBackgroundAwareCourseThemeForTone(tone: CalendarTone) {
+    if (tone === "dark") {
+      const choices = ["Gelato", "Macaron", "Sorbet", "Pastel", "Blossom"];
+      return getCourseThemeByName(choices[Math.floor(Math.random() * choices.length)]);
+    }
+
+    const choices = ["Jewel", "Campus", "Forest", "Berry", "Dusk"];
+    return getCourseThemeByName(choices[Math.floor(Math.random() * choices.length)]);
+  }
+
+  function getBackgroundAwareCourseTheme() {
+    const tone = backgroundKind === "gradient"
+      ? toneFromColors(gradient.colors)
+      : backgroundKind === "image"
+      ? backgroundTone
+      : toneFromHex(background);
+
+    return getBackgroundAwareCourseThemeForTone(tone);
+  }
+
+  function autoColorCoursesForBackground() {
+    const theme = getBackgroundAwareCourseTheme();
+    setActiveCoursePalette(theme.colors);
+    setEntries((current) => autoColorByCourse(current, theme.colors));
+    trackAppEvent("auto_course_colors", {
+      courseTheme: theme.name,
+      backgroundKind,
+      backgroundTone
+    });
+  }
+
+  function applyAutoBackground() {
+    const mode = (["gradient", "lines", "emoji"] as const)[Math.floor(Math.random() * 3)];
+    const preset = GRADIENT_PRESETS[Math.floor(Math.random() * GRADIENT_PRESETS.length)];
+    const nextGradient = normalizeGradientConfig({
+      ...preset.gradient,
+      angle: preset.gradient.type === "linear" ? Math.floor(95 + Math.random() * 90) : preset.gradient.angle
+    });
+    const nextTone = toneFromColors(nextGradient.colors);
+
+    setBackgroundKind("gradient");
+    setGradient(nextGradient);
+    setBackground(nextGradient.colors[0]);
+    setBackgroundImage("");
+    setBackgroundTone(nextTone);
+
+    if (mode === "lines") {
+      const nextLine = AUTO_LINE_PRESETS[Math.floor(Math.random() * AUTO_LINE_PRESETS.length)];
+      setLineOverlayEnabled(true);
+      setEmojiOverlayEnabled(false);
+      setGeometric(nextLine);
+      setBackgroundSubTab("lines");
+    } else if (mode === "emoji") {
+      const nextEmoji = AUTO_BACKGROUND_EMOJIS[Math.floor(Math.random() * AUTO_BACKGROUND_EMOJIS.length)];
+      setEmojiOverlayEnabled(true);
+      setLineOverlayEnabled(false);
+      setPattern((current) => ({
+        ...current,
+        emoji: nextEmoji,
+        preset: Math.random() > 0.45 ? "diagonal" : "grid",
+        size: 120 + Math.floor(Math.random() * 82),
+        spacing: 120 + Math.floor(Math.random() * 86),
+        opacity: 0.1 + Math.random() * 0.12
+      }));
+      setBackgroundSubTab("emoji");
+    } else {
+      setEmojiOverlayEnabled(false);
+      setLineOverlayEnabled(false);
+      setBackgroundSubTab("base");
+    }
+
+    const courseTheme = getBackgroundAwareCourseThemeForTone(nextTone);
+    setActiveCoursePalette(courseTheme.colors);
+    setEntries((current) => autoColorByCourse(current, courseTheme.colors));
+
+    trackAppEvent("auto_background", {
+      mode,
+      gradientPreset: preset.name,
+      backgroundTone: nextTone,
+      courseTheme: courseTheme.name
+    });
+  }
+
   function applyPatternPreset(preset: PatternPreset) {
     setPattern((current) => ({ ...current, preset }));
   }
@@ -2583,11 +2786,8 @@ function MainApp() {
     setManipulation(null);
     document.body.style.cursor = "";
 
-    // Save locally
-    if (!sessionStorage.getItem("archers_manipulation_hud_v2")) {
-      setShowManipulationHint(false);
-      sessionStorage.setItem("archers_calendar_manipulation_hint", "true");
-    }
+    setShowManipulationHint(false);
+    sessionStorage.setItem("archers_manipulation_hud_v2", "true");
   };
   async function duplicateSavedCopy(snapshot: SavedScheduleSnapshot) {
     const now = Date.now();
@@ -2669,11 +2869,13 @@ function MainApp() {
       if (localImport.entries.length && !localImport.shouldUseAi) {
         applyParsedEntries(localImport.entries);
         setImportSource("local");
+        trackAppEvent("parse_success", { source: "local", entries: localImport.entries.length });
         return;
       }
 
       if (!localImport.scheduleLike) {
         setImportError(localImport.message ?? "No schedule details found in the pasted text.");
+        trackAppEvent("parse_failed", { reason: "not_schedule_like" });
         return;
       }
 
@@ -2694,19 +2896,23 @@ function MainApp() {
         applyParsedEntries(parsed);
         setImportSource(result.source ?? "local");
         if (result.message) setImportError(result.message);
+        trackAppEvent("parse_success", { source: result.source ?? "local", entries: parsed.length });
         return;
       }
 
       setImportError(result.message ?? "No classes were found in the pasted schedule.");
+      trackAppEvent("parse_failed", { reason: "empty_result" });
     } catch (error) {
       if (localImport.entries.length) {
         applyParsedEntries(localImport.entries);
         setImportSource("local");
         setImportError("Compatibility Layer was unavailable, so the local import was used.");
+        trackAppEvent("parse_success", { source: "local_fallback", entries: localImport.entries.length });
         return;
       }
 
       setImportError(error instanceof Error ? error.message : "Import failed.");
+      trackAppEvent("parse_failed", { reason: "request_failed" });
     } finally {
       clearInterval(progressInterval);
       setIsParsing(false);
@@ -2728,6 +2934,7 @@ function MainApp() {
     if (parsed.length) {
       applyParsedEntries(parsed);
       setImportSource("local");
+      trackAppEvent("parse_success", { source: "paste", entries: parsed.length });
     }
   }
 
@@ -2827,15 +3034,6 @@ function MainApp() {
     setExpandedCourses((current) => new Set(current).add(newCourseKey));
     setMobileTab("start");
     setDesktopPanel("start");
-  }
-
-  function focusImportBox() {
-    setShowBetaPopup(false);
-    setMobileTab("start");
-    setDesktopPanel("start");
-    window.setTimeout(() => {
-      desktopImportTextAreaRef.current?.focus();
-    }, 50);
   }
 
   function toggleDay(day: DayKey) {
@@ -3049,6 +3247,7 @@ function MainApp() {
       const exportedCanvas = await captureExportCanvas(canvasRef.current, canvasSize, EXPORT_SCALE);
       setExportProgress({ label: `Saving ${EXPORT_DEVICE_LABELS[device]}`, current: 1, total: 1 });
       const delivery = await downloadCanvas(exportedCanvas, makeExportFilename(device, getExportVariantSuffix()));
+      trackAppEvent("export_completed", { device, exportVariant, count: 1, delivery });
       if (delivery !== "native" && !shouldUseNativeSaveSheet()) setTimeout(triggerShare, 500);
     } finally {
       setIsExporting(false);
@@ -3072,6 +3271,7 @@ function MainApp() {
           const exported = await captureExportCanvas(canvasRef.current, CANVAS_SIZES[deviceId], EXPORT_SCALE);
           setExportProgress({ label: `Saving ${EXPORT_DEVICE_LABELS[deviceId]}`, current: 1, total: 1 });
           const delivery = await downloadCanvas(exported, makeExportFilename(deviceId, getExportVariantSuffix()));
+          trackAppEvent("export_completed", { device: deviceId, exportVariant, count: 1, delivery });
           if (delivery !== "native" && !shouldUseNativeSaveSheet()) setTimeout(triggerShare, 500);
         }
       } else {
@@ -3098,6 +3298,7 @@ function MainApp() {
         link.download = "archers-calendar.zip";
         link.click();
         window.setTimeout(() => URL.revokeObjectURL(link.href), 2000);
+        trackAppEvent("export_completed", { device: "multi", exportVariant, count: deviceIds.length, delivery: "zip" });
       }
       if (deviceIds.length > 1) setTimeout(triggerShare, 500);
     } finally {
@@ -3217,9 +3418,10 @@ function MainApp() {
     );
   }
 
-  function applyColorTheme(colors: string[]) {
+  function applyColorTheme(colors: string[], name = "Custom") {
     setActiveCoursePalette(colors);
     applyCoursePalette(colors);
+    trackAppEvent("course_theme_selected", { courseTheme: name });
   }
 
   function updateCourseCode(oldCode: string, newCode: string) {
@@ -3412,7 +3614,7 @@ function MainApp() {
             </div>
           </div>
 
-          <div className="sticky bottom-0 flex gap-2 border-t border-white/[0.07] bg-[#0B100D]/88 p-3 backdrop-blur-xl">
+          <div className="archers-save-footer sticky bottom-0 flex gap-2 border-t border-white/[0.07] bg-[#0B100D]/88 p-3 backdrop-blur-xl">
             <button
               type="button"
               className="flex-1 rounded-lg border border-white/10 py-2.5 text-sm font-bold text-white/60 transition hover:bg-white/[0.06] hover:text-white disabled:pointer-events-none disabled:opacity-45"
@@ -3629,7 +3831,7 @@ function MainApp() {
             type="button"
             title="Auto-color courses"
             aria-label="Auto-color courses"
-            onClick={() => setEntries((current) => autoColorByCourse(current, activeCoursePalette))}
+            onClick={autoColorCoursesForBackground}
           >
             <Wand2 size={14} strokeWidth={2.5} />
             Auto
@@ -3649,7 +3851,7 @@ function MainApp() {
                     ? "border-dlsu-vivid/70 shadow-sm shadow-dlsu-vivid/20"
                     : "border-white/[0.12] hover:border-white/25 hover:bg-white/[0.055]"
                 )}
-                onClick={() => applyColorTheme(theme.colors)}
+                onClick={() => applyColorTheme(theme.colors, theme.name)}
               >
                 <div className="flex h-2.5 overflow-hidden">
                   {theme.colors.map((color, index) => (
@@ -3681,25 +3883,25 @@ function MainApp() {
 
     return (
       <>
-        <div className="grid grid-cols-1 gap-3 min-[340px]:grid-cols-2">
+        <div className="grid grid-cols-1 gap-2 min-[340px]:grid-cols-2">
           <Field label="Name" value={calendarTitle} onChange={setCalendarTitle} placeholder="e.g. Richard" />
           <Field label="Term" value={calendarSubtitle} onChange={setCalendarSubtitle} placeholder="e.g. Term 3" />
         </div>
         <div>
-          <SectionLabel className="mb-2">Header</SectionLabel>
-          <div className="grid grid-cols-1 gap-2 min-[340px]:grid-cols-2">
+          <SectionLabel className="mb-1.5">Header</SectionLabel>
+          <div className="grid grid-cols-2 gap-1.5">
             <Toggle compact checked={showCalendarTitle} icon={UserRound} label="Name" onChange={() => setShowCalendarTitle(!showCalendarTitle)} />
             <Toggle compact checked={showCalendarSubtitle} icon={Hash} label="Term" onChange={() => setShowCalendarSubtitle(!showCalendarSubtitle)} />
           </div>
         </div>
-        <div className="space-y-4">
+        <div className="space-y-3">
           <div>
-            <SectionLabel className="mb-2">Visible Days</SectionLabel>
-            <div className="grid grid-cols-1 gap-2 min-[340px]:grid-cols-2">
+            <SectionLabel className="mb-1.5">Visible Days</SectionLabel>
+            <div className="grid grid-cols-1 gap-1.5 min-[340px]:grid-cols-2">
               <div className="relative">
                 <button
                   onClick={() => setOpenDaysDropdown(!openDaysDropdown)}
-                  className="group flex min-h-11 w-full items-center justify-between gap-3 rounded-lg border border-white/[0.12] bg-white/[0.035] px-3 text-xs font-bold text-white shadow-sm outline-none transition-all hover:border-white/25 hover:bg-white/[0.055] focus:border-dlsu-vivid"
+                  className="group flex min-h-9 w-full items-center justify-between gap-2 rounded-lg border border-white/[0.12] bg-white/[0.035] px-2.5 text-[11px] font-bold text-white shadow-sm outline-none transition-all hover:border-white/25 hover:bg-white/[0.055] focus:border-dlsu-vivid"
                 >
                   <span className="flex min-w-0 items-center gap-2 overflow-hidden">
                     <CalendarDays size={14} className="shrink-0 text-white/50 transition-colors group-hover:text-white/75" />
@@ -3726,8 +3928,8 @@ function MainApp() {
             </div>
           </div>
           <div>
-            <SectionLabel className="mb-2">Cell Details</SectionLabel>
-            <div className="grid grid-cols-1 gap-2 min-[340px]:grid-cols-2">
+            <SectionLabel className="mb-1.5">Cell Details</SectionLabel>
+            <div className="grid grid-cols-2 gap-1.5">
               <Toggle compact checked={showCourseTitle} icon={AlignLeft}  label="Title" onChange={() => setShowCourseTitle(!showCourseTitle)} />
               <Toggle compact checked={showRoom}        icon={MapPin}     label="Room"         onChange={() => setShowRoom(!showRoom)} />
               <Toggle compact checked={showProfessor}   icon={UserRound}  label="Teacher"      onChange={() => setShowProfessor(!showProfessor)} />
@@ -3837,7 +4039,7 @@ function MainApp() {
           }
         >
         {groupedCourses.length ? (
-          <div className="space-y-1.5">
+          <div className="space-y-1">
             {groupedCourses.map((course) => {
               const courseKey = courseKeyFromCode(course.code);
               const isExpanded = expandedCourses.has(courseKey);
@@ -3860,7 +4062,7 @@ function MainApp() {
                     isJustAdded ? "animate-added-row ring-1 ring-dlsu-vivid/40" : ""
                   )}
                 >
-                  <div className="flex items-center gap-1.5 border-white/[0.06] p-1.5">
+                  <div className="flex items-center gap-1 border-white/[0.06] p-1">
                     <button
                       type="button"
                       className="group flex min-w-0 flex-1 items-center gap-2 rounded-lg px-2 py-1 text-left transition-colors duration-150 hover:bg-white/[0.045]"
@@ -3868,21 +4070,21 @@ function MainApp() {
                     >
                       <div className="relative shrink-0">
                         <span
-                          className="block h-8 w-1.5 rounded-full border border-black/20 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.16)]"
+                          className="block h-7 w-1.5 rounded-full border border-black/20 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.16)]"
                           style={{ backgroundColor: course.color }}
                         />
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex min-w-0 items-center gap-2">
-                          <p className="truncate text-[13px] font-black leading-tight text-white">{displayCode}</p>
+                          <p className="truncate text-[12px] font-black leading-tight text-white">{displayCode}</p>
                           {course.emoji && (
-                            <span className="shrink-0 text-[13px] leading-none" aria-hidden="true">
+                            <span className="shrink-0 text-[12px] leading-none" aria-hidden="true">
                               {course.emoji}
                             </span>
                           )}
                         </div>
                         {course.title && (
-                          <p className="mt-0.5 line-clamp-1 text-[10px] font-semibold leading-snug text-white/45">{course.title}</p>
+                          <p className="mt-0.5 line-clamp-1 text-[9.5px] font-semibold leading-snug text-white/45">{course.title}</p>
                         )}
                       </div>
                       <ChevronDown
@@ -3904,13 +4106,13 @@ function MainApp() {
                   </div>
 
                   {isExpanded && (
-                    <div className="space-y-2 border-t border-white/[0.06] p-2">
-                      <div className="rounded-lg border border-white/[0.07] bg-black/[0.10] p-2">
+                    <div className="space-y-1.5 border-t border-white/[0.06] p-1.5">
+                      <div className="rounded-lg border border-white/[0.07] bg-black/[0.10] p-1.5">
                         <div className="mb-1.5 flex items-center justify-between gap-3">
                           <p className="text-[10px] font-black uppercase tracking-[0.14em] text-white/35">Schedule</p>
                           <p className="truncate text-[10px] font-bold text-white/[0.28]">{course.slots.length} {course.slots.length === 1 ? "meeting" : "meetings"}</p>
                         </div>
-                        <div className="space-y-1.5">
+                        <div className="space-y-1">
                         {course.slots.map((slot) => {
                           const slotId = `${course.code}-${slot.timeSlot}-${slot.days.join("")}`;
                           const isDropdownOpen = openSlotDropdownId === slotId;
@@ -3918,7 +4120,7 @@ function MainApp() {
 	                          return (
 	                            <div
 	                              key={slotId}
-	                              className="grid grid-cols-1 gap-2 rounded-lg border border-white/[0.08] bg-white/[0.025] p-2"
+	                              className="grid grid-cols-1 gap-1.5 rounded-lg border border-white/[0.08] bg-white/[0.025] p-1.5"
 	                            >
                               <div className="space-y-1">
                                 <span className="block text-[10px] font-black uppercase tracking-[0.08em] text-white/[0.38]">Days</span>
@@ -3964,7 +4166,7 @@ function MainApp() {
                         </div>
                       </div>
 
-	                      <div className="grid grid-cols-2 gap-2 rounded-lg border border-white/[0.07] bg-black/[0.10] p-2 xl:grid-cols-3">
+	                      <div className="grid grid-cols-2 gap-1.5 rounded-lg border border-white/[0.07] bg-black/[0.10] p-1.5 xl:grid-cols-3">
 	                        <p className="col-span-2 text-[10px] font-black uppercase tracking-[0.14em] text-white/35 xl:col-span-3">Details</p>
 	                        <CourseField
 	                          label="Code"
@@ -3994,7 +4196,7 @@ function MainApp() {
 	                        />
 	                      </div>
 
-                      <div className="space-y-2 rounded-lg border border-white/[0.07] bg-black/[0.10] p-2">
+                      <div className="space-y-1.5 rounded-lg border border-white/[0.07] bg-black/[0.10] p-1.5">
                         <p className="text-[10px] font-black uppercase tracking-[0.14em] text-white/35">Appearance</p>
                         <div className="space-y-2">
                           <p className="text-[10px] font-black uppercase tracking-[0.1em] text-white/[0.38]">Color</p>
@@ -4360,7 +4562,7 @@ function MainApp() {
                   type="button"
                   title={DEVICES[deviceId].label}
                   aria-label={DEVICES[deviceId].label}
-                  onClick={() => setDevice(deviceId)}
+                  onClick={() => selectDevice(deviceId)}
                 >
                   <DeviceIcon size={15} strokeWidth={active ? 2.5 : 2} />
                 </button>
@@ -4371,11 +4573,23 @@ function MainApp() {
 
         {/* Background */}
         <div className="order-6">
-          <ControlGroup title="Background">
+          <ControlGroup
+            title="Background"
+            action={
+              <button
+                type="button"
+                className="flex h-8 items-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.04] px-2.5 text-[10px] font-black text-white/70 transition-all hover:border-white/25 hover:bg-white/[0.08] hover:text-white"
+                onClick={applyAutoBackground}
+              >
+                <Wand2 size={13} strokeWidth={2.5} />
+                Auto
+              </button>
+            }
+          >
             {/* ── Sub-tabs for Background customization ── */}
             <div className="mb-4 grid grid-cols-3 gap-1 rounded-lg border border-white/[0.10] bg-white/[0.045] p-1">
               {([
-                { id: "base",  label: "Base",  icon: ImageIcon },
+                { id: "base",  label: "Base",  icon: Palette },
                 { id: "emoji", label: "Emoji", icon: Sparkles },
                 { id: "lines", label: "Lines", icon: Layers    },
               ] as { id: "base" | "emoji" | "lines"; label: string; icon: LucideIcon }[]).map(({ id, label, icon: TabIcon }) => (
@@ -4781,8 +4995,19 @@ function MainApp() {
 
   // ── Page ───────────────────────────────────────────────────────────────────
   return (
-    <main data-app-theme={appTheme} className="h-dvh w-full overflow-hidden bg-[#080B09] text-white">
+    <main data-app-theme={appTheme} className="archers-app h-dvh w-full overflow-hidden bg-[#080B09] text-white">
       <ExportOverlay />
+      <a
+        data-export-hidden="true"
+        href="https://instagram.com/richarduaje"
+        target="_blank"
+        rel="noreferrer"
+        className="liquid-glass-strong fixed bottom-[calc(env(safe-area-inset-bottom)+5rem)] right-3 z-40 flex items-center gap-2 rounded-full border border-white/10 px-3 py-2 text-[11px] font-black text-white/75 shadow-xl shadow-black/30 transition hover:border-dlsu-vivid/45 hover:bg-dlsu-vivid/15 hover:text-white lg:bottom-5 lg:right-5"
+        onClick={() => trackAppEvent("bug_report_click", { target: "instagram" })}
+      >
+        <Bug size={13} strokeWidth={2.5} />
+        <span>Report Bugs @richarduaje</span>
+      </a>
 
       {pendingDeleteSaved && (
         <div
@@ -4889,10 +5114,7 @@ function MainApp() {
               so the preview is pixel-perfect with the export output */}
           <div
             ref={previewContainerRef}
-            className={classNames(
-              "relative flex min-h-0 flex-1 items-center justify-center overflow-hidden p-4 md:p-6 lg:p-8",
-              device !== "share" ? "lg:cursor-grab" : ""
-            )}
+            className="relative flex min-h-0 flex-1 items-center justify-center overflow-hidden p-4 md:p-6 lg:p-8"
             onClick={() => { if (isMobileExpanded) setIsMobileExpanded(false); }}
             onTouchStart={(e) => {
               const touch = e.targetTouches[0];
@@ -4908,15 +5130,15 @@ function MainApp() {
               }
             }}
           >
-            <div data-export-hidden="true" className="pointer-events-none absolute left-5 right-5 top-5 z-30 hidden items-start justify-between gap-3 lg:flex">
-              <div className="liquid-glass-strong pointer-events-auto rounded-2xl border border-white/10 px-4 py-3 shadow-xl shadow-black/30">
+            <div data-export-hidden="true" className="pointer-events-none absolute inset-x-5 top-5 z-30 hidden lg:block">
+              <div className="liquid-glass-strong pointer-events-auto absolute left-0 top-0 rounded-2xl border border-white/10 px-4 py-3 shadow-xl shadow-black/30">
                 <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-white/[0.38]">Live preview</p>
                 <h2 className="mt-0.5 text-base font-black leading-none text-white">
-                  {activeDevice.label} <span className="font-medium text-white/40">{activeDevice.description}</span>
+                  {activeDevice.label}
                 </h2>
               </div>
 
-              <div className="liquid-glass-strong pointer-events-auto flex items-center gap-2 rounded-2xl border border-white/10 p-1.5 shadow-xl shadow-black/30">
+              <div className="liquid-glass-strong pointer-events-auto absolute left-1/2 top-0 flex -translate-x-1/2 items-center gap-2 rounded-2xl border border-white/10 p-1.5 shadow-xl shadow-black/30">
                 {(Object.keys(DEVICES) as DeviceId[]).map((deviceId) => {
                   const DeviceIcon = DEVICES[deviceId].icon;
                   const active = device === deviceId;
@@ -4932,7 +5154,7 @@ function MainApp() {
                       type="button"
                       title={`${DEVICES[deviceId].label} ${DEVICES[deviceId].description}`}
                       aria-label={`${DEVICES[deviceId].label} ${DEVICES[deviceId].description}`}
-                      onClick={() => setDevice(deviceId)}
+                      onClick={() => selectDevice(deviceId)}
                     >
                       <DeviceIcon size={17} strokeWidth={active ? 2.5 : 2} />
                     </button>
@@ -4940,7 +5162,7 @@ function MainApp() {
                 })}
               </div>
 
-              <div className="pointer-events-auto relative">
+              <div className="pointer-events-auto absolute right-0 top-0">
                 <button
                   className="group flex h-11 items-center gap-2.5 rounded-2xl bg-dlsu-vivid px-5 text-sm font-black text-white shadow-lg shadow-dlsu-vivid/25 transition-all duration-200 hover:bg-dlsu active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
                   type="button"
@@ -4991,38 +5213,27 @@ function MainApp() {
                 isManipulating={!!manipulation}
               />
 
-              {/* Professional Brutalist Manipulation Hint (Desktop Only) */}
+              {/* Resize hint island (desktop only) */}
               {device !== "share" && showManipulationHint && (
-                <div className="absolute bottom-12 z-[100] hidden animate-in fade-in slide-in-from-bottom-4 duration-500 lg:block">
-                  <div className="flex items-stretch overflow-hidden border-[3px] border-white bg-black text-white shadow-[10px_10px_0px_rgba(0,0,0,0.5)]">
-                    <div className="flex flex-col justify-center px-7 py-5">
-                      <div className="flex items-center gap-2">
-                        <span className="bg-yellow-400 px-1.5 py-0.5 text-[9px] font-black uppercase text-black">New</span>
-                        <p className="text-[10px] font-black uppercase tracking-[0.25em] text-white/50">System Update</p>
-                      </div>
-                      <h3 className="mt-1 text-xl font-black leading-none tracking-tighter uppercase">Move & Resize Grid</h3>
-                      <div className="mt-5 space-y-2">
-                        <p className="flex items-center gap-2.5 text-[11px] font-bold text-white/80 uppercase">
-                          <span className="h-2 w-2 border border-white" />
-                          Drag edges to scale
-                        </p>
-                        <p className="flex items-center gap-2.5 text-[11px] font-bold text-white/80 uppercase">
-                          <span className="h-2 w-2 border border-white" />
-                          Drag center to move
-                        </p>
-                      </div>
+                <div data-export-hidden="true" className="pointer-events-none absolute bottom-8 left-1/2 z-[100] hidden -translate-x-1/2 lg:block">
+                  <div className="liquid-glass-strong flex items-center gap-3 rounded-2xl border border-white/10 px-4 py-3 text-white shadow-xl shadow-black/35">
+                    <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-dlsu-vivid/25 bg-dlsu-vivid/15 text-dlsu-vivid">
+                      <Move size={16} strokeWidth={2.5} />
                     </div>
-
+                    <div className="min-w-0">
+                      <p className="text-[10px] font-black uppercase tracking-[0.14em] text-white/40">Move & resize</p>
+                      <p className="mt-0.5 text-xs font-bold text-white/75">Drag the calendar center or its edges.</p>
+                    </div>
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
                         sessionStorage.setItem("archers_manipulation_hud_v2", "true");
                         setShowManipulationHint(false);
                       }}
-                      className="flex w-20 items-center justify-center border-l-[3px] border-white bg-white text-black transition-colors hover:bg-dlsu-vivid hover:text-white"
+                      className="pointer-events-auto grid h-8 w-8 shrink-0 place-items-center rounded-full border border-white/10 bg-white/[0.05] text-white/50 transition hover:border-white/25 hover:bg-white/[0.10] hover:text-white"
                       title="Dismiss"
                     >
-                      <Check size={32} strokeWidth={5} />
+                      <Check size={14} strokeWidth={3} />
                     </button>
                   </div>
                 </div>
@@ -5045,76 +5256,6 @@ function MainApp() {
         </section>
       </div>
 
-      {/* Welcome Popup Modal */}
-      {showBetaPopup && (
-        <div
-          className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 p-4 backdrop-blur-xl"
-          onClick={(e) => { if (e.target === e.currentTarget) setShowBetaPopup(false); }}
-        >
-          <div className="liquid-glass-strong relative flex w-full max-w-[390px] flex-col overflow-hidden rounded-2xl border border-white/10 shadow-[0_32px_80px_rgba(0,0,0,0.7)]">
-            <button
-              type="button"
-              onClick={() => setShowBetaPopup(false)}
-              className="absolute right-3 top-3 z-10 grid h-8 w-8 place-items-center rounded-full text-white/30 transition-all hover:bg-white/10 hover:text-white"
-              aria-label="Close"
-            >
-              <X size={16} />
-            </button>
-
-            {/* Header */}
-            <div className="flex flex-col items-center px-7 pb-5 pt-8 text-center">
-              <div className="mb-4">
-                <img src="/logos/logo-mini-green.png" alt="Archers Calendar" className="h-10 w-auto object-contain" />
-              </div>
-              <h2 className="mb-2 text-[22px] font-black leading-tight tracking-tight text-white">
-                Your schedule,<br />wallpaper-ready.
-              </h2>
-              <p className="text-[13px] leading-relaxed text-white/45">
-                Paste your ArchersHub or EAF table, customize, then download.
-              </p>
-            </div>
-
-            {/* Steps */}
-            <div className="mx-5 mb-5 overflow-hidden rounded-xl border border-white/[0.07] bg-white/[0.025]">
-              {[
-                { n: "1", text: "Paste your schedule" },
-                { n: "2", text: "Customize the design" },
-                { n: "3", text: "Download your wallpaper" },
-              ].map(({ n, text }, i, arr) => (
-                <div key={n} className={classNames(
-                  "flex items-center gap-3 px-4 py-3",
-                  i < arr.length - 1 ? "border-b border-white/[0.06]" : ""
-                )}>
-                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-dlsu-vivid/20 text-[11px] font-black text-dlsu-vivid">{n}</span>
-                  <span className="text-[13px] font-medium leading-snug text-white/60">{text}</span>
-                </div>
-              ))}
-            </div>
-
-            {/* CTA */}
-            <div className="px-5 pb-5">
-              <button
-                type="button"
-                onClick={focusImportBox}
-                className="flex w-full items-center justify-center rounded-xl bg-white py-3.5 text-[14px] font-black text-black shadow-lg shadow-white/5 transition-all hover:bg-white/90 active:scale-95"
-              >
-                Start
-              </button>
-            </div>
-
-            {/* Footer */}
-            <div className="border-t border-white/[0.06] px-5 py-3 text-center">
-              <p className="text-[11px] font-medium text-white/25">
-                Bugs?{" "}
-                <a className="text-white/40 transition-colors hover:text-white hover:underline underline-offset-4" href="https://instagram.com/richarduaje" target="_blank" rel="noreferrer">
-                  DM @richarduaje
-                </a>
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-
     </main>
   );
 }
@@ -5122,17 +5263,17 @@ function MainApp() {
 // ── Sub-components ─────────────────────────────────────────────────────────────
 
 function SectionLabel({ children, className }: { children: React.ReactNode; className?: string }) {
-  return <h2 className={classNames("text-[11px] font-black text-white/60", className)}>{children}</h2>;
+  return <h2 className={classNames("text-[10px] font-black uppercase tracking-[0.08em] text-white/55", className)}>{children}</h2>;
 }
 
 function ControlGroup({ title, action, children, className }: { title: string; action?: React.ReactNode; children: React.ReactNode; className?: string }) {
   return (
-    <div className={classNames("liquid-glass rounded-xl border border-white/[0.075] p-3 shadow-sm transition-all duration-200", className)}>
-      <div className="flex min-h-9 items-center justify-between gap-3">
+    <div className={classNames("liquid-glass rounded-xl border border-white/[0.075] p-2.5 shadow-sm transition-all duration-200", className)}>
+      <div className="flex min-h-8 items-center justify-between gap-3">
         <SectionLabel>{title}</SectionLabel>
         {action}
       </div>
-      <div className="mt-2.5 space-y-3">
+      <div className="mt-2 space-y-2.5">
         {children}
       </div>
     </div>
@@ -5142,9 +5283,9 @@ function ControlGroup({ title, action, children, className }: { title: string; a
 function Field({ label, value, onChange, className, placeholder }: { label: string; value: string; onChange: (v: string) => void; className?: string; placeholder?: string }) {
   return (
     <label className={classNames("block", className)}>
-      <span className="mb-2 block text-[11px] font-black text-white/55">{label}</span>
+      <span className="mb-1.5 block text-[10px] font-black uppercase tracking-[0.08em] text-white/45">{label}</span>
       <input
-        className="min-h-12 w-full rounded-lg border border-white/[0.12] bg-white/[0.035] px-4 text-[15px] font-semibold text-white shadow-sm outline-none transition-all placeholder:text-white/25 hover:border-white/25 hover:bg-white/[0.05] focus:border-dlsu-vivid focus:bg-white/[0.055] focus:ring-1 focus:ring-dlsu-vivid"
+        className="min-h-10 w-full rounded-lg border border-white/[0.12] bg-white/[0.035] px-3 text-sm font-semibold text-white shadow-sm outline-none transition-all placeholder:text-white/25 hover:border-white/25 hover:bg-white/[0.05] focus:border-dlsu-vivid focus:bg-white/[0.055] focus:ring-1 focus:ring-dlsu-vivid"
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder ?? label}
@@ -5179,9 +5320,10 @@ function CalendarFontDropdown({ value, onChange }: { value: CalendarFont; onChan
       const updatePosition = () => {
         const rect = triggerRef.current?.getBoundingClientRect();
         if (rect) {
+          const menuHeight = Math.min(window.innerHeight * 0.6, 420);
           setCoords({
-            top: rect.bottom + window.scrollY,
-            left: rect.left + window.scrollX,
+            top: Math.max(8, Math.min(rect.bottom + 8, window.innerHeight - menuHeight - 12)),
+            left: Math.max(16, Math.min(rect.left, window.innerWidth - Math.max(rect.width, 260) - 16)),
             width: rect.width
           });
         }
@@ -5233,10 +5375,10 @@ function CalendarFontDropdown({ value, onChange }: { value: CalendarFont; onChan
           role="listbox"
           style={{
             position: "fixed",
-            top: coords.top + 8,
+            top: coords.top,
             left: coords.left,
             minWidth: Math.max(coords.width, 260),
-            width: "max-content",
+            width: Math.max(coords.width, 260),
             maxWidth: "calc(100vw - 2rem)"
           }}
           className="liquid-glass-strong animate-popover-in z-[2000] max-h-[min(60dvh,420px)] overflow-y-auto rounded-xl border border-white/[0.14] bg-black/60 backdrop-blur-xl p-1.5 shadow-2xl shadow-black/45 scrollbar-thin"
@@ -5250,7 +5392,7 @@ function CalendarFontDropdown({ value, onChange }: { value: CalendarFont; onChan
                 role="option"
                 aria-selected={selected}
                 className={classNames(
-                  "group/option flex min-h-12 w-full items-center justify-between gap-4 rounded-lg px-3 text-left transition-all duration-150 hover:bg-white/[0.08] active:scale-[0.99]",
+                  "group/option grid min-h-11 w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-lg px-3 text-left transition-all duration-150 hover:bg-white/[0.08] active:scale-[0.99]",
                   selected ? "bg-dlsu-vivid/18 text-white" : "text-white/72 hover:text-white",
                   option.bodyClass
                 )}
@@ -5270,9 +5412,8 @@ function CalendarFontDropdown({ value, onChange }: { value: CalendarFont; onChan
                     : "border-white/[0.10] bg-white/[0.045] text-white/55 group-hover/option:text-white/85",
                   option.headingClass
                 )}>
-                  Aa
+                  {selected ? <Check size={14} strokeWidth={3} className="text-dlsu-vivid" /> : "Aa"}
                 </span>
-                {selected && <Check size={14} strokeWidth={3} className="shrink-0 text-dlsu-vivid" />}
               </button>
             );
           })}
@@ -5376,17 +5517,17 @@ function Toggle({ checked, label, icon: Icon, onChange, compact }: { checked: bo
     <button
       className={classNames(
         "group flex w-full items-center justify-between rounded-lg border border-white/[0.12] bg-white/[0.035] font-semibold text-white shadow-sm transition-all hover:border-white/25 hover:bg-white/[0.055]",
-        compact ? "min-h-11 gap-2 px-3 text-xs" : "min-h-12 gap-3 px-4 text-sm"
+        compact ? "min-h-9 gap-2 px-2.5 text-[11px]" : "min-h-12 gap-3 px-4 text-sm"
       )}
       type="button"
       onClick={onChange}
       aria-pressed={checked}
     >
       <span className={classNames("flex min-w-0 items-center", compact ? "gap-2" : "gap-3")}>
-        <Icon size={compact ? 14 : 17} className="shrink-0 text-white/60 transition-colors group-hover:text-white" />
+        <Icon size={compact ? 13 : 17} className="shrink-0 text-white/60 transition-colors group-hover:text-white" />
         <span className="min-w-0 truncate leading-tight">{label}</span>
       </span>
-      <span className={classNames("flex shrink-0 items-center rounded-full p-1 transition-colors duration-300", compact ? "h-5 w-9" : "h-6 w-11", checked ? "bg-dlsu-vivid" : "bg-white/20 group-hover:bg-white/25")}>
+      <span className={classNames("flex shrink-0 items-center rounded-full p-0.5 transition-colors duration-300", compact ? "h-[18px] w-8" : "h-6 w-11", checked ? "bg-dlsu-vivid" : "bg-white/20 group-hover:bg-white/25")}>
         <span className={classNames("rounded-full bg-white shadow-sm transition-transform duration-300", compact ? "h-3 w-3" : "h-4 w-4", checked ? (compact ? "translate-x-4" : "translate-x-5") : "translate-x-0")} />
       </span>
     </button>
