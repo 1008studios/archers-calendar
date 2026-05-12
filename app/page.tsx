@@ -1944,16 +1944,21 @@ function MainApp() {
       const container = previewContainerRef.current;
       if (!container) return;
       
-      const width = container.offsetWidth;
-      const height = container.offsetHeight;
+      const rect = container.getBoundingClientRect();
+      const styles = window.getComputedStyle(container);
+      const horizontalPadding = parseFloat(styles.paddingLeft) + parseFloat(styles.paddingRight);
+      const verticalPadding = parseFloat(styles.paddingTop) + parseFloat(styles.paddingBottom);
+      
+      const availableWidth = Math.max(0, rect.width - horizontalPadding);
+      const availableHeight = Math.max(0, rect.height - verticalPadding);
       
       const { width: fw, height: fh } = CANVAS_SIZES[device];
-      // Keep existing padding/gap logic relative to container
-      const gap = width < 900 || height < 640 ? 40 : 80;
-      const scale = Math.min((width - gap) / fw, (height - gap) / fh);
       
-      // Apply a reduction factor for specific mobile devices to make them fit more comfortably
-      const reductionFactor = (device === "iphone" || device === "ipad_portrait" || device === "share") ? 0.75 : 1.0;
+      // Use the actual available space without an arbitrary gap, letting the container's padding dictate the layout
+      const scale = Math.min(availableWidth / fw, availableHeight / fh);
+      
+      // Apply a subtle reduction factor to prevent it from feeling too cramped
+      const reductionFactor = (device === "iphone" || device === "ipad_portrait" || device === "share") ? 0.90 : 1.0;
       setPreviewScale(Math.max(0.045, scale * reductionFactor));
     };
     compute();
