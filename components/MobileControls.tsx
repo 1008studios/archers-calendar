@@ -167,13 +167,15 @@ export default function MobileControls({ children }: { children: React.ReactNode
         ref={contentRef}
         className="backdrop-blur-xl bg-black/60 overscroll-contain overflow-y-auto border-white/[0.06] scrollbar-thin"
         style={{
-          maxHeight: isMobileExpanded ? "50dvh" : "0px",
+          maxHeight: isMobileExpanded ? "calc(50dvh - env(safe-area-inset-bottom))" : "0px",
           opacity: isMobileExpanded ? 1 : 0,
           borderTopWidth: isMobileExpanded ? "1px" : "0px",
           touchAction: isMobileExpanded ? "auto" : "none"
         }}
       >
-        {children}
+        <div className="p-4 pb-[env(safe-area-inset-bottom)]">
+          {children}
+        </div>
       </div>
     </nav>
   );
