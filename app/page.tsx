@@ -5120,15 +5120,15 @@ function MainApp() {
                   <button
                     key={deviceId}
                     className={classNames(
-                      "grid h-8 w-8 place-items-center rounded-xl transition-all duration-150",
+                      "flex h-9 w-10 items-center justify-center rounded-lg transition-all duration-150",
                       active
                         ? "bg-dlsu-vivid text-white shadow-lg shadow-dlsu-vivid/20"
-                        : "text-white/[0.42] hover:bg-white/[0.07] hover:text-white/[0.85]"
+                        : "text-white/[0.42] hover:bg-white/[0.12] hover:text-white"
                     )}
                     type="button"
                     onClick={() => selectDevice(deviceId)}
                   >
-                    <DeviceIcon size={16} />
+                    <DeviceIcon size={18} strokeWidth={2.5} />
                   </button>
                 );
               })}
