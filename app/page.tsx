@@ -5144,7 +5144,7 @@ function MainApp() {
                     <button
                       key={deviceId}
                       className={classNames(
-                        "grid h-9 w-10 place-items-center rounded-xl transition-all duration-150",
+                        "grid h-8 w-9 place-items-center rounded-lg transition-all duration-150",
                         active
                           ? "bg-dlsu-vivid text-white shadow-lg shadow-dlsu-vivid/20"
                           : "text-white/[0.42] hover:bg-white/[0.07] hover:text-white/[0.85]"
@@ -5154,7 +5154,7 @@ function MainApp() {
                       aria-label={`${DEVICES[deviceId].label} ${DEVICES[deviceId].description}`}
                       onClick={() => selectDevice(deviceId)}
                     >
-                      <DeviceIcon size={17} strokeWidth={active ? 2.5 : 2} />
+                      <DeviceIcon size={15} strokeWidth={active ? 2.5 : 2} />
                     </button>
                   );
                 })}
