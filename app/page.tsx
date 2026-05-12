@@ -3180,7 +3180,7 @@ function MainApp() {
     const ua = navigator.userAgent || "";
     const isTouchMac = /Macintosh/i.test(ua) && navigator.maxTouchPoints > 1;
     return (
-      window.matchMedia("(max-width: 767px)").matches ||
+      window.matchMedia("(max-width: 1024px)").matches || // Support iPad Landscape/Portrait
       window.matchMedia("(pointer: coarse)").matches ||
       /iPhone|iPad|iPod|Android|Mobile/i.test(ua) ||
       isTouchMac
@@ -3194,23 +3194,22 @@ function MainApp() {
   async function shareCanvasNatively(blob: Blob, filename: string) {
     if (!shouldUseNativeSaveSheet() || typeof File === "undefined" || !navigator.share) return false;
 
-    const file = new File([blob], filename, { type: "image/png" });
-    const shareData: ShareData = {
-      files: [file],
-      title: "My Schedule",
-      text: "My class schedule for this term."
-    };
-
-    if (navigator.canShare && !navigator.canShare({ files: [file] })) return false;
-
     try {
-      await navigator.share(shareData);
-      return true;
+      const file = new File([blob], filename, { type: "image/png" });
+      
+      // Check if we can share just the file first (most robust)
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({
+          files: [file],
+          title: "My Schedule",
+        });
+        return true;
+      }
     } catch (error) {
       if (isNativeShareCancel(error)) return true;
-      console.error("Native save failed", error);
-      return false;
+      console.error("Native share failed", error);
     }
+    return false;
   }
 
   async function downloadCanvas(canvas: HTMLCanvasElement, filename: string) {
