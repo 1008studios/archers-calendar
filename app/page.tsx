@@ -4990,7 +4990,7 @@ function MainApp() {
         href="https://instagram.com/richarduaje"
         target="_blank"
         rel="noreferrer"
-        className="liquid-glass-strong fixed bottom-[calc(env(safe-area-inset-bottom)+4.5rem)] right-3 z-40 flex items-center gap-2 rounded-full border border-white/10 px-3 py-2 text-[11px] font-black text-white/75 shadow-xl shadow-black/30 transition hover:border-dlsu-vivid/45 hover:bg-dlsu-vivid/15 hover:text-white lg:bottom-5 lg:right-5"
+        className="liquid-glass-strong fixed bottom-[calc(env(safe-area-inset-bottom)+4.5rem)] right-3 z-40 hidden lg:flex items-center gap-2 rounded-full border border-white/10 px-3 py-2 text-[11px] font-black text-white/75 shadow-xl shadow-black/30 transition hover:border-dlsu-vivid/45 hover:bg-dlsu-vivid/15 hover:text-white lg:bottom-5 lg:right-5"
         onClick={() => trackAppEvent("bug_report_click", { target: "instagram" })}
       >
         <Bug size={13} strokeWidth={2.5} />
