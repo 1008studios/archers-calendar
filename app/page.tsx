@@ -302,7 +302,7 @@ const CANVAS_SIZES: Record<DeviceId, { width: number; height: number }> = {
   macbook:        { width: 1440, height: 900  }, // 16:10
   share:          { width: 1080, height: 1080 }
 };
-const EXPORT_SCALE = 6; // High-res export (6× native) — increased from 4x for better readability in dense schedules.
+const EXPORT_SCALE = 3; // High-res export (3× native) — reduced from 6x to prevent mobile Safari from crashing/hanging due to canvas size limits.
 
 const GRID_SIZE_MIN = 0.2;
 const GRID_SIZE_MAX = 12;
