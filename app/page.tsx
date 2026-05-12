@@ -5107,10 +5107,10 @@ function MainApp() {
         <section className="flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden">
           {/* Mobile device switcher (Visible at top on mobile) */}
           <div className={classNames(
-            "liquid-glass-strong pointer-events-auto absolute left-4 right-4 top-4 z-[100] flex items-center justify-between rounded-2xl border border-white/10 p-1.5 shadow-xl shadow-black/30 transition-all duration-300 lg:hidden",
+            "liquid-glass-strong pointer-events-auto absolute left-4 right-4 top-4 z-[100] flex items-center justify-center rounded-2xl border border-white/10 p-1.5 shadow-xl shadow-black/30 transition-all duration-300 lg:hidden",
             isMobileExpanded ? "pointer-events-none opacity-0" : "opacity-100"
           )}>
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center justify-center gap-1.5">
               {(Object.keys(DEVICES) as DeviceId[]).map((deviceId) => {
                 const DeviceIcon = DEVICES[deviceId].icon;
                 const active = device === deviceId;
