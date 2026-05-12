@@ -505,12 +505,12 @@ button:not([data-no-spotlight]):hover::after,
 }
 
 @keyframes device-switch {
-  from { opacity: 0; scale: 0.985; }
-  to { opacity: 1; scale: 1; }
+  from { opacity: 0; transform: translateY(4px) scale(0.985); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 .animate-device-switch {
-  animation: device-switch 150ms cubic-bezier(0.2, 0, 0, 1) both;
+  animation: device-switch 250ms cubic-bezier(0.2, 0, 0, 1) both;
 }
 
 @media (prefers-reduced-motion: reduce) {
