@@ -1941,16 +1941,14 @@ function MainApp() {
     const container = previewContainerRef.current;
     if (!container) return;
     const compute = () => {
-      const rect = container.getBoundingClientRect();
-      if (!rect.width || !rect.height) return;
+      // Use visualViewport if available (zoom-agnostic), otherwise fallback to window
+      const width = window.visualViewport ? window.visualViewport.width : window.innerWidth;
+      const height = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+      
       const { width: fw, height: fh } = CANVAS_SIZES[device];
-      const styles = window.getComputedStyle(container);
-      const horizontalPadding = parseFloat(styles.paddingLeft) + parseFloat(styles.paddingRight);
-      const verticalPadding = parseFloat(styles.paddingTop) + parseFloat(styles.paddingBottom);
-      const availableWidth = Math.max(0, rect.width - horizontalPadding);
-      const availableHeight = Math.max(0, rect.height - verticalPadding);
-      const gap = rect.width < 900 || rect.height < 640 ? 12 : 32;
-      const scale = Math.min((availableWidth - gap) / fw, (availableHeight - gap) / fh);
+      // Keep existing padding/gap logic relative to container or simplified for consistency
+      const gap = width < 900 || height < 640 ? 40 : 80;
+      const scale = Math.min((width - gap) / fw, (height - gap) / fh);
       
       // Apply a reduction factor for specific mobile devices to make them fit more comfortably
       const reductionFactor = (device === "iphone" || device === "ipad_portrait" || device === "share") ? 0.75 : 1.0;
