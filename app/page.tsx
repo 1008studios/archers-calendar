@@ -4922,22 +4922,22 @@ function MainApp() {
         )}
       >
         <SectionLabel>Export Format</SectionLabel>
-        <div className="flex rounded-lg border border-white/10 bg-black/40 p-1 shadow-inner">
+        <div className="grid grid-cols-3 gap-1 rounded-lg border border-white/10 bg-black/40 p-0.5 shadow-inner">
           {EXPORT_VARIANT_OPTIONS.map(({ value, label, description, icon: VariantIcon }) => (
             <button
               key={value}
               type="button"
               title={description}
               className={classNames(
-                "flex flex-1 items-center justify-center gap-1.5 rounded-md h-9 transition-all active:scale-95",
+                "flex flex-col items-center justify-center gap-1 rounded-md py-1.5 transition-all active:scale-95",
                 exportVariant === value
                   ? "bg-dlsu-vivid text-white shadow-sm shadow-dlsu-vivid/20"
                   : "text-white/55 hover:bg-white/[0.06] hover:text-white/80"
               )}
               onClick={() => setExportVariant(value)}
             >
-              <VariantIcon size={13} />
-              <span className="text-[10px] font-black uppercase tracking-wider">{label}</span>
+              <VariantIcon size={14} />
+              <span className="text-[9px] font-black uppercase tracking-wider">{label}</span>
             </button>
           ))}
         </div>

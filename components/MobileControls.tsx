@@ -117,7 +117,7 @@ export default function MobileControls({ children }: { children: React.ReactNode
     <nav
       aria-label="Mobile navigation"
       data-mobile-controls="true"
-      className="liquid-glass-strong flex shrink-0 flex-col border-t border-white/10 pb-safe md:hidden"
+      className="backdrop-blur-xl bg-black/60 flex shrink-0 flex-col border-t border-white/10 pb-safe md:hidden"
     >
       <div
         className="touch-none select-none"
@@ -141,7 +141,7 @@ export default function MobileControls({ children }: { children: React.ReactNode
               <button
                 key={tab.id}
                 className={classNames(
-                  "liquid-glass flex min-h-12 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-lg px-2 text-[11px] font-bold transition-all duration-200 active:scale-95",
+                  "flex min-h-12 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-lg px-2 text-[11px] font-bold transition-all duration-200 active:scale-95 bg-white/[0.03]",
                   active ? "bg-dlsu-vivid text-white shadow-md shadow-dlsu-vivid/25" : "text-white/60 hover:bg-white/[0.08] hover:text-white"
                 )}
                 type="button"
@@ -165,7 +165,7 @@ export default function MobileControls({ children }: { children: React.ReactNode
       
       <div 
         ref={contentRef}
-        className="overscroll-contain overflow-y-auto border-white/[0.06] scrollbar-thin"
+        className="backdrop-blur-xl bg-black/60 overscroll-contain overflow-y-auto border-white/[0.06] scrollbar-thin"
         style={{
           maxHeight: isMobileExpanded ? "50dvh" : "0px",
           opacity: isMobileExpanded ? 1 : 0,
