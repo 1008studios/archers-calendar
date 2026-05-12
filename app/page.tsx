@@ -4974,7 +4974,6 @@ function MainApp() {
           className="group flex min-h-12 w-full items-center justify-center gap-2.5 rounded-xl bg-dlsu-vivid px-4 text-white shadow-lg shadow-dlsu-vivid/25 transition-all duration-200 hover:bg-dlsu active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-60"
           onClick={() => {
             if (typeof window !== "undefined" && window.innerWidth < 1024) {
-              // On mobile, bypass the multi-device popup and just download directly
               void handleExport();
             } else {
               setShowExportPopup(true);
@@ -4987,8 +4986,18 @@ function MainApp() {
             : <Download size={18} className="transition-transform group-hover:-translate-y-0.5" />}
           <span className="text-sm font-black">{isExporting ? "Saving..." : "Save to Photos"}</span>
         </button>
-      </section>
 
+        <a
+          href="https://instagram.com/richarduaje"
+          target="_blank"
+          rel="noreferrer"
+          className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.03] py-3 text-[11px] font-black text-white/50 transition-all hover:border-white/20 hover:bg-white/[0.06] hover:text-white active:scale-[0.97]"
+          onClick={() => trackAppEvent("bug_report_click", { target: "instagram" })}
+        >
+          <Bug size={13} strokeWidth={2.5} />
+          Report Bugs @richarduaje
+        </a>
+        </section>
 
     </div>
   );
@@ -4997,17 +5006,6 @@ function MainApp() {
   return (
     <main data-app-theme={appTheme} className="archers-app h-dvh w-full overflow-hidden bg-[#080B09] text-white">
       <ExportOverlay />
-      <a
-        data-export-hidden="true"
-        href="https://instagram.com/richarduaje"
-        target="_blank"
-        rel="noreferrer"
-        className="liquid-glass-strong fixed bottom-[calc(env(safe-area-inset-bottom)+5rem)] right-3 z-40 flex items-center gap-2 rounded-full border border-white/10 px-3 py-2 text-[11px] font-black text-white/75 shadow-xl shadow-black/30 transition hover:border-dlsu-vivid/45 hover:bg-dlsu-vivid/15 hover:text-white lg:bottom-5 lg:right-5"
-        onClick={() => trackAppEvent("bug_report_click", { target: "instagram" })}
-      >
-        <Bug size={13} strokeWidth={2.5} />
-        <span>Report Bugs @richarduaje</span>
-      </a>
 
       {pendingDeleteSaved && (
         <div
