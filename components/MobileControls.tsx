@@ -117,7 +117,7 @@ export default function MobileControls({ children }: { children: React.ReactNode
     <nav
       aria-label="Mobile navigation"
       data-mobile-controls="true"
-      className="backdrop-blur-xl bg-black/60 flex shrink-0 flex-col border-t border-white/10 pb-safe md:hidden"
+      className="backdrop-blur-xl bg-black/60 flex shrink-0 flex-col border-t border-white/10 pb-safe lg:hidden"
     >
       <div
         className="touch-none select-none"
@@ -128,12 +128,12 @@ export default function MobileControls({ children }: { children: React.ReactNode
         {/* Toggle button */}
         <button 
           onClick={() => setIsMobileExpanded(!isMobileExpanded)} 
-          className="flex w-full items-center justify-center py-2 text-white/40 hover:text-white/80 transition-colors"
+          className="flex w-full items-center justify-center py-3 text-white/40 hover:text-white/80 transition-colors"
         >
-          <div className="h-1 w-10 rounded-full bg-white/20" />
+          <div className="h-1.5 w-12 rounded-full bg-white/20" />
         </button>
 
-        <div className="flex gap-1.5 px-2 pb-2">
+        <div className="flex gap-2 px-3 pb-3">
           {MOBILE_TABS.map((tab) => {
             const TabIcon = tab.icon;
             const active = mobileTab === tab.id;
@@ -141,7 +141,7 @@ export default function MobileControls({ children }: { children: React.ReactNode
               <button
                 key={tab.id}
                 className={classNames(
-                  "flex min-h-12 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-lg px-2 text-[11px] font-bold transition-all duration-200 active:scale-95 bg-white/[0.03]",
+                  "flex min-h-16 min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-xl px-2 text-xs font-bold transition-all duration-200 active:scale-95 bg-white/[0.03]",
                   active ? "bg-dlsu-vivid text-white shadow-md shadow-dlsu-vivid/25" : "text-white/60 hover:bg-white/[0.08] hover:text-white"
                 )}
                 type="button"
@@ -155,7 +155,7 @@ export default function MobileControls({ children }: { children: React.ReactNode
                   }
                 }}
               >
-                <TabIcon size={17} strokeWidth={active ? 2.5 : 2} />
+                <TabIcon size={22} strokeWidth={active ? 2.5 : 2} />
                 {tab.label}
               </button>
             );

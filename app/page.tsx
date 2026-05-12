@@ -1979,11 +1979,7 @@ function MainApp() {
       .filter((e) => visibleDayList.includes(e.day as DayKey)),
     [entries, visibleDayList]
   );
-  const animoCourseColorSet = new Set(ANIMO_PALETTE.map(normalizeHexColor));
-  const shouldUseUniformAnimoText = visibleEntries.length > 0 && visibleEntries.every((entry) =>
-    animoCourseColorSet.has(normalizeHexColor(entry.color))
-  );
-  const uniformCourseTextColor = shouldUseUniformAnimoText ? getPaletteTextColor(ANIMO_PALETTE) : undefined;
+  const uniformCourseTextColor = undefined; // Force individual contrast calculation for each course
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
