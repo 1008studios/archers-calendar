@@ -5107,7 +5107,7 @@ function MainApp() {
         <section className="flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden">
           {/* Mobile device switcher (Visible on the right side near bottom on mobile) */}
           <div className={classNames(
-            "liquid-glass-strong pointer-events-auto absolute bottom-24 right-4 z-[100] flex flex-col items-center justify-center rounded-2xl border border-white/10 p-1.5 shadow-xl shadow-black/30 transition-all duration-300 lg:hidden",
+            "liquid-glass-strong pointer-events-auto absolute bottom-24 right-4 z-[100] flex flex-col items-center justify-center rounded-2xl border border-white/10 bg-black/40 backdrop-blur-md p-1.5 shadow-xl shadow-black/30 transition-all duration-300 lg:hidden",
             isMobileExpanded ? "pointer-events-none opacity-0" : "opacity-100"
           )}>
             <div className="flex flex-col items-center justify-center gap-1.5">
