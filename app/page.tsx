@@ -5133,7 +5133,6 @@ function MainApp() {
                 );
               })}
             </div>
-            <div className="mr-2 text-xs font-black text-white">{activeDevice.label}</div>
           </div>
 
           {/* Preview — always visible */}
