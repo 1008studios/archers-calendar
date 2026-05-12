@@ -1953,7 +1953,7 @@ function MainApp() {
       const scale = Math.min((availableWidth - gap) / fw, (availableHeight - gap) / fh);
       
       // Apply a reduction factor for specific mobile devices to make them fit more comfortably
-      const reductionFactor = (device === "iphone" || device === "ipad_portrait" || device === "share") ? 0.85 : 1.0;
+      const reductionFactor = (device === "iphone" || device === "ipad_portrait" || device === "share") ? 0.75 : 1.0;
       setPreviewScale(Math.max(0.045, scale * reductionFactor));
     };
     compute();
@@ -5115,7 +5115,7 @@ function MainApp() {
               so the preview is pixel-perfect with the export output */}
           <div
             ref={previewContainerRef}
-            className="relative flex min-h-0 flex-1 items-center justify-center overflow-hidden p-8 md:p-6 lg:p-8"
+            className="relative flex min-h-0 flex-1 items-center justify-center overflow-hidden p-12 md:p-8 lg:p-8"
             onClick={() => { if (isMobileExpanded) setIsMobileExpanded(false); }}
             onTouchStart={(e) => {
               const touch = e.targetTouches[0];
