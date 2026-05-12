@@ -1951,7 +1951,10 @@ function MainApp() {
       const availableHeight = Math.max(0, rect.height - verticalPadding);
       const gap = rect.width < 900 || rect.height < 640 ? 12 : 32;
       const scale = Math.min((availableWidth - gap) / fw, (availableHeight - gap) / fh);
-      setPreviewScale(Math.max(0.045, scale));
+      
+      // Apply a reduction factor for specific mobile devices to make them fit more comfortably
+      const reductionFactor = (device === "iphone" || device === "ipad_portrait" || device === "share") ? 0.85 : 1.0;
+      setPreviewScale(Math.max(0.045, scale * reductionFactor));
     };
     compute();
     const ro = new ResizeObserver(compute);
