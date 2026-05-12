@@ -3215,16 +3215,24 @@ function MainApp() {
   async function downloadCanvas(canvas: HTMLCanvasElement, filename: string) {
     const blob = await canvasToPngBlob(canvas);
 
+    // Try native share first
     if (await shareCanvasNatively(blob, filename)) return "native";
 
+    // Fallback: Use window.open for better mobile reliability
     const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = filename;
-    link.type = "image/png";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    const win = window.open(url, "_blank");
+    
+    // If pop-up blocker prevents window.open, fallback to link click
+    if (!win) {
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = filename;
+      link.type = "image/png";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
     window.setTimeout(() => URL.revokeObjectURL(url), 5000);
     return "download";
   }
