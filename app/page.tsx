@@ -1957,9 +1957,7 @@ function MainApp() {
       // Use the actual available space without an arbitrary gap, letting the container's padding dictate the layout
       const scale = Math.min(availableWidth / fw, availableHeight / fh);
       
-      // Apply a subtle reduction factor to prevent it from feeling too cramped
-      const reductionFactor = (device === "iphone" || device === "ipad_portrait" || device === "share") ? 0.90 : 1.0;
-      setPreviewScale(Math.max(0.045, scale * reductionFactor));
+      setPreviewScale(Math.max(0.045, scale));
     };
     compute();
     const ro = new ResizeObserver(compute);
@@ -4964,8 +4962,7 @@ function MainApp() {
         >
           {isExporting
             ? <Loader2 size={18} className="animate-spin" />
-            : <Download size={18} className="transition-transform group-hover:-translate-y-0.5" />}
-          <span className="text-sm font-black">{isExporting ? "Saving..." : "Save to Photos"}</span>
+            : <Download size={18} className="transition-transform" />}          <span className="text-sm font-black">{isExporting ? "Saving..." : "Save to Photos"}</span>
         </button>
 
         <a
@@ -4987,6 +4984,18 @@ function MainApp() {
   return (
     <main data-app-theme={appTheme} className="archers-app h-[100dvh] w-full overflow-hidden bg-[#080B09] text-white overscroll-none">
       <ExportOverlay />
+
+      <a
+        data-export-hidden="true"
+        href="https://instagram.com/richarduaje"
+        target="_blank"
+        rel="noreferrer"
+        className="liquid-glass-strong fixed bottom-[calc(env(safe-area-inset-bottom)+4.5rem)] right-3 z-40 flex items-center gap-2 rounded-full border border-white/10 px-3 py-2 text-[11px] font-black text-white/75 shadow-xl shadow-black/30 transition hover:border-dlsu-vivid/45 hover:bg-dlsu-vivid/15 hover:text-white lg:bottom-5 lg:right-5"
+        onClick={() => trackAppEvent("bug_report_click", { target: "instagram" })}
+      >
+        <Bug size={13} strokeWidth={2.5} />
+        <span>Report Bugs @richarduaje</span>
+      </a>
 
       {pendingDeleteSaved && (
         <div
@@ -5120,7 +5129,7 @@ function MainApp() {
               so the preview is pixel-perfect with the export output */}
           <div
             ref={previewContainerRef}
-            className="relative flex min-h-0 flex-1 items-center justify-center overflow-hidden p-12 md:p-8 lg:p-8"
+            className="relative flex min-h-0 flex-1 items-center justify-center overflow-hidden p-6 md:p-8 lg:p-8"
             onClick={() => { if (isMobileExpanded) setIsMobileExpanded(false); }}
             onTouchStart={(e) => {
               const touch = e.targetTouches[0];
