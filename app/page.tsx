@@ -4544,33 +4544,6 @@ function MainApp() {
           </ControlGroup>
         </div>
 
-        <div className="hidden lg:order-3 lg:block">
-          <SectionLabel>Device Frame</SectionLabel>
-          <div className="flex items-center rounded-lg border border-white/10 bg-black/40 p-1 shadow-inner">
-            {(Object.keys(DEVICES) as DeviceId[]).map((deviceId) => {
-              const DeviceIcon = DEVICES[deviceId].icon;
-              const active = device === deviceId;
-              return (
-                <button
-                  key={deviceId}
-                  className={classNames(
-                    "flex flex-1 h-8 place-items-center justify-center rounded-md transition-all duration-200",
-                    active
-                      ? "bg-dlsu-vivid text-white shadow-sm shadow-dlsu-vivid/20"
-                      : "text-white/40 hover:bg-white/[0.06] hover:text-white/80"
-                  )}
-                  type="button"
-                  title={DEVICES[deviceId].label}
-                  aria-label={DEVICES[deviceId].label}
-                  onClick={() => selectDevice(deviceId)}
-                >
-                  <DeviceIcon size={15} strokeWidth={active ? 2.5 : 2} />
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
         {/* Background */}
         <div className="order-6">
           <ControlGroup
