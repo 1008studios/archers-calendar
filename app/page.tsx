@@ -5203,7 +5203,9 @@ function MainApp() {
                 height: canvasSize.height,
                 transform: `scale(${previewScale})`,
                 transformOrigin: "center center",
-                flexShrink: 0
+                flexShrink: 0,
+                // Add containment to stop zoom artifacts from affecting internal layout
+                contain: "layout size",
               }}
               className="animate-device-switch flex items-center justify-center"
             >
