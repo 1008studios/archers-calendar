@@ -5201,51 +5201,61 @@ function MainApp() {
               </button>
             </div>
 
-            <div
+            {/* Bounding Box Wrapper: Solves edge-to-edge scaling bug by restricting physical layout space */}
+            <div 
               key={device}
+              className="animate-device-switch relative flex items-center justify-center"
               style={{
-                width: canvasSize.width,
-                height: canvasSize.height,
-                transform: `scale(${previewScale})`,
-                transformOrigin: "center center",
-                flexShrink: 0,
-                // Add containment to stop zoom artifacts from affecting internal layout
-                contain: "layout size",
+                width: canvasSize.width * previewScale,
+                height: canvasSize.height * previewScale,
+                flexShrink: 0
               }}
-              className="animate-device-switch flex items-center justify-center"
             >
-              <PreviewCanvas
-                canvasRef={canvasRef}
-                previewScale={previewScale}
-                onManipulationStart={handleManipulationStart}
-                isManipulating={!!manipulation}
-              />
+              <div
+                style={{
+                  width: canvasSize.width,
+                  height: canvasSize.height,
+                  transform: `scale(${previewScale})`,
+                  transformOrigin: "center center",
+                  flexShrink: 0,
+                  contain: "layout size",
+                }}
+                className="absolute flex items-center justify-center"
+              >
+                <PreviewCanvas
+                  canvasRef={canvasRef}
+                  previewScale={previewScale}
+                  onManipulationStart={handleManipulationStart}
+                  isManipulating={!!manipulation}
+                />
 
-              {/* Resize hint island (desktop only) */}
-              {device !== "share" && showManipulationHint && (
-                <div data-export-hidden="true" className="pointer-events-none absolute bottom-8 left-1/2 z-[100] hidden -translate-x-1/2 lg:block">
-                  <div className="liquid-glass-strong flex min-w-[320px] items-center gap-3 rounded-2xl border border-white/10 px-4 py-3 text-white shadow-xl shadow-black/35">
-                    <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-dlsu-vivid/25 bg-dlsu-vivid/15 text-dlsu-vivid">
-                      <Move size={16} strokeWidth={2.5} />
+                {/* Resize hint island (desktop only) */}
+                {device !== "share" && showManipulationHint && (
+                  <div data-export-hidden="true" className="pointer-events-none absolute bottom-8 left-1/2 z-[100] hidden -translate-x-1/2 lg:block">
+                    <div className="liquid-glass-strong flex min-w-[320px] items-center gap-3 rounded-2xl border border-white/10 px-4 py-3 text-white shadow-xl shadow-black/35">
+                      <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-dlsu-vivid/25 bg-dlsu-vivid/15 text-dlsu-vivid">
+                        <Move size={16} strokeWidth={2.5} />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-[10px] font-black uppercase tracking-[0.14em] text-white/40">Move & resize</p>
+                        <p className="mt-0.5 text-xs font-bold text-white/75">Drag the calendar center or its edges.</p>
+                      </div>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          sessionStorage.setItem("archers_manipulation_hud_v2", "true");
+                          setShowManipulationHint(false);
+                        }}
+                        className="pointer-events-auto grid h-8 w-8 shrink-0 place-items-center rounded-full border border-white/10 bg-white/[0.05] text-white/50 transition hover:border-white/25 hover:bg-white/[0.10] hover:text-white"
+                        title="Dismiss"
+                      >
+                        <Check size={14} strokeWidth={3} />
+                      </button>
                     </div>
-                    <div className="min-w-0">
-                      <p className="text-[10px] font-black uppercase tracking-[0.14em] text-white/40">Move & resize</p>
-                      <p className="mt-0.5 text-xs font-bold text-white/75">Drag the calendar center or its edges.</p>
-                    </div>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        sessionStorage.setItem("archers_manipulation_hud_v2", "true");
-                        setShowManipulationHint(false);
-                      }}
-                      className="pointer-events-auto grid h-8 w-8 shrink-0 place-items-center rounded-full border border-white/10 bg-white/[0.05] text-white/50 transition hover:border-white/25 hover:bg-white/[0.10] hover:text-white"
-                      title="Dismiss"
-                    >
-                      <Check size={14} strokeWidth={3} />
-                    </button>
                   </div>
-                </div>
-              )}            </div>
+                )}
+              </div>
+            </div>
 
             {/* Global Manipulation Event Layer (Desktop Only) */}
             {manipulation && (
