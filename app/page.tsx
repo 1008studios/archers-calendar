@@ -1941,12 +1941,14 @@ function MainApp() {
     const container = previewContainerRef.current;
     if (!container) return;
     const compute = () => {
-      // Use visualViewport if available (zoom-agnostic), otherwise fallback to window
-      const width = window.visualViewport ? window.visualViewport.width : window.innerWidth;
-      const height = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+      const container = previewContainerRef.current;
+      if (!container) return;
+      
+      const width = container.offsetWidth;
+      const height = container.offsetHeight;
       
       const { width: fw, height: fh } = CANVAS_SIZES[device];
-      // Keep existing padding/gap logic relative to container or simplified for consistency
+      // Keep existing padding/gap logic relative to container
       const gap = width < 900 || height < 640 ? 40 : 80;
       const scale = Math.min((width - gap) / fw, (height - gap) / fh);
       
