@@ -4544,7 +4544,7 @@ function MainApp() {
           </ControlGroup>
         </div>
 
-        <div className="order-3 lg:hidden">
+        <div className="hidden lg:order-3 lg:block">
           <SectionLabel>Device Frame</SectionLabel>
           <div className="flex items-center rounded-lg border border-white/10 bg-black/40 p-1 shadow-inner">
             {(Object.keys(DEVICES) as DeviceId[]).map((deviceId) => {
