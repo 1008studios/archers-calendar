@@ -5112,7 +5112,7 @@ function MainApp() {
               so the preview is pixel-perfect with the export output */}
           <div
             ref={previewContainerRef}
-            className="relative flex min-h-0 flex-1 items-center justify-center overflow-hidden p-4 md:p-6 lg:p-8"
+            className="relative flex min-h-0 flex-1 items-center justify-center overflow-hidden p-8 md:p-6 lg:p-8"
             onClick={() => { if (isMobileExpanded) setIsMobileExpanded(false); }}
             onTouchStart={(e) => {
               const touch = e.targetTouches[0];
