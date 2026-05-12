@@ -523,3 +523,4 @@ button:not([data-no-spotlight]):hover::after,
     transition-duration: 0.01ms !important;
   }
 }
+[data-app-theme="light"] [data-wallpaper-canvas], [data-wallpaper-canvas] * { color: #ffffff !important; }
