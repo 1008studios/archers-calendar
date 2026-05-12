@@ -5004,7 +5004,7 @@ function MainApp() {
 
   // ── Page ───────────────────────────────────────────────────────────────────
   return (
-    <main data-app-theme={appTheme} className="archers-app h-dvh w-full overflow-hidden bg-[#080B09] text-white">
+    <main data-app-theme={appTheme} className="archers-app h-[100dvh] w-full overflow-hidden bg-[#080B09] text-white overscroll-none">
       <ExportOverlay />
 
       {pendingDeleteSaved && (
