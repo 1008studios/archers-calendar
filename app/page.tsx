@@ -5214,7 +5214,7 @@ function MainApp() {
               {/* Resize hint island (desktop only) */}
               {device !== "share" && showManipulationHint && (
                 <div data-export-hidden="true" className="pointer-events-none absolute bottom-8 left-1/2 z-[100] hidden -translate-x-1/2 lg:block">
-                  <div className="liquid-glass-strong flex items-center gap-3 rounded-2xl border border-white/10 px-4 py-3 text-white shadow-xl shadow-black/35">
+                  <div className="liquid-glass-strong flex min-w-[320px] items-center gap-3 rounded-2xl border border-white/10 px-4 py-3 text-white shadow-xl shadow-black/35">
                     <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-dlsu-vivid/25 bg-dlsu-vivid/15 text-dlsu-vivid">
                       <Move size={16} strokeWidth={2.5} />
                     </div>
