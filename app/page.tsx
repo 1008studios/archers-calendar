@@ -3140,10 +3140,17 @@ function MainApp() {
         skipAutoScale: true,
         width: size.width,
         height: size.height,
+        // Enforce internal window bounds to prevent mobile Safari viewport bugs from adding extra margins
+        canvasWidth: size.width * scale,
+        canvasHeight: size.height * scale,
         style: {
           width: `${size.width}px`,
           height: `${size.height}px`,
-          transform: "none"
+          transform: "none",
+          margin: "0",
+          padding: "0",
+          left: "0",
+          top: "0"
         }
       });
     } finally {
