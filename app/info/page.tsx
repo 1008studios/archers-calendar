@@ -2,8 +2,8 @@ import React from "react";
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "About Archers Calendar - The Ultimate Schedule Builder for PH Students",
-  description: "Learn about Archers Calendar, the free, 30-second schedule wallpaper generator created by Richard Christian Uaje for all university students in the Philippines.",
+  title: "About Archers Calendar - The Ultimate Calendar & Schedule Generator for PH Students",
+  description: "Learn about Archers Calendar, the free, 30-second calendar and schedule generator created by Richard Christian Uaje for all university students in the Philippines.",
   robots: "index, follow",
 };
 
@@ -13,9 +13,9 @@ export default function InfoPage() {
       <h1 className="text-5xl font-black mb-8 text-dlsu-vivid tracking-tighter">Archers Calendar</h1>
       
       <section className="mb-10">
-        <h2 className="text-2xl font-bold mb-4 text-white/90">Build Your Schedule in 30 Seconds</h2>
+        <h2 className="text-2xl font-bold mb-4 text-white/90">The #1 Calendar & Schedule Generator</h2>
         <p className="text-white/70 text-lg">
-          Archers Calendar is a **dedicated calendar builder** designed specifically for students in the Philippines. 
+          Archers Calendar is a **dedicated calendar and schedule generator** designed specifically for students in the Philippines. 
           Forget manual typing—our smart **copy-paste system** automatically detects your classes and converts 
           messy schedule text into professional, aesthetic wallpapers in under 30 seconds.
         </p>
