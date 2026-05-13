@@ -121,9 +121,6 @@ export default function MobileControls({ children }: { children: React.ReactNode
     >
       <div
         className="touch-none select-none"
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
       >
         {/* Toggle button */}
         <button 
@@ -133,7 +130,12 @@ export default function MobileControls({ children }: { children: React.ReactNode
           <div className="h-1.5 w-12 rounded-full bg-white/20" />
         </button>
 
-        <div className="flex gap-2 px-3 pb-3">
+        <div 
+          className="flex gap-2 px-3 pb-3"
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+        >
           {MOBILE_TABS.map((tab) => {
             const TabIcon = tab.icon;
             const active = mobileTab === tab.id;

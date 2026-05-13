@@ -734,10 +734,10 @@ export default React.memo(function PreviewCanvas({
             <div className={classNames("col-span-full flex items-center justify-center p-12 text-center text-sm font-bold uppercase opacity-40", headerText)}>No Classes Scheduled</div>
             )}
 
-            {/* High-Fidelity Manipulation Handles (Desktop & Tablet) */}
+            {/* High-Fidelity Manipulation Handles (All Devices) */}
             {!isTransparentExport && !isBackgroundOnlyExport && !isSquareDevice && (
               <div
-                className="absolute inset-0 z-[60] hidden pointer-events-none group/manip md:block"
+                className="absolute inset-0 z-[60] pointer-events-none group/manip"
                 style={{ color: manipulationAccent }}
               >
                 <div
@@ -751,18 +751,18 @@ export default React.memo(function PreviewCanvas({
                 {/* Center Move Handle */}
                 <div
                   data-manipulation-handle="move"
-                  className="absolute inset-8 cursor-grab active:cursor-grabbing pointer-events-auto"
+                  className="absolute inset-12 cursor-grab active:cursor-grabbing pointer-events-auto"
                   onMouseDown={(e) => onManipulationStart?.("move", e)}
                   onTouchStart={(e) => onManipulationStart?.("move", e)}
                 />
 
-                {/* Edge Handles */}
-                <div data-manipulation-handle="resize-n" className="absolute left-8 right-8 top-0 h-4 cursor-ns-resize pointer-events-auto" onMouseDown={(e) => onManipulationStart?.("resize-n", e)} onTouchStart={(e) => onManipulationStart?.("resize-n", e)} />
-                <div data-manipulation-handle="resize-s" className="absolute bottom-0 left-8 right-8 h-4 cursor-ns-resize pointer-events-auto" onMouseDown={(e) => onManipulationStart?.("resize-s", e)} onTouchStart={(e) => onManipulationStart?.("resize-s", e)} />
-                <div data-manipulation-handle="resize-w" className="absolute bottom-8 left-0 top-8 w-4 cursor-ew-resize pointer-events-auto" onMouseDown={(e) => onManipulationStart?.("resize-w", e)} onTouchStart={(e) => onManipulationStart?.("resize-w", e)} />
-                <div data-manipulation-handle="resize-e" className="absolute bottom-8 right-0 top-8 w-4 cursor-ew-resize pointer-events-auto" onMouseDown={(e) => onManipulationStart?.("resize-e", e)} onTouchStart={(e) => onManipulationStart?.("resize-e", e)} />
+                {/* Edge Handles - Enlarged for touch */}
+                <div data-manipulation-handle="resize-n" className="absolute left-10 right-10 top-0 h-8 cursor-ns-resize pointer-events-auto" onMouseDown={(e) => onManipulationStart?.("resize-n", e)} onTouchStart={(e) => onManipulationStart?.("resize-n", e)} />
+                <div data-manipulation-handle="resize-s" className="absolute bottom-0 left-10 right-10 h-8 cursor-ns-resize pointer-events-auto" onMouseDown={(e) => onManipulationStart?.("resize-s", e)} onTouchStart={(e) => onManipulationStart?.("resize-s", e)} />
+                <div data-manipulation-handle="resize-w" className="absolute bottom-10 left-0 top-10 w-8 cursor-ew-resize pointer-events-auto" onMouseDown={(e) => onManipulationStart?.("resize-w", e)} onTouchStart={(e) => onManipulationStart?.("resize-w", e)} />
+                <div data-manipulation-handle="resize-e" className="absolute bottom-10 right-0 top-10 w-8 cursor-ew-resize pointer-events-auto" onMouseDown={(e) => onManipulationStart?.("resize-e", e)} onTouchStart={(e) => onManipulationStart?.("resize-e", e)} />
 
-                {/* Corner Handles */}
+                {/* Corner Handles - Enlarged for touch */}
                 {[
                   { type: "resize-nw", class: "left-0 top-0 cursor-nwse-resize", mark: "left-1.5 top-1.5 rounded-tl-md border-l-2 border-t-2" },
                   { type: "resize-ne", class: "right-0 top-0 cursor-nesw-resize", mark: "right-1.5 top-1.5 rounded-tr-md border-r-2 border-t-2" },
@@ -775,7 +775,7 @@ export default React.memo(function PreviewCanvas({
                     onMouseDown={(e) => onManipulationStart?.(h.type, e)}
                     onTouchStart={(e) => onManipulationStart?.(h.type, e)}
                     className={classNames(
-                      "absolute h-8 w-8 pointer-events-auto",
+                      "absolute h-12 w-12 pointer-events-auto",
                       h.class
                     )}
                   >

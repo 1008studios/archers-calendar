@@ -2675,8 +2675,8 @@ function MainApp() {
 
   // --- Direct Grid Manipulation Handlers ---
   const handleManipulationStart = (type: ManipulationType, e: React.MouseEvent | React.TouchEvent) => {
-    // Allow manipulation on desktop and tablets (md: 768px+)
-    if (device === "share" || (typeof window !== "undefined" && window.innerWidth < 768)) return;
+    // Allow manipulation on all devices except sharing mode
+    if (device === "share") return;
 
     if (e.cancelable) e.preventDefault();
     e.stopPropagation();
