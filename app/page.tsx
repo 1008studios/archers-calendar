@@ -185,7 +185,7 @@ type SharedDesignState = {
   emojiOverlayEnabled: boolean;
   lineOverlayEnabled: boolean;
   background: string;
-  backgroundImage: string;
+  backgroundImage?: string;
   backgroundTone: CalendarTone;
   gradient: GradientConfig;
   pattern: PatternConfig;
@@ -2198,7 +2198,6 @@ function MainApp() {
       emojiOverlayEnabled,
       lineOverlayEnabled,
       background,
-      backgroundImage,
       backgroundTone,
       gradient,
       pattern,

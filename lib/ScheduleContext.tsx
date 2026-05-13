@@ -157,7 +157,7 @@ interface ScheduleContextType {
 const ScheduleContext = createContext<ScheduleContextType | undefined>(undefined);
 
 export const DEFAULT_DEVICE_SETTINGS: Record<DeviceId, DeviceGridSettings> = {
-  iphone:         { x: 0, y: 0, sx: 1, sy: 1 },
+  iphone:         { x: 0, y: 0, sx: 5, sy: 5 }, // XS by default
   ipad_portrait:  { x: 0, y: 0, sx: 3, sy: 3 },
   ipad_landscape: { x: 0, y: 0, sx: 3, sy: 3 },
   laptop:         { x: 0, y: 0, sx: 3, sy: 3 },
