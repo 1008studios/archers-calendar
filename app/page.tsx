@@ -4978,16 +4978,24 @@ function MainApp() {
             : <Download size={18} className="transition-transform" />}          <span className="text-sm font-black">{isExporting ? "Saving..." : "Save to Photos"}</span>
         </button>
 
-        <a
-          href="https://instagram.com/richarduaje"
-          target="_blank"
-          rel="noreferrer"
-          className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.03] py-3 text-[11px] font-black text-white/50 transition-all hover:border-white/20 hover:bg-white/[0.06] hover:text-white active:scale-[0.97]"
-          onClick={() => trackAppEvent("bug_report_click", { target: "instagram" })}
-        >
-          <Bug size={13} strokeWidth={2.5} />
-          Report Bugs @richarduaje
-        </a>
+        <div className="flex flex-col gap-2">
+          <a
+            href="https://instagram.com/richarduaje"
+            target="_blank"
+            rel="noreferrer"
+            className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.03] py-3 text-[11px] font-black text-white/50 transition-all hover:border-white/20 hover:bg-white/[0.06] hover:text-white active:scale-[0.97]"
+            onClick={() => trackAppEvent("bug_report_click", { target: "instagram" })}
+          >
+            <Bug size={13} strokeWidth={2.5} />
+            Report Bugs @richarduaje
+          </a>
+          <a
+            href="/info"
+            className="flex w-full items-center justify-center py-2 text-[10px] font-bold text-white/20 transition-colors hover:text-white/40"
+          >
+            About Archers Calendar
+          </a>
+        </div>
         </section>
 
     </div>

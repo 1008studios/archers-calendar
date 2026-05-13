@@ -65,22 +65,27 @@ const workSans = Work_Sans({ subsets: ["latin"], weight: ["400", "500", "600", "
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://archers-calendar.vercel.app"),
-  title: "Archers Calendar Generator",
-  description: "Create simple, readable DLSU schedule wallpapers from ArchersHub text, images, gradients, and emoji patterns.",
+  title: "Archers Calendar - Free Student Schedule Wallpaper Generator",
+  description: "Create beautiful, readable schedule wallpapers for students in Metro Manila (DLSU and more). Created by Richard Christian Uaje. Convert your class schedule into high-res wallpapers with custom designs, gradients, and themes. Free to use.",
+  keywords: ["DLSU schedule generator", "Metro Manila student tools", "class schedule wallpaper", "Archers Calendar", "DLSU ArchersHub", "student productivity", "Richard Christian Uaje", "free schedule generator"],
+  authors: [{ name: "Richard Christian Uaje" }],
+  creator: "Richard Christian Uaje",
   icons: {
     icon: "/logos/logo-mini-green.png",
     shortcut: "/logos/logo-mini-green.png",
     apple: "/logos/logo-mini-green.png",
   },
   openGraph: {
-    title: "Archers Calendar Generator",
-    description: "Create simple, readable DLSU schedule wallpapers from ArchersHub text, images, gradients, and emoji patterns.",
+    title: "Archers Calendar - Free Schedule Wallpaper Generator",
+    description: "Convert your DLSU or university schedule into aesthetic wallpapers. Created by Richard Christian Uaje for students in Metro Manila.",
+    url: "https://archers-calendar.vercel.app",
+    siteName: "Archers Calendar",
     images: [
       {
         url: "/logos/logo-full-green.png",
         width: 1200,
         height: 630,
-        alt: "Archers Calendar Logo",
+        alt: "Archers Calendar - Free Schedule Generator",
       },
     ],
     locale: "en_PH",
@@ -88,9 +93,10 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Archers Calendar Generator",
-    description: "Create simple, readable DLSU schedule wallpapers from ArchersHub text.",
+    title: "Archers Calendar - Free Schedule Wallpaper Generator",
+    description: "Beautiful schedule wallpapers for Metro Manila students. Created by Richard Christian Uaje.",
     images: ["/logos/logo-full-green.png"],
+    creator: "@rcuaje",
   },
 };
 

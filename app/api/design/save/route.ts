@@ -48,7 +48,7 @@ export async function POST(req: Request) {
       );
     }
 
-    if (await hitRateLimit(req, "design:save", 50, 3600)) {
+    if (await hitRateLimit(req, "design:save", 10, 3600)) {
       return NextResponse.json({ error: "Too many requests. Try again later." }, { status: 429 });
     }
 
