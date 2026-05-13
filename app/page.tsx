@@ -815,7 +815,7 @@ const DAY_NAMES_FULL: Record<DayKey, string> = {
 const DEFAULT_VISIBLE_DAYS: Record<DayKey, boolean> = {
   Mon: true, Tue: true, Wed: true, Thu: true, Fri: true, Sat: true, Sun: false
 };
-// Sunday is never shown — DLSU schedules don't use it
+// Sunday is never shown — university schedules in the PH rarely use it
 
 type AnalyticsProps = Record<string, string | number | boolean | undefined>;
 
@@ -3238,7 +3238,7 @@ function MainApp() {
       if (navigator.share) {
         await navigator.share({
           title: 'Archers Calendar Generator',
-          text: 'Generated my DLSU schedule wallpaper! #archerscalendar',
+          text: 'Generated my university schedule wallpaper! #archerscalendar',
           url: 'https://archers-calendar.vercel.app',
         });
       }
@@ -3994,7 +3994,7 @@ function MainApp() {
             value={rawText}
             onChange={(e) => handleRawTextChange(e.target.value)}
             onPaste={handlePaste}
-            placeholder={`Paste your ArchersHub table or messy schedule text here.\n\n12:45 PM - 02:15 PM   GEAGNO - AGNO FOOD STUDIES\n02:30 PM - 04:00 PM   GEBILLIARDS - ADVANCED BILLIARDS`}
+            placeholder={`Paste your university schedule or messy text here. Build in 30 seconds.\n\nExample:\n12:45 PM - 02:15 PM   GEAGNO - AGNO FOOD STUDIES\n02:30 PM - 04:00 PM   GEBILLIARDS - ADVANCED BILLIARDS`}
           />
           {importError && (
             <p className="rounded-lg border border-amber-300/20 bg-amber-300/10 px-3 py-2 text-xs font-medium leading-5 text-amber-100">
@@ -4003,7 +4003,7 @@ function MainApp() {
           )}
           {!importError && importSource === "ai" && (
             <p className="rounded-lg border border-dlsu-vivid/25 bg-dlsu-vivid/10 px-3 py-2 text-xs font-medium leading-5 text-white/70">
-              Imported with Compatibility Layer.
+              Smart Universal Import Active.
             </p>
           )}
           {isParsing && (
@@ -4018,7 +4018,7 @@ function MainApp() {
                   style={{ width: `${parsingProgress}%` }}
                 />
               </div>
-              <p className="text-[10px] font-bold text-white/30 animate-pulse">Running Compatibility Layer...</p>
+              <p className="text-[10px] font-bold text-white/30 animate-pulse">Running Universal Engine...</p>
             </div>
           )}
           {!importError && importSource === "local" && (

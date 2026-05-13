@@ -65,9 +65,14 @@ const workSans = Work_Sans({ subsets: ["latin"], weight: ["400", "500", "600", "
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://archers-calendar.vercel.app"),
-  title: "Archers Calendar - Free Student Schedule Wallpaper Generator",
-  description: "Create beautiful, readable schedule wallpapers for students in Metro Manila (DLSU and more). Created by Richard Christian Uaje. Convert your class schedule into high-res wallpapers with custom designs, gradients, and themes. Free to use.",
-  keywords: ["DLSU schedule generator", "Metro Manila student tools", "class schedule wallpaper", "Archers Calendar", "DLSU ArchersHub", "student productivity", "Richard Christian Uaje", "free schedule generator"],
+  title: "Archers Calendar - Build Your Schedule Wallpaper in 30 Seconds",
+  description: "The ultimate free schedule wallpaper generator for PH students. Build a custom calendar in 30 seconds by pasting your schedule. Support for iPhone, iPad, MacBook, and Laptop. Export as full wallpapers, clear PNGs, or backdrops. 100% FREE, all features unlocked. Created by Richard Christian Uaje.",
+  keywords: [
+    "schedule wallpaper generator", "PH student tools", "class schedule builder", "university schedule maker",
+    "iPhone schedule wallpaper", "iPad schedule wallpaper", "MacBook schedule wallpaper", "free student app",
+    "Richard Christian Uaje", "UP schedule", "UST schedule", "DLSU schedule", "ADMU schedule", "FEU schedule",
+    "custom calendar background", "emoji pattern calendar", "gradient schedule"
+  ],
   authors: [{ name: "Richard Christian Uaje" }],
   creator: "Richard Christian Uaje",
   icons: {
@@ -76,8 +81,8 @@ export const metadata: Metadata = {
     apple: "/logos/logo-mini-green.png",
   },
   openGraph: {
-    title: "Archers Calendar - Free Schedule Wallpaper Generator",
-    description: "Convert your DLSU or university schedule into aesthetic wallpapers. Created by Richard Christian Uaje for students in Metro Manila.",
+    title: "Archers Calendar - Free Universal Schedule Generator",
+    description: "Build beautiful, high-res schedule wallpapers in seconds. Works for all PH universities. 100% FREE and fully unlocked. Created by Richard Christian Uaje.",
     url: "https://archers-calendar.vercel.app",
     siteName: "Archers Calendar",
     images: [
@@ -85,7 +90,7 @@ export const metadata: Metadata = {
         url: "/logos/logo-full-green.png",
         width: 1200,
         height: 630,
-        alt: "Archers Calendar - Free Schedule Generator",
+        alt: "Archers Calendar - Free Schedule Wallpaper Generator",
       },
     ],
     locale: "en_PH",
@@ -93,8 +98,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Archers Calendar - Free Schedule Wallpaper Generator",
-    description: "Beautiful schedule wallpapers for Metro Manila students. Created by Richard Christian Uaje.",
+    title: "Archers Calendar - 30-Second Schedule Builder",
+    description: "Convert your university schedule into aesthetic wallpapers. 100% FREE for all PH students. Created by Richard Christian Uaje.",
     images: ["/logos/logo-full-green.png"],
     creator: "@rcuaje",
   },
