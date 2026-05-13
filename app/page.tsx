@@ -3098,14 +3098,10 @@ function MainApp() {
     const anchor = document.createElement("div");
     Object.assign(anchor.style, {
       position: "fixed",
-      left: "0",
-      top: "0",
-      width: "0",
-      height: "0",
-      overflow: "hidden",
+      left: "-9999px",
+      top: "-9999px",
       pointerEvents: "none",
-      zIndex: "-9999",
-      opacity: "0"
+      zIndex: "-9999"
     });
 
     const wrapper = document.createElement("div");
@@ -3218,20 +3214,14 @@ function MainApp() {
     // Try native share first
     if (await shareCanvasNatively(blob, filename)) return "native";
 
-    // Fallback: Use window.open for better mobile reliability
     const url = URL.createObjectURL(blob);
-    const win = window.open(url, "_blank");
-    
-    // If pop-up blocker prevents window.open, fallback to link click
-    if (!win) {
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = filename;
-      link.type = "image/png";
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    }
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    link.type = "image/png";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
 
     window.setTimeout(() => URL.revokeObjectURL(url), 5000);
     return "download";
@@ -3254,13 +3244,25 @@ function MainApp() {
     }
   }
 
+  function getSafeExportScale(width: number, height: number) {
+    const isMobile = shouldUseNativeSaveSheet();
+    const maxArea = isMobile ? 5000000 : 16777216; // 5MP for mobile to be safe, 16MP for desktop
+    const currentArea = width * height;
+    let safeScale = EXPORT_SCALE;
+    while (currentArea * safeScale * safeScale > maxArea && safeScale > 1) {
+      safeScale -= 0.5;
+    }
+    return Math.max(1, safeScale);
+  }
+
   async function handleExport() {
     if (!canvasRef.current) return;
     setIsExporting(true);
     setExportProgress({ label: `Preparing ${EXPORT_DEVICE_LABELS[device]}`, current: 0, total: 1 });
     try {
       await waitForExportFrame();
-      const exportedCanvas = await captureExportCanvas(canvasRef.current, canvasSize, EXPORT_SCALE);
+      const safeScale = getSafeExportScale(canvasSize.width, canvasSize.height);
+      const exportedCanvas = await captureExportCanvas(canvasRef.current, canvasSize, safeScale);
       setExportProgress({ label: `Saving ${EXPORT_DEVICE_LABELS[device]}`, current: 1, total: 1 });
       const delivery = await downloadCanvas(exportedCanvas, makeExportFilename(device, getExportVariantSuffix()));
       trackAppEvent("export_completed", { device, exportVariant, count: 1, delivery });
@@ -3284,7 +3286,8 @@ function MainApp() {
         setDevice(deviceId);
         await waitForCanvasSize(CANVAS_SIZES[deviceId]);
         if (canvasRef.current) {
-          const exported = await captureExportCanvas(canvasRef.current, CANVAS_SIZES[deviceId], EXPORT_SCALE);
+          const safeScale = getSafeExportScale(CANVAS_SIZES[deviceId].width, CANVAS_SIZES[deviceId].height);
+          const exported = await captureExportCanvas(canvasRef.current, CANVAS_SIZES[deviceId], safeScale);
           setExportProgress({ label: `Saving ${EXPORT_DEVICE_LABELS[deviceId]}`, current: 1, total: 1 });
           const delivery = await downloadCanvas(exported, makeExportFilename(deviceId, getExportVariantSuffix()));
           trackAppEvent("export_completed", { device: deviceId, exportVariant, count: 1, delivery });
@@ -3301,7 +3304,8 @@ function MainApp() {
           await waitForCanvasSize(CANVAS_SIZES[deviceId]);
           if (!canvasRef.current) continue;
 
-          const exported = await captureExportCanvas(canvasRef.current, CANVAS_SIZES[deviceId], EXPORT_SCALE);
+          const safeScale = getSafeExportScale(CANVAS_SIZES[deviceId].width, CANVAS_SIZES[deviceId].height);
+          const exported = await captureExportCanvas(canvasRef.current, CANVAS_SIZES[deviceId], safeScale);
           const pngBlob = await canvasToPngBlob(exported);
           folder?.file(makeExportFilename(deviceId, getExportVariantSuffix()), pngBlob);
           setExportProgress({ label: `Added ${EXPORT_DEVICE_LABELS[deviceId]}`, current: index + 1, total: deviceIds.length });
