@@ -2674,11 +2674,15 @@ function MainApp() {
   }
 
   // --- Direct Grid Manipulation Handlers ---
-  const handleManipulationStart = (type: ManipulationType, e: React.MouseEvent) => {
-    if (device === "share" || (typeof window !== "undefined" && window.innerWidth < 1024)) return;
+  const handleManipulationStart = (type: ManipulationType, e: React.MouseEvent | React.TouchEvent) => {
+    // Allow manipulation on desktop and tablets (md: 768px+)
+    if (device === "share" || (typeof window !== "undefined" && window.innerWidth < 768)) return;
 
-    e.preventDefault();
+    if (e.cancelable) e.preventDefault();
     e.stopPropagation();
+
+    const clientX = "touches" in e ? e.touches[0].clientX : (e as React.MouseEvent).clientX;
+    const clientY = "touches" in e ? e.touches[0].clientY : (e as React.MouseEvent).clientY;
 
     const current = deviceSettings[device] || { x: 0, y: 0, sx: 3, sy: 3 };
     const startFrame = getFrameSize(device, current.sx, current.sy);
@@ -2686,8 +2690,8 @@ function MainApp() {
     const gridRect = gridElement?.getBoundingClientRect();
     setManipulation({ type });
     dragStartRef.current = {
-      x: e.clientX,
-      y: e.clientY,
+      x: clientX,
+      y: clientY,
       ox: current.x,
       oy: current.y,
       osx: current.sx,
@@ -2703,12 +2707,12 @@ function MainApp() {
 
   const manipulationRafRef = useRef<number | null>(null);
 
-  const handleManipulationMove = useCallback((e: React.MouseEvent) => {
+  const handleManipulationMove = useCallback((e: React.MouseEvent | React.TouchEvent) => {
     if (!manipulation) return;
     if (manipulationRafRef.current) cancelAnimationFrame(manipulationRafRef.current);
 
-    const clientX = e.clientX;
-    const clientY = e.clientY;
+    const clientX = "touches" in e ? e.touches[0].clientX : (e as React.MouseEvent).clientX;
+    const clientY = "touches" in e ? e.touches[0].clientY : (e as React.MouseEvent).clientY;
 
     manipulationRafRef.current = requestAnimationFrame(() => {
       const dx = clientX - dragStartRef.current.x;
@@ -5287,13 +5291,15 @@ function MainApp() {
               </div>
             </div>
 
-            {/* Global Manipulation Event Layer (Desktop Only) */}
+            {/* Global Manipulation Event Layer (Desktop & Tablet) */}
             {manipulation && (
               <div
-                className="fixed inset-0 z-[9999]"
+                className="fixed inset-0 z-[9999] touch-none"
                 style={{ cursor: getManipulationCursor(manipulation.type) }}
                 onMouseMove={handleManipulationMove}
                 onMouseUp={handleManipulationEnd}
+                onTouchMove={handleManipulationMove}
+                onTouchEnd={handleManipulationEnd}
               />
             )}
           </div>

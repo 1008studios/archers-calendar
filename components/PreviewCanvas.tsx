@@ -173,7 +173,7 @@ export default React.memo(function PreviewCanvas({
 }: {
   canvasRef: React.RefObject<HTMLDivElement | null>,
   previewScale: number,
-  onManipulationStart?: (type: any, e: React.MouseEvent) => void,
+  onManipulationStart?: (type: any, e: React.MouseEvent | React.TouchEvent) => void,
   isManipulating?: boolean
 }) {
   const {
@@ -734,10 +734,10 @@ export default React.memo(function PreviewCanvas({
             <div className={classNames("col-span-full flex items-center justify-center p-12 text-center text-sm font-bold uppercase opacity-40", headerText)}>No Classes Scheduled</div>
             )}
 
-            {/* High-Fidelity Manipulation Handles (Desktop Only) */}
+            {/* High-Fidelity Manipulation Handles (Desktop & Tablet) */}
             {!isTransparentExport && !isBackgroundOnlyExport && !isSquareDevice && (
               <div
-                className="absolute inset-0 z-[60] hidden pointer-events-none group/manip lg:block"
+                className="absolute inset-0 z-[60] hidden pointer-events-none group/manip md:block"
                 style={{ color: manipulationAccent }}
               >
                 <div
@@ -753,13 +753,14 @@ export default React.memo(function PreviewCanvas({
                   data-manipulation-handle="move"
                   className="absolute inset-8 cursor-grab active:cursor-grabbing pointer-events-auto"
                   onMouseDown={(e) => onManipulationStart?.("move", e)}
+                  onTouchStart={(e) => onManipulationStart?.("move", e)}
                 />
 
                 {/* Edge Handles */}
-                <div data-manipulation-handle="resize-n" className="absolute left-8 right-8 top-0 h-4 cursor-ns-resize pointer-events-auto" onMouseDown={(e) => onManipulationStart?.("resize-n", e)} />
-                <div data-manipulation-handle="resize-s" className="absolute bottom-0 left-8 right-8 h-4 cursor-ns-resize pointer-events-auto" onMouseDown={(e) => onManipulationStart?.("resize-s", e)} />
-                <div data-manipulation-handle="resize-w" className="absolute bottom-8 left-0 top-8 w-4 cursor-ew-resize pointer-events-auto" onMouseDown={(e) => onManipulationStart?.("resize-w", e)} />
-                <div data-manipulation-handle="resize-e" className="absolute bottom-8 right-0 top-8 w-4 cursor-ew-resize pointer-events-auto" onMouseDown={(e) => onManipulationStart?.("resize-e", e)} />
+                <div data-manipulation-handle="resize-n" className="absolute left-8 right-8 top-0 h-4 cursor-ns-resize pointer-events-auto" onMouseDown={(e) => onManipulationStart?.("resize-n", e)} onTouchStart={(e) => onManipulationStart?.("resize-n", e)} />
+                <div data-manipulation-handle="resize-s" className="absolute bottom-0 left-8 right-8 h-4 cursor-ns-resize pointer-events-auto" onMouseDown={(e) => onManipulationStart?.("resize-s", e)} onTouchStart={(e) => onManipulationStart?.("resize-s", e)} />
+                <div data-manipulation-handle="resize-w" className="absolute bottom-8 left-0 top-8 w-4 cursor-ew-resize pointer-events-auto" onMouseDown={(e) => onManipulationStart?.("resize-w", e)} onTouchStart={(e) => onManipulationStart?.("resize-w", e)} />
+                <div data-manipulation-handle="resize-e" className="absolute bottom-8 right-0 top-8 w-4 cursor-ew-resize pointer-events-auto" onMouseDown={(e) => onManipulationStart?.("resize-e", e)} onTouchStart={(e) => onManipulationStart?.("resize-e", e)} />
 
                 {/* Corner Handles */}
                 {[
@@ -772,6 +773,7 @@ export default React.memo(function PreviewCanvas({
                     key={h.type}
                     data-manipulation-handle={h.type}
                     onMouseDown={(e) => onManipulationStart?.(h.type, e)}
+                    onTouchStart={(e) => onManipulationStart?.(h.type, e)}
                     className={classNames(
                       "absolute h-8 w-8 pointer-events-auto",
                       h.class
