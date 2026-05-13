@@ -3121,6 +3121,7 @@ function MainApp() {
       width: `${size.width}px`,
       height: `${size.height}px`,
       transform: "none",
+      borderRadius: "0px",
     });
 
     wrapper.appendChild(clone);

@@ -549,8 +549,8 @@ export default React.memo(function PreviewCanvas({
           data-calendar-grid="true"
           className={classNames(
             "relative grid min-h-0 w-full transition-colors duration-300 ease-out",
-            wallpaperStyle === "clean" && !isSquareDevice ? "overflow-hidden rounded-[6px] border" : "overflow-visible rounded-none border-l border-t",
-            isBorderlessStyle ? "shadow-none" : "shadow-lg",
+            wallpaperStyle === "clean" && !isSquareDevice ? "overflow-hidden rounded-[6px] border" : "overflow-visible border-l border-t",
+            isBorderlessStyle ? "shadow-none !border-transparent" : "shadow-lg",
             gridBg,
             shouldStretchHeight ? "flex-1" : "",
             gridBorder
